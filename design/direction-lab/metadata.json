@@ -1,7 +1,7 @@
 {
-  "name": "Claudex Usage Design Lab",
-  "description": "Code-native visual directions for the Claudex Usage GNOME panel surface.",
+  "name": "Claudex Usage Primitive Catalog",
+  "description": "Static Direction D primitive catalog for the Claudex Usage GNOME panel surface.",
   "uuid": "claudex-usage-design@hugo.local",
   "shell-version": ["50"],
-  "version": 1
+  "version": 2
 }

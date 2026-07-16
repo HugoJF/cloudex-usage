@@ -1,7 +1,8 @@
 # Design Direction Exploration — Claudex Usage
 
-This is the single divergent Phase-0 exploration required by Aura. It is an
-interactive design lab, not a production extension or implementation contract.
+This is the durable record of the single divergent Phase-0 exploration required by
+Aura. Direction D is the canonical outcome; the adjacent extension is its executable,
+developer-only primitive catalog rather than a selectable direction gallery.
 
 ## Product essence
 

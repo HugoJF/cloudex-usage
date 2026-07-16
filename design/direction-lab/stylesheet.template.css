@@ -1,0 +1,340 @@
+.claudex-indicator {
+  -natural-hpadding: {{space.control}}px;
+  -minimum-hpadding: {{space.compact}}px;
+}
+
+.claudex-menu-item {
+  padding: 0;
+}
+
+.claudex-panel {
+  spacing: {{space.compact}}px;
+}
+
+.claudex-panel-provider {
+  spacing: {{space.iconText}}px;
+}
+
+.claudex-panel-provider-icon {
+  width: {{size.panelProviderIcon}}px;
+  height: {{size.panelProviderIcon}}px;
+}
+
+.claudex-panel-provider-icon.muted {
+  opacity: 0.52;
+}
+
+.claudex-panel-provider-divider {
+  background-color: {{color.separator}};
+}
+
+.claudex-panel-selected-value {
+  font-size: {{type.bodyStrong.size}}pt;
+  font-weight: {{type.bodyStrong.weight}};
+}
+
+.direction-selected {
+  min-width: {{size.popoverMinWidth}}px;
+  padding: {{space.popoverInset}}px;
+  spacing: {{space.section}}px;
+  border-radius: {{radius.popover}}px;
+  background-color: {{color.surfaceRoot}};
+  color: {{color.foregroundPrimary}};
+}
+
+.selected-header,
+.selected-title-copy,
+.selected-history,
+.selected-settings-header {
+  spacing: {{space.control}}px;
+}
+
+.selected-kicker,
+.selected-settings-kicker {
+  font-size: {{type.kicker.size}}pt;
+  font-weight: {{type.kicker.weight}};
+  letter-spacing: {{type.kicker.tracking}}px;
+  color: {{color.foregroundMuted}};
+}
+
+.selected-title,
+.selected-settings-title {
+  font-size: {{type.title.size}}pt;
+  font-weight: {{type.title.weight}};
+}
+
+.selected-settings-button {
+  min-width: {{size.iconButtonHitTarget}}px;
+  min-height: {{size.iconButtonHitTarget}}px;
+  padding: {{space.iconText}}px;
+  border-radius: {{radius.control}}px;
+  color: {{color.foregroundSecondary}};
+  background-color: transparent;
+}
+
+.selected-settings-button:hover,
+.selected-settings-button:focus {
+  color: {{color.foregroundPrimary}};
+  background-color: {{color.hoverOverlay}};
+}
+
+.selected-settings-button:focus,
+.selected-back-button:focus,
+.claudex-range-button:focus,
+.claudex-text-button:focus,
+.selected-setting-button:focus,
+.selected-choice-button:focus {
+  box-shadow: inset 0 0 0 1px {{color.focus}};
+}
+
+.selected-provider-card {
+  padding: {{space.cardInset}}px;
+  spacing: {{space.control}}px;
+  border-radius: {{radius.card}}px;
+  background-color: {{color.surfaceRaised}};
+  border: 1px solid {{color.borderSubtle}};
+}
+
+.claudex-provider-header {
+  spacing: {{space.control}}px;
+}
+
+.claudex-provider-icon {
+  width: {{size.providerIcon}}px;
+  height: {{size.providerIcon}}px;
+}
+
+.claudex-provider-copy {
+  spacing: {{space.micro}}px;
+}
+
+.claudex-provider-name {
+  font-size: {{type.bodyStrong.size}}pt;
+  font-weight: {{type.bodyStrong.weight}};
+}
+
+.claudex-provider-detail,
+.claudex-reset,
+.claudex-updated {
+  font-size: {{type.meta.size}}pt;
+  color: {{color.foregroundMuted}};
+}
+
+.claudex-metric {
+  spacing: {{space.compact}}px;
+}
+
+.claudex-metric-top {
+  spacing: {{space.control}}px;
+}
+
+.claudex-window,
+.claudex-percent {
+  font-size: {{type.body.size}}pt;
+}
+
+.claudex-window {
+  font-weight: {{type.bodyStrong.weight}};
+}
+
+.claudex-percent {
+  font-weight: {{type.bodyStrong.weight}};
+}
+
+.claudex-progress-track {
+  width: {{size.progressWidth}}px;
+  height: {{size.progressHeight}}px;
+  border-radius: {{radius.pill}}px;
+  background-color: {{color.surfaceHover}};
+}
+
+.claudex-progress-fill {
+  border-radius: {{radius.pill}}px;
+}
+
+.color-claudeShort {
+  background-color: {{color.dataClaudeShort}};
+  color: {{color.dataClaudeShort}};
+}
+
+.color-claudeWeekly {
+  background-color: {{color.dataClaudeWeekly}};
+  color: {{color.dataClaudeWeekly}};
+}
+
+.color-codexWeekly {
+  background-color: {{color.dataCodexWeekly}};
+  color: {{color.dataCodexWeekly}};
+}
+
+.selected-history {
+  padding-top: {{space.micro}}px;
+}
+
+.selected-history-header {
+  spacing: {{space.compact}}px;
+}
+
+.selected-section-title {
+  font-size: {{type.bodyStrong.size}}pt;
+  font-weight: {{type.bodyStrong.weight}};
+}
+
+.claudex-chart-frame {
+  spacing: {{space.compact}}px;
+}
+
+.claudex-chart {
+  height: {{size.chartHeight}}px;
+  border-radius: {{radius.chart}}px;
+  background-color: {{color.surfaceChart}};
+  border: 1px solid {{color.borderChart}};
+}
+
+.claudex-chart-axis {
+  width: {{size.chartAxisWidth}}px;
+}
+
+.claudex-chart-axis-label {
+  width: {{size.chartAxisWidth}}px;
+  font-size: {{type.kicker.size}}pt;
+  color: {{color.foregroundMuted}};
+}
+
+.claudex-range-selector {
+  spacing: {{space.micro}}px;
+}
+
+.claudex-range-button {
+  padding: {{space.micro}}px {{space.compact}}px;
+  border-radius: {{radius.control}}px;
+  color: {{color.foregroundMuted}};
+  background-color: {{color.surfaceControl}};
+}
+
+.claudex-range-button:hover,
+.claudex-range-button:focus {
+  color: {{color.foregroundPrimary}};
+  background-color: {{color.surfaceHover}};
+}
+
+.claudex-range-button.active {
+  color: {{color.surfaceRoot}};
+  background-color: {{color.focus}};
+}
+
+.claudex-legend {
+  spacing: {{space.section}}px;
+}
+
+.claudex-legend-item {
+  spacing: {{space.iconText}}px;
+}
+
+.claudex-legend-dot {
+  border-radius: {{radius.pill}}px;
+}
+
+.claudex-legend-label {
+  font-size: {{type.legend.size}}pt;
+  color: {{color.foregroundMuted}};
+}
+
+.claudex-footer {
+  spacing: {{space.control}}px;
+  padding-top: {{space.micro}}px;
+}
+
+.claudex-text-button {
+  padding: {{space.iconText}}px {{space.control}}px;
+  border-radius: {{radius.control}}px;
+  color: {{color.foregroundSecondary}};
+  background-color: transparent;
+}
+
+.claudex-text-button:hover,
+.claudex-text-button:focus {
+  color: {{color.foregroundPrimary}};
+  background-color: {{color.surfaceHover}};
+}
+
+.claudex-button-label {
+  font-size: inherit;
+  color: inherit;
+}
+
+.selected-back-button {
+  padding: {{space.iconText}}px {{space.compact}}px;
+  border-radius: {{radius.control}}px;
+  color: {{color.foregroundSecondary}};
+  background-color: {{color.surfaceControl}};
+}
+
+.selected-back-button:hover,
+.selected-back-button:focus {
+  color: {{color.foregroundPrimary}};
+  background-color: {{color.surfaceHover}};
+}
+
+.selected-settings-section {
+  spacing: {{space.compact}}px;
+  padding: {{space.cardInset}}px;
+  border-radius: {{radius.card}}px;
+  background-color: {{color.surfaceRaised}};
+  border: 1px solid {{color.borderSubtle}};
+}
+
+.selected-setting-button,
+.selected-choice-button {
+  padding: {{space.compact}}px {{space.iconText}}px;
+  border-radius: {{radius.control}}px;
+  background-color: transparent;
+}
+
+.selected-setting-button:hover,
+.selected-setting-button:focus,
+.selected-choice-button:hover,
+.selected-choice-button:focus {
+  background-color: {{color.borderChart}};
+}
+
+.selected-setting-row,
+.selected-choice-row {
+  spacing: {{space.control}}px;
+}
+
+.selected-setting-copy {
+  spacing: {{space.micro}}px;
+}
+
+.selected-setting-title {
+  font-size: {{type.body.size}}pt;
+  font-weight: {{type.bodyStrong.weight}};
+}
+
+.selected-setting-description {
+  font-size: {{type.supporting.size}}pt;
+  color: {{color.foregroundSubtle}};
+}
+
+.selected-switch {
+  width: {{size.switchTrackWidth}}px;
+  height: {{size.switchTrackHeight}}px;
+  border-radius: {{radius.pill}}px;
+  background-color: {{color.switchInactive}};
+}
+
+.selected-switch.active {
+  background-color: {{color.switchActive}};
+}
+
+.selected-switch-knob {
+  border-radius: {{radius.pill}}px;
+  background-color: {{color.switchThumb}};
+  box-shadow: 0 1px 2px {{color.switchShadow}};
+}
+
+.selected-choice-value {
+  font-size: {{type.meta.size}}pt;
+  color: {{color.foregroundSecondary}};
+}

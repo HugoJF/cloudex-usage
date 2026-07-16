@@ -1,7 +1,7 @@
 ---
 id: SPEC-PRIMITIVE-CATALOG
 type: spec
-status: draft
+status: done
 owner: hugo
 created: 2026-07-16
 updated: 2026-07-16
@@ -90,10 +90,9 @@ additional primitive requires a reviewed change to the design system and this Sp
 
 ## Build Slices
 
-- [ ] `UI-001` — token-backed GJS primitives and the selected static catalog, covered
-  by the J-001 journey test.
-- [ ] `UI-002` — developer packaging plus deterministic screenshot evidence for the
-  required theme, scaling, and interaction-state matrix.
+- [x] `UI-001` — token-backed GJS primitives, the selected static catalog, developer
+  packaging, and deterministic screenshot evidence, covered by the J-001 journey
+  test.
 
 ## Non-Scope
 

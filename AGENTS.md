@@ -16,22 +16,22 @@ This file contains only Claudex Usage project facts.
 
 - Target desktop: GNOME Shell 50.1 on Linux.
 - Intended UI surface: a GNOME Shell extension written in GJS.
-- Current phase: product documentation and visual design; no production application
-  code yet. `design/direction-lab` is a developer-only static GNOME extension.
+- Current phase: approved visual system and developer-only primitive catalog; no
+  provider integration or production extension yet.
 
 ```bash
-node scripts/doc-lint.mjs docs/product docs/engineering
+npm test
 ```
 
-This document gate is the single validation command until application tooling is
-introduced. Development and screenshot-harness commands will be added with the
-first implementation Spec.
+This is the single validation gate: docs, token/CSS drift, unit tests, extension
+packaging, the isolated J-001 GNOME journey, and temporary capture verification.
+Use `npm run capture` only when canonical visual evidence must be regenerated.
 
 ## Architecture
 
-No application topology has been accepted yet. The founding provider constraints
-are canonical in `docs/product/pitch.md`. The first UI milestone uses static mock
-states so panel and popup design can be settled independently of provider access.
+`design/direction-lab` is the developer-installed static Shell extension described
+in `docs/engineering/architecture.md`. The founding provider constraints remain
+canonical in `docs/product/pitch.md`; provider adapters are outside this topology.
 
 ## Docs Map
 

@@ -13,8 +13,8 @@ technical typography, provider grouping, and a quiet top-panel footprint.
 - Provider-mark provenance: [`design/direction-lab/icons/README.md`](../../design/direction-lab/icons/README.md)
 
 The token manifest is the value authority. GNOME Shell CSS lacks portable custom
-properties, so generated or hand-authored styles may repeat literals but must remain
-byte-equivalent to the manifest roles they consume.
+properties, so the executable catalog generates its stylesheet from a checked-in
+template and rejects token or generated-file drift in the repository gate.
 
 ## Tokens
 
@@ -104,6 +104,8 @@ screen must list composed primitives and explicitly justify additions.
   the selected/hover/focus states before accepting a primitive slice.
 - Screenshot evidence must include the minimized panel, usage popup, settings popup,
   and every interactive state that changes geometry.
+
+Canonical evidence: [`design/captures`](../../design/captures/).
 
 ## Scope Boundary
 

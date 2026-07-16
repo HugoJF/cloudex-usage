@@ -1,14 +1,26 @@
-# Claudex Usage Direction Lab
+# Claudex Usage Primitive Catalog
 
-Developer-only GNOME Shell extension containing four static-data visual directions.
-It intentionally performs no authentication, provider calls, polling, or persistence.
+Developer-only GNOME Shell extension containing the approved static Direction D
+panel, usage popup, settings popup, and interaction states. It performs no
+authentication, provider calls, polling, or persistence.
 
-After installation, click the Claudex indicator in the top panel. Use the direction
-buttons at the bottom of the popup to switch among Native Utility, Signal Deck, Quiet
-Capacity, and the selected synthesis.
+## Validate and review
 
-## Package
+Run the complete gate. It renders the token-backed stylesheet, packages the catalog,
+installs it into an isolated GNOME Shell 50.1 devkit session, runs J-001, and verifies
+temporary screenshots:
 
-    gnome-extensions pack --force --extra-source=icons design/direction-lab --out-dir /tmp
+```bash
+npm test
+```
 
-The generated ZIP can then be installed with GNOME Extensions for visual review.
+Regenerate the canonical evidence under [`design/captures`](../captures/):
+
+```bash
+npm run capture
+```
+
+The package includes `extension.js`, the pure process-local catalog state, the GJS
+primitive module, both provider-mark contrast variants, and the canonical token
+manifest. `gnome-shell-test-tool` installs the resulting ZIP into a disposable XDG
+home, so development review does not alter the user's installed extensions.

@@ -14,7 +14,7 @@ No capabilities have been promoted to a Brief yet.
 
 | Document | Status | Purpose |
 | --- | --- | --- |
-| [SPEC-PRIMITIVE-CATALOG](specs/2026-07-16-primitive-catalog.md) | draft | Builds the approved GNOME visual primitives and review harness. |
+| [SPEC-PRIMITIVE-CATALOG](specs/2026-07-16-primitive-catalog.md) | done | Builds the approved GNOME visual primitives and review harness. |
 
 ## Supporting documents
 
