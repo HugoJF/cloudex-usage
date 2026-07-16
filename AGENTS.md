@@ -16,7 +16,8 @@ This file contains only Claudex Usage project facts.
 
 - Target desktop: GNOME Shell 50.1 on Linux.
 - Intended UI surface: a GNOME Shell extension written in GJS.
-- Current phase: product documentation and visual design; no application code yet.
+- Current phase: product documentation and visual design; no production application
+  code yet. `design/direction-lab` is a developer-only static GNOME extension.
 
 ```bash
 node scripts/doc-lint.mjs docs/product docs/engineering

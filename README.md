@@ -3,9 +3,9 @@
 Claudex Usage is a GNOME Shell panel surface for seeing Claude Code and Codex usage
 windows and reset times without leaving the current workflow.
 
-The project is currently in its documentation and visual-design phase. There is no
-installable extension yet; the first intended artifact is a developer-installed,
-static-data prototype of the panel indicator and popup.
+The project is currently in its documentation and visual-design phase. Its only
+installable artifact is a developer-only static design lab; no provider integration
+or production extension exists yet.
 
 ## Project documents
 
@@ -13,6 +13,8 @@ static-data prototype of the panel indicator and popup.
 - [Product document index](docs/product/README.md)
 - [Feature horizon](docs/product/feature-horizon.md)
 - [Engineering documents](docs/engineering/architecture.md)
+- [Design system](docs/engineering/design-system.md)
+- [Direction lab](design/direction-lab/README.md)
 
 ## Validation
 

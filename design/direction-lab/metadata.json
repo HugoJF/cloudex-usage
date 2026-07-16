@@ -1,0 +1,7 @@
+{
+  "name": "Claudex Usage Design Lab",
+  "description": "Code-native visual directions for the Claudex Usage GNOME panel surface.",
+  "uuid": "claudex-usage-design@hugo.local",
+  "shell-version": ["50"],
+  "version": 1
+}
