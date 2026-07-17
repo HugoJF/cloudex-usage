@@ -66,3 +66,32 @@ and fatal UTF-8 decoding. Per-request identity prevents stale cleanup from touch
 new attempt; the surface also preserves a cleared lifecycle timestamp when a request
 finishes after eligibility disappeared. Keyring-only credentials and relative
 inherited `CODEX_HOME` values fail closed rather than adding another secret source.
+
+## 2026-07-17 — Freeze the Claude OAuth credential and account short/weekly boundary
+
+Local evidence found the existing Claude Code OAuth credential at
+`claudeAiOauth.accessToken` in `~/.claude/.credentials.json` (honoring
+`CLAUDE_CONFIG_DIR`), stored beside unrelated `mcpOAuth.*` tokens. A live authenticated
+`GET https://api.anthropic.com/api/oauth/usage` with `Authorization: Bearer` and
+`anthropic-beta: oauth-2025-04-20` returned HTTP 200 carrying `five_hour` and
+`seven_day` objects, each with a float `utilization` (0–100) and an ISO-8601 `resets_at`.
+The same response carried a conflicting model-scoped weekly limit
+(`limits[].kind = weekly_scoped`, e.g. a Fable weekly cap at a different percentage),
+dollar and `spend` fields, an `extra_usage` block, and null promotional buckets.
+
+The adapter boundary therefore reads only the nested `claudeAiOauth.accessToken` and
+only the `five_hour` and `seven_day` account windows, mapping them in order to one
+`short` and one `weekly` reading. `resets_at` is treated as authoritative and parsed by
+a strict, calendar-checked ISO-8601 grammar (accepting `Z` or a `±HH:MM` offset) reduced
+to safe epoch milliseconds; ambiguity or any malformed required value fails closed, and
+both windows must be valid or the whole result is unavailable. The model-scoped weekly,
+`limits` array, dollar, `spend`, `extra_usage`, and promotional fields are deliberately
+discarded because the product exposes one account short and one account weekly Claude
+reading and makes no downstream decision from those fields.
+
+`/api/oauth/usage` is undocumented and may change. The owner accepts that compatibility
+risk as the sole Claude endpoint exception; strict grammar and range checks surface
+drift as unavailable rather than guessing. Credential expiry remains a later
+authentication failure surfaced as unavailable: the boundary neither decodes JWT claims
+nor refreshes or initiates login. Presence detection — an exact current-user `claude`
+process, mirroring Codex — is evidenced but deferred to CLAUDE-002 with the runtime.

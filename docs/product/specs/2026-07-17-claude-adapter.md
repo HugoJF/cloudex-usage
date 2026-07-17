@@ -94,7 +94,7 @@ spawned by either layer.
 
 ## Build Slices
 
-- [ ] `CLAUDE-001` — evidence the existing Claude Code OAuth credential, the accepted
+- [x] `CLAUDE-001` — evidence the existing Claude Code OAuth credential, the accepted
   usage endpoint, the short and weekly response mapping, and the eligibility presence
   signal; add deterministic sanitized fixtures and record the fail-closed mapping
   decision. Medium: one credential-to-response boundary invariant, at most 14 files and

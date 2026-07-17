@@ -50,6 +50,30 @@ The seconds are multiplied by 1000 only when the epoch-millisecond result remain
 safe integer. `additional_rate_limits`, identity, plan, credit, promotion, allowance,
 limit-state, and relative-reset fields cannot affect the result.
 
+## Claude credential and usage boundary
+
+`extension/claude-contract.js` is a synchronous, framework-free source boundary that
+can be imported by Node tests and GJS. It exports:
+
+| Export | Accepted input | Failure result |
+| --- | --- | --- |
+| `extractClaudeAccessToken(authPayload)` | A parsed object whose `claudeAiOauth.accessToken` is a nonempty opaque string, optionally prefixed by case-insensitive `Bearer` and surrounding whitespace | `null` |
+| `mapClaudeUsage(payload)` | A `five_hour` and a `seven_day` account window, each a structurally valid `{utilization, resets_at}` record | Frozen `{status: "unavailable"}` |
+
+Token extraction reads no top-level, `mcpOAuth`, or alternate credential field. It
+removes at most one bearer prefix and rejects embedded whitespace, non-string values,
+and malformed containers. The caller owns auth-file access, the parsed payload, and the
+returned ephemeral credential; this boundary never logs, persists, or retains them.
+
+Usage mapping reads only the `five_hour` and `seven_day` account windows and maps them,
+in order, to one `short` and one `weekly` reading. Each window needs finite numeric
+`utilization` from 0 through 100 and a strict ISO-8601 `resets_at` (calendar-checked,
+with `Z` or a `±HH:MM` offset) reduced to non-negative safe epoch milliseconds; both
+windows must be valid or the whole result is unavailable. The `limits` array, any
+model-scoped window, dollar, spend, extra-usage, and promotional fields cannot affect
+the result. An accepted payload becomes a deeply frozen provider-slot result with two
+readings; every call creates new presentation objects and retains no source reference.
+
 An accepted payload becomes a deeply frozen provider-slot result with one `weekly`
 reading. Every call creates new presentation objects and retains no source reference.
 `extension/codex-runtime.js` is the first production consumer. It exports the provider

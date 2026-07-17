@@ -1,0 +1,38 @@
+{
+  "five_hour": {
+    "utilization": 62.5,
+    "resets_at": "2026-08-01T09:15:30Z"
+  },
+  "seven_day": {
+    "utilization": 88.0,
+    "resets_at": "2026-08-05T14:00:00.5-05:00"
+  },
+  "limits": [
+    {
+      "kind": "weekly_scoped",
+      "group": "weekly",
+      "percent": 99,
+      "severity": "warning",
+      "resets_at": "2026-08-05T14:00:00.5-05:00",
+      "scope": {
+        "model": {
+          "id": null,
+          "display_name": "Opus"
+        },
+        "surface": null
+      },
+      "is_active": true
+    }
+  ],
+  "spend": {
+    "used": {
+      "amount_minor": 1200,
+      "currency": "USD",
+      "exponent": 2
+    },
+    "limit": null,
+    "percent": 0,
+    "severity": "normal",
+    "enabled": true
+  }
+}
