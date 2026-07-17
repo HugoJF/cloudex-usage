@@ -7,6 +7,7 @@ created: 2026-07-16
 updated: 2026-07-17
 child_docs:
   - docs/product/briefs/2026-07-16-live-usage.md
+  - docs/product/briefs/2026-07-17-local-history.md
   - docs/product/specs/2026-07-16-primitive-catalog.md
 tags: [gnome, codex, claude, usage]
 ---

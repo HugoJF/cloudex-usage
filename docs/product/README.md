@@ -11,6 +11,7 @@
 | Document | Status | Purpose |
 | --- | --- | --- |
 | [BRIEF-LIVE-USAGE](briefs/2026-07-16-live-usage.md) | delivered | Delivers live usage through the unified surface and per-provider adapters. |
+| [BRIEF-LOCAL-HISTORY](briefs/2026-07-17-local-history.md) | active | Records local usage samples and ships the deferred trajectory chart. |
 
 ## Specs
 
