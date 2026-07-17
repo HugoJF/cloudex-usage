@@ -1,7 +1,7 @@
 ---
 id: BRIEF-LIVE-USAGE
 type: product-brief
-status: active
+status: delivered
 owner: hugo
 created: 2026-07-16
 updated: 2026-07-17
@@ -104,7 +104,11 @@ were confirmed at the promotion gate.
 
 ## Next Step
 
-Plan CLAUDE-001 before implementing the Claude adapter: it evidences the existing
-OAuth credential, usage endpoint, short and weekly response mapping, and the presence
-signal the provider must use, preserving the Codex adapter's fail-closed and no-launch
-constraints.
+Delivered: the production surface and both provider adapters
+([SPEC-USAGE-SURFACE](../specs/2026-07-16-usage-surface.md),
+[SPEC-CODEX-ADAPTER](../specs/2026-07-17-codex-adapter.md),
+[SPEC-CLAUDE-ADAPTER](../specs/2026-07-17-claude-adapter.md)) ship the unified panel item
+with live Codex weekly and Claude 5-hour and weekly usage. Remaining follow-ups are
+separate decisions on the [feature horizon](../feature-horizon.md): validate live values
+against each provider's own view, then weigh distribution, local usage history, and
+threshold notifications.
