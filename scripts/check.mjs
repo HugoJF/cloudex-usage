@@ -510,7 +510,8 @@ try {
     run('node', ['--test', 'tests/unit/catalog-state.test.js',
         'tests/unit/claude-contract.test.js',
         'tests/unit/codex-contract.test.js',
-        'tests/unit/design-tokens.test.js', 'tests/unit/panel-preferences.test.js',
+        'tests/unit/design-tokens.test.js', 'tests/unit/history-store.test.js',
+        'tests/unit/panel-preferences.test.js',
         'tests/unit/surface-controller.test.js']);
     run('gjs', ['-m', 'tests/unit/codex-adapter.test.js']);
     run('gjs', ['-m', 'tests/unit/claude-adapter.test.js']);

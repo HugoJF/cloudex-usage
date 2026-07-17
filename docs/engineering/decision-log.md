@@ -112,3 +112,23 @@ fatal UTF-8 decoding. Per-request identity prevents stale cleanup from touching 
 attempt. A relative inherited `CLAUDE_CONFIG_DIR` fails closed rather than adding another
 secret source. The Claude and Codex providers register through the same in-process slot
 and share the surface's one refresh cycle; neither spawns a process.
+
+## 2026-07-17 — Freeze the local usage-history sample store
+
+Local usage history records a bounded per-provider-window ring of `{atMs, percent}`
+samples rather than a full time series or a database. HIST-001 fixes the store shape and
+math in a pure `history-store.js` boundary; HIST-002 adds the durable file that persists
+its serialized form. A small append-capped store was chosen over SQLite (operationally
+heavy for a Shell extension) and over GSettings (the wrong tool for time series): samples
+are sparse — at most one per refresh, every 5–15 minutes — so a 30-day retention window
+and a per-window cap keep the store tiny.
+
+Samples are recorded only during the existing eligible refresh, so no timer or background
+work is added and nothing is written while no provider is present. The shipped ranges are
+the catalog's `1h`/`6h`/`1d`/`7d`/`30d`. Each range renders a fixed 30-point series built
+by carrying the last observed percent forward across a shared grid; a window appears only
+once it holds a sample at or before the range start, so early buckets are never
+back-filled with an invented value. The store keeps only percent-and-timestamp samples —
+never a credential, raw response, reset detail, or error — and is local-only: nothing it
+records is transmitted or shared. Visible-gap rendering for unobserved spans would need a
+charting-primitive change and stays out of scope; carry-forward is the accepted default.

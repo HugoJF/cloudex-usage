@@ -74,6 +74,28 @@ model-scoped window, dollar, spend, extra-usage, and promotional fields cannot a
 the result. An accepted payload becomes a deeply frozen provider-slot result with two
 readings; every call creates new presentation objects and retains no source reference.
 
+## Usage history store
+
+`extension/history-store.js` is a synchronous, framework-free boundary that can be
+imported by Node tests and GJS. It owns sample recording, range derivation, and durable
+serialization; it performs no file, network, or clock access — the caller supplies every
+timestamp. It exports:
+
+| Export | Behavior | Failure result |
+| --- | --- | --- |
+| `recordSample(store, {providerId, windowId, percent, atMs})` | Appends one bounded per-window sample; drops samples older than `RETENTION_MS` and caps each window's ring | Returns the store unchanged (invalid or non-increasing sample) |
+| `seriesForRange(store, rangeId, nowMs)` | Derives one `SERIES_POINTS`-length carry-forward series per window covered at the range start | Frozen `[]` (unknown range, invalid `nowMs`, no coverage) |
+| `serializeStore(store)` / `deserializeStore(data)` | Convert to and from a versioned durable object | `deserializeStore` returns an empty store on any malformed or non-monotonic data |
+
+Samples require a finite `percent` from 0 through 100 and a non-negative safe-integer
+`atMs`; per window they stay strictly increasing in time. `seriesForRange` builds a
+shared grid over `[nowMs - span, nowMs]` and, for each window holding a sample at or
+before the grid start, carries the last observed percent forward to each point, so every
+series is an equal-length array of valid percents; windows without start coverage are
+omitted rather than interpolated backward. Every call returns deeply frozen values and
+retains no source reference. No credential, response, or reset detail enters the store —
+only `{providerId, windowId, percent, atMs}` samples.
+
 An accepted payload becomes a deeply frozen provider-slot result with one `weekly`
 reading. Every call creates new presentation objects and retains no source reference.
 `extension/codex-runtime.js` is the first production consumer. It exports the provider

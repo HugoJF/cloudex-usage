@@ -94,7 +94,7 @@ read boundary; the surface continues to own polling, rendering, and provider lif
 
 ## Build Slices
 
-- [ ] `HIST-001` — a durable, bounded local sample store: define the record-and-read
+- [x] `HIST-001` — a durable, bounded local sample store: define the record-and-read
   boundary fed by the refresh cycle, its retention and range windows, and gap handling;
   add deterministic tests and record the store-mechanism decision. Medium: one
   sample-to-series boundary invariant, at most 14 files and 750 handwritten lines.
