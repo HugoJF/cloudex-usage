@@ -48,8 +48,8 @@ Acceptance:
 
 ## Cross-Journey Acceptance
 
-- The adapter persists no server address, credential, raw response, usage value, or
-  error detail.
+- The adapter persists no endpoint configuration, credential, raw response, usage
+  value, or error detail.
 - The internal Codex usage endpoint is the only accepted undocumented provider
   endpoint; schema drift fails closed.
 - It makes no process-launch, login, browser, or dashboard-scraping attempt.
@@ -62,18 +62,22 @@ The adapter composes the existing Codex provider mark, `ProviderCard`, `UsageMet
 
 ## Contracts
 
-- API: [Provider slot](../../engineering/api-contracts.md#provider-slot) — delta: a
-  Codex module implements the existing provider object with one weekly window.
+- API: [Provider slot](../../engineering/api-contracts.md#provider-slot) and
+  [Codex credential and usage boundary](../../engineering/api-contracts.md#codex-credential-and-usage-boundary)
+  — delta: a Codex module maps the evidenced source contract into the existing
+  provider object with one weekly window.
 - Data: [Data model](../../engineering/data-model.md) — delta: no durable adapter
   data; transport results reduce to the presentation contract.
 - Decisions: [Decision log](../../engineering/decision-log.md) — records the
-  evidenced local-server transport and payload mapping before integration lands.
+  evidenced internal HTTP contract, payload mapping, and accepted compatibility
+  risk.
 
 ## Architecture
 
-The packaged production extension includes a Codex adapter module that registers
-against the in-process provider slot. It observes local Codex-session presence, reads
-the existing CLI credential at refresh time, and requests the accepted internal usage
+The framework-free Codex contract establishes credential and response mapping without
+filesystem or network access. CODEX-002 packages a Codex adapter module that registers
+against the in-process provider slot, observes local Codex-session presence, reads the
+existing CLI credential at refresh time, and requests the accepted internal usage
 endpoint asynchronously. The adapter owns presence, credential access, and transport
 handling; the surface continues to own polling, rendering, and provider lifecycle.
 No process is spawned by either layer.
@@ -87,7 +91,7 @@ No process is spawned by either layer.
 
 ## Build Slices
 
-- [ ] `CODEX-001` — evidence the existing CLI auth-file and accepted internal HTTP
+- [x] `CODEX-001` — evidence the existing CLI auth-file and accepted internal HTTP
   usage contract; add deterministic sanitized fixtures and record the fail-closed
   mapping decision. Medium: one credential-to-response boundary invariant, at most
   14 files and 750 handwritten lines.
@@ -99,7 +103,7 @@ No process is spawned by either layer.
 
 - Starting or authenticating Codex, browser/dashboard automation, or undocumented
   remote endpoint discovery beyond the accepted usage endpoint.
-- App-server daemon or Remote Control integration.
+- Codex background-service or Remote Control integration.
 - Claude Code integration, usage history, notifications, or new visual primitives.
 
 ## Open Questions

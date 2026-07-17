@@ -1,0 +1,31 @@
+{
+  "rate_limit": {
+    "primary_window": {
+      "used_percent": 37,
+      "limit_window_seconds": 604800,
+      "reset_at": 1783296000,
+      "reset_after_seconds": 432100
+    },
+    "secondary_window": null,
+    "allowed": true,
+    "limit_reached": false
+  },
+  "additional_rate_limits": [
+    {
+      "limit_name": "codex-other-models",
+      "rate_limit": {
+        "primary_window": {
+          "used_percent": 91,
+          "limit_window_seconds": 604800,
+          "reset_at": 1783382400
+        },
+        "secondary_window": null
+      }
+    }
+  ],
+  "plan_type": "subscription",
+  "credits": {
+    "has_credits": false
+  },
+  "promo": null
+}

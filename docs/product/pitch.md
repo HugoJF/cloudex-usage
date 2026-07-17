@@ -55,8 +55,8 @@ usage windows and reset times; otherwise it stays out of the way.
 
 While an eligible application is open, the panel presents fresh usage percentages
 and reset information without interfering with the agent. When it closes, its
-indicator and polling stop. A provider outage, expired session, or unavailable
-Codex server produces no stale or misleading value.
+indicator and polling stop. A provider outage, expired session, or unusable Codex
+response produces no stale or misleading value.
 
 ## Open Questions (product-level)
 

@@ -1,0 +1,24 @@
+{
+  "rate_limit": {
+    "primary_window": {
+      "used_percent": 19,
+      "limit_window_seconds": 18000,
+      "reset_at": 1782864000
+    },
+    "secondary_window": {
+      "used_percent": 62.5,
+      "limit_window_seconds": 604800,
+      "reset_at": 1783900800
+    },
+    "allowed": true,
+    "limit_reached": false
+  },
+  "plan_type": "subscription",
+  "credits": {
+    "has_credits": true,
+    "balance": 0
+  },
+  "promo": {
+    "active": false
+  }
+}

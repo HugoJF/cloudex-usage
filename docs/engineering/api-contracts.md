@@ -27,3 +27,30 @@ logging or retaining raw error details.
 The surface owns registration, eligibility visibility, one shared refresh cycle, and
 teardown. Adapters own presence detection and provider access. Provider payloads,
 credentials, and errors never cross this presentation contract.
+
+## Codex credential and usage boundary
+
+`extension/codex-contract.js` is a synchronous, framework-free source boundary that
+can be imported by Node tests and GJS. It exports:
+
+| Export | Accepted input | Failure result |
+| --- | --- | --- |
+| `extractCodexAccessToken(authPayload)` | A parsed object whose `tokens.access_token` is a nonempty opaque string, optionally prefixed by case-insensitive `Bearer` and surrounding whitespace | `null` |
+| `mapCodexUsage(payload)` | Exactly one valid seven-day account window in `rate_limit.primary_window` or `secondary_window` | Frozen `{status: "unavailable"}` |
+
+Token extraction reads no top-level or alternate credential field. It removes at
+most one bearer prefix and rejects embedded whitespace, non-string values, and
+malformed containers. The caller owns auth-file access, the parsed payload, and the
+returned ephemeral credential; this boundary never logs, persists, or retains them.
+
+Usage mapping reads only the two account-level `rate_limit` window slots. Exactly one
+must have numeric `limit_window_seconds` equal to `604800`, finite numeric
+`used_percent` from 0 through 100, and non-negative integer Unix-second `reset_at`.
+The seconds are multiplied by 1000 only when the epoch-millisecond result remains a
+safe integer. `additional_rate_limits`, identity, plan, credit, promotion, allowance,
+limit-state, and relative-reset fields cannot affect the result.
+
+An accepted payload becomes a deeply frozen provider-slot result with one `weekly`
+reading. Every call creates new presentation objects and retains no source reference.
+CODEX-001 leaves the module out of the installed extension; CODEX-002 is its first
+production consumer and owns filesystem access, transport, and provider registration.

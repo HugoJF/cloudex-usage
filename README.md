@@ -33,7 +33,7 @@ These constraints are product-level commitments, not implementation details
   local session is present; nothing is started solely to obtain usage.
 - **Privacy by default.** Credentials and raw provider responses are never persisted,
   logged, or displayed, and nothing is shared with another service.
-- **Fail closed.** An outage, expired session, or unavailable server produces an
+- **Fail closed.** An outage, expired session, or provider failure produces an
   explicit unavailable state — never a stale or misleading value.
 
 ## Project status

@@ -29,3 +29,26 @@ weekly, and Codex weekly panel-visibility booleans plus the refresh choice. The
 accepted cadence set is five, ten, or fifteen minutes, defaulting to five. A change
 replaces the pending shared timer from the selection time; it does not trigger an
 extra provider refresh.
+
+## 2026-07-17 — Freeze the Codex CLI auth and account-weekly usage boundary
+
+Local evidence found the existing CLI credential at `tokens.access_token`. A live
+authenticated request to the accepted internal `/backend-api/wham/usage` endpoint
+returned HTTP 200 with the account `rate_limit.primary_window` lasting `604800`
+seconds, an integer `used_percent` within 0–100, Unix-second `reset_at`, and no
+secondary window. The response also carried a conflicting model-specific weekly
+bucket under `additional_rate_limits`.
+
+The adapter boundary therefore reads only the nested access token and only the two
+account-level window slots. It accepts exactly one seven-day candidate, treats
+`reset_at` as authoritative, rejects unsafe seconds-to-milliseconds conversion, and
+fails closed on every ambiguity or malformed required value. Model limits, account
+identity, plan, credits, promotions, allowance flags, limit-state flags, and
+`reset_after_seconds` are deliberately discarded because the product exposes one
+account-weekly Codex reading and makes no downstream decision from those fields.
+
+`/backend-api/wham/usage` is undocumented and may change. The owner accepts that
+compatibility risk as the sole internal Codex endpoint exception; exact-duration and
+shape checks surface drift as unavailable rather than guessing. Credential expiry
+remains a later authentication failure: the boundary neither decodes JWT claims nor
+refreshes or initiates login.

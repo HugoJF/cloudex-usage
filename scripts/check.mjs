@@ -434,6 +434,7 @@ try {
     run('node', ['scripts/doc-lint.mjs', 'docs/product', 'docs/engineering']);
     run('node', ['scripts/render-catalog-styles.mjs', '--check']);
     run('node', ['--test', 'tests/unit/catalog-state.test.js',
+        'tests/unit/codex-contract.test.js',
         'tests/unit/design-tokens.test.js', 'tests/unit/panel-preferences.test.js',
         'tests/unit/surface-controller.test.js']);
     run('gnome-extensions', [
