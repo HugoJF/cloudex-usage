@@ -29,15 +29,27 @@ export const REFRESH_INTERVALS = Object.freeze([
 ]);
 
 export const REFRESH_INTERVAL_KEY = 'refresh-interval';
+export const LOCAL_HISTORY_KEY = 'show-usage-history';
+export const HISTORY_RANGE_KEY = 'history-range';
+
+export const HISTORY_RANGES = Object.freeze([
+    Object.freeze({index: 0, id: '1h', label: '1h'}),
+    Object.freeze({index: 1, id: '6h', label: '6h'}),
+    Object.freeze({index: 2, id: '1d', label: '1d'}),
+    Object.freeze({index: 3, id: '7d', label: '7d'}),
+    Object.freeze({index: 4, id: '30d', label: '30d'}),
+]);
 
 const LIMIT_BY_KEY = new Map(PANEL_LIMITS.map(limit => [limit.key, limit]));
+const HISTORY_RANGE_BY_ID = new Map(HISTORY_RANGES.map(range => [range.id, range]));
 
 function frozen(value) {
     return Object.freeze(value);
 }
 
 export function isPreferenceKey(key) {
-    return LIMIT_BY_KEY.has(key) || key === REFRESH_INTERVAL_KEY;
+    return LIMIT_BY_KEY.has(key) || key === REFRESH_INTERVAL_KEY ||
+        key === LOCAL_HISTORY_KEY || key === HISTORY_RANGE_KEY;
 }
 
 export function refreshInterval(index) {
@@ -48,6 +60,19 @@ export function refreshInterval(index) {
 
 export function nextRefreshInterval(index) {
     return REFRESH_INTERVALS[(refreshInterval(index).index + 1) % REFRESH_INTERVALS.length];
+}
+
+export function historyRange(index) {
+    if (!Number.isInteger(index) || !HISTORY_RANGES[index])
+        throw new Error('History range enum must be a known integer');
+    return HISTORY_RANGES[index];
+}
+
+export function historyRangeIndex(id) {
+    const range = HISTORY_RANGE_BY_ID.get(id);
+    if (!range)
+        throw new Error(`Unknown history range: ${id}`);
+    return range.index;
 }
 
 export function readPanelPreferences(settings) {
@@ -62,8 +87,13 @@ export function readPanelPreferences(settings) {
         visibility[limit.dataRole] = value;
     }
     const interval = refreshInterval(settings.get_enum(REFRESH_INTERVAL_KEY));
+    const localHistory = settings.get_boolean(LOCAL_HISTORY_KEY);
+    if (typeof localHistory !== 'boolean')
+        throw new Error(`Panel preference ${LOCAL_HISTORY_KEY} must be boolean`);
     return frozen({
         visibility: frozen(visibility),
         refreshInterval: interval,
+        localHistory,
+        historyRange: historyRange(settings.get_enum(HISTORY_RANGE_KEY)),
     });
 }

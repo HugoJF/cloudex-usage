@@ -138,6 +138,7 @@ function assertProductionVerifierRejects(entries) {
             assertPackageEntries(fixture, 'invalid', ['surface-controller.js',
                 'panel-preferences.js', 'codex-contract.js', 'codex-runtime.js',
                 'claude-contract.js', 'claude-runtime.js',
+                'history-store.js', 'history-runtime.js',
                 'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
                 'icons/claude.svg', 'icons/codex.svg']);
             for (const forbidden of ['catalog-state.js', 'stub-provider.js']) {
@@ -152,6 +153,7 @@ function assertProductionVerifierRejects(entries) {
     for (const required of ['surface-controller.js', 'panel-preferences.js',
         'codex-contract.js', 'codex-runtime.js',
         'claude-contract.js', 'claude-runtime.js',
+        'history-store.js', 'history-runtime.js',
         'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
         'shared/primitives.js', 'tokens.json',
         'icons/claude.svg']) {
@@ -210,6 +212,7 @@ function prepareProductionVariant(sourceDir, packageDir, edits) {
         '--extra-source=surface-controller.js', '--extra-source=panel-preferences.js',
         '--extra-source=codex-contract.js', '--extra-source=codex-runtime.js',
         '--extra-source=claude-contract.js', '--extra-source=claude-runtime.js',
+        '--extra-source=history-store.js', '--extra-source=history-runtime.js',
         '--extra-source=shared',
         '--extra-source=tokens.json', '--extra-source=icons',
         '--out-dir', packageDir, sourceDir,
@@ -485,6 +488,7 @@ const journeyProcRoot = path.join(temporaryRoot, 'journey-proc');
 const claudeJourneyProcRoot = path.join(temporaryRoot, 'claude-journey-proc');
 const codexHome = path.join(temporaryRoot, 'codex-home');
 const claudeConfigHome = path.join(temporaryRoot, 'claude-home');
+const claudeHistoryDir = path.join(temporaryRoot, 'claude-history');
 const fakeCodex = path.join(temporaryRoot, 'codex');
 const fakeClaude = path.join(temporaryRoot, 'claude');
 const captureDir = updateCaptures
@@ -493,7 +497,7 @@ const captureDir = updateCaptures
 for (const directory of [packageDir, productionPackageDir, proofPackageDir,
     captureDir, settingsFixtureDir, fixturePackageDir, journeyPackageDir,
     claudeJourneyPackageDir, fixtureProcRoot, journeyProcRoot, claudeJourneyProcRoot,
-    codexHome, claudeConfigHome])
+    codexHome, claudeConfigHome, claudeHistoryDir])
     mkdirSync(directory, {recursive: true});
 writeFileSync(path.join(codexHome, 'auth.json'),
     JSON.stringify({tokens: {access_token: 'journey-token'}}));
@@ -515,6 +519,7 @@ try {
         'tests/unit/surface-controller.test.js']);
     run('gjs', ['-m', 'tests/unit/codex-adapter.test.js']);
     run('gjs', ['-m', 'tests/unit/claude-adapter.test.js']);
+    run('gjs', ['-m', 'tests/unit/history-runtime.test.js']);
     run('gnome-extensions', [
         'pack',
         '--force',
@@ -546,6 +551,8 @@ try {
         '--extra-source=codex-runtime.js',
         '--extra-source=claude-contract.js',
         '--extra-source=claude-runtime.js',
+        '--extra-source=history-store.js',
+        '--extra-source=history-runtime.js',
         '--extra-source=shared',
         '--extra-source=../design/system/tokens.json',
         '--extra-source=../design/direction-lab/icons',
@@ -561,6 +568,8 @@ try {
         'codex-runtime.js',
         'claude-contract.js',
         'claude-runtime.js',
+        'history-store.js',
+        'history-runtime.js',
         'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
         'icons/claude.svg',
         'icons/claude-light.svg',
@@ -615,6 +624,23 @@ try {
     ], {
         env: {...process.env, CLAUDE_CONFIG_DIR: claudeConfigHome,
             CLAUDEX_FAKE_CLAUDE: fakeClaude, CLAUDEX_PROC_ROOT: claudeJourneyProcRoot},
+    });
+    const seedNow = Date.now();
+    const seedSample = (hoursAgo, percent) => [seedNow - hoursAgo * 3600 * 1000, percent];
+    writeFileSync(path.join(claudeHistoryDir, 'history.json'), JSON.stringify({
+        version: 1,
+        windows: {
+            'claude:short': [seedSample(7, 8), seedSample(3, 14), seedSample(1, 11)],
+            'claude:weekly': [seedSample(7, 60), seedSample(3, 63), seedSample(1, 66)],
+        },
+    }));
+    run('dbus-run-session', ['--', 'gnome-shell-test-tool', '--devkit',
+        '--disable-animations', '--extension', claudeJourneyZipPath,
+        'tests/journeys/J-006-usage-history.journey.test.js',
+    ], {
+        env: {...process.env, CLAUDE_CONFIG_DIR: claudeConfigHome,
+            CLAUDEX_FAKE_CLAUDE: fakeClaude, CLAUDEX_PROC_ROOT: claudeJourneyProcRoot,
+            CLAUDEX_HISTORY_DIR: claudeHistoryDir},
     });
     writeSharedConsumer(proofSourceDir, proofJourneyPath);
     run('gnome-extensions', [

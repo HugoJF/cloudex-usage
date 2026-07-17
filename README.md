@@ -40,7 +40,8 @@ These constraints are product-level commitments, not implementation details
 
 The approved visual system, production surface, and both live provider adapters ship
 today: Codex account-weekly usage, and Claude Code 5-hour and weekly usage, each read
-from the existing login while a local session is present.
+from the existing login while a local session is present, plus a local-only usage-history
+chart recorded during the same refresh.
 
 | Capability | Status |
 | --- | --- |
@@ -48,6 +49,7 @@ from the existing login while a local session is present.
 | Unified usage surface | ✅ Done — production UUID `claudex-usage@hugo.local`, persisted panel choices, and fail-closed polling while eligible providers exist |
 | Codex provider adapter | ✅ Done — current account-weekly usage from the existing file-backed CLI login |
 | Claude Code provider adapter | ✅ Done — 5-hour and weekly usage from the existing file-backed OAuth login |
+| Local usage history | ✅ Done — records samples during refresh and charts the merged trajectory, local-only |
 
 The [feature horizon](docs/product/feature-horizon.md) tracks the full capability map.
 

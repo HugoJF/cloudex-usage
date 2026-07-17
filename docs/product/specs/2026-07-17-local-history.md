@@ -1,7 +1,7 @@
 ---
 id: SPEC-LOCAL-HISTORY
 type: spec
-status: draft
+status: done
 owner: hugo
 created: 2026-07-17
 updated: 2026-07-17
@@ -98,7 +98,7 @@ read boundary; the surface continues to own polling, rendering, and provider lif
   boundary fed by the refresh cycle, its retention and range windows, and gap handling;
   add deterministic tests and record the store-mechanism decision. Medium: one
   sample-to-series boundary invariant, at most 14 files and 750 handwritten lines.
-- [ ] `HIST-002` — wire the merged chart, range selector, legend, and the local-history
+- [x] `HIST-002` — wire the merged chart, range selector, legend, and the local-history
   and range settings into the production popup behind the store, and prove J-006 through
   the production surface. Medium: one recording-to-presentation invariant, at most 15
   files and 800 handwritten lines.

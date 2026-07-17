@@ -54,7 +54,18 @@ source values. J-004 keeps this composition intact while substituting only dispo
 endpoint and process-root inputs.
 
 The package declares `org.gnome.shell.extensions.claudex-usage` and includes its
-GSettings schema, which GNOME compiles on installation. It persists only the three panel-visibility booleans and
-the accepted refresh enum; settings changes rerender the panel immediately and
-reschedule the single timer without a concurrent refresh. The J-003 harness proves
-the values survive two fresh Shell sessions through a disposable keyfile backend.
+GSettings schema, which GNOME compiles on installation. It persists the three
+panel-visibility booleans, the accepted refresh enum, and the local-history boolean and
+range enum; settings changes rerender the panel immediately and reschedule the single
+timer without a concurrent refresh. The J-003 harness proves the values survive two fresh
+Shell sessions through a disposable keyfile backend.
+
+`history-store.js` is a pure sample-store boundary shared by Node and GJS; `history-runtime.js`
+loads and persists its serialized form as a durable JSON file under the user data
+directory. When local history is enabled, each completed refresh records one bounded
+sample per available provider window, and the popup derives the merged trajectory for the
+selected range from the store — reusing the shipped `HistoryChart`, `RangeSelector`, and
+`Legend`. Recording rides the existing refresh, so nothing samples or writes while no
+provider is present, and nothing recorded leaves the machine. J-006 seeds a store, proves
+the chart, the live sample, the range switch, and the disable path, and reuses the J-005
+Claude endpoint and process-root inputs.

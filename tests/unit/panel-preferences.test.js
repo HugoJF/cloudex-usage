@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    historyRange,
+    historyRangeIndex,
     isPreferenceKey,
     nextRefreshInterval,
     PANEL_LIMITS,
@@ -10,10 +12,12 @@ import {
     refreshInterval,
 } from '../../extension/panel-preferences.js';
 
-function settings({booleans = {}, interval = 0} = {}) {
+function settings({booleans = {}, interval = 0, range = 0} = {}) {
     return {
         get_boolean: key => booleans[key] ?? true,
         get_enum: key => {
+            if (key === 'history-range')
+                return range;
             assert.equal(key, 'refresh-interval');
             return interval;
         },
@@ -37,6 +41,19 @@ test('panel preferences map each semantic role to its durable boolean', () => {
     assert.deepEqual(PANEL_LIMITS.map(limit => limit.key), [
         'show-claude-short', 'show-claude-weekly', 'show-codex-weekly',
     ]);
+});
+
+test('history preferences expose the local-history flag and selected range', () => {
+    const snapshot = readPanelPreferences(settings({
+        booleans: {'show-usage-history': false}, range: 3,
+    }));
+    assert.equal(snapshot.localHistory, false);
+    assert.deepEqual(snapshot.historyRange, {index: 3, id: '7d', label: '7d'});
+    assert.equal(historyRange(0).id, '1h');
+    assert.equal(historyRangeIndex('30d'), 4);
+    assert.throws(() => historyRange(5));
+    assert.throws(() => historyRangeIndex('2h'));
+    assert(isPreferenceKey('show-usage-history') && isPreferenceKey('history-range'));
 });
 
 test('refresh intervals cycle, reject unknown enums, and expose only known keys', () => {

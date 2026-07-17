@@ -10,21 +10,34 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {
     FooterStatus,
+    HistoryChart,
     IconButton,
+    Legend,
     PanelIndicator,
     PopoverScaffold,
     ProviderCard,
     ProviderGroup,
+    RangeSelector,
     ChoiceRow,
     SettingsRow,
 } from './shared/primitives.js';
 import {
+    HISTORY_RANGES,
+    historyRangeIndex,
+    isPreferenceKey,
     nextRefreshInterval,
     PANEL_LIMITS,
     readPanelPreferences,
 } from './panel-preferences.js';
 import {createCodexProvider, CodexRuntime} from './codex-runtime.js';
 import {createClaudeProvider, ClaudeRuntime} from './claude-runtime.js';
+import {HistoryRuntime} from './history-runtime.js';
+
+const HISTORY_SERIES_META = Object.freeze({
+    'claude:short': {dataRole: 'dataClaudeShort', stroke: 'claudeShort', label: 'Claude 5-hour'},
+    'claude:weekly': {dataRole: 'dataClaudeWeekly', stroke: 'weekly', label: 'Claude weekly'},
+    'codex:weekly': {dataRole: 'dataCodexWeekly', stroke: 'weekly', label: 'Codex weekly'},
+});
 import {validateTokens} from './shared/token-geometry.js';
 import {SurfaceController} from './surface-controller.js';
 
@@ -60,8 +73,9 @@ export default class ClaudexUsageExtension extends Extension {
         this._settings = this.getSettings();
         this._preferences = readPanelPreferences(this._settings);
         this._view = 'usage';
+        this._wasRefreshing = false;
         this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
-            if (!PANEL_LIMITS.some(limit => limit.key === key) && key !== 'refresh-interval')
+            if (!isPreferenceKey(key))
                 return;
             const previous = this._preferences.refreshInterval.ms;
             this._preferences = readPanelPreferences(this._settings);
@@ -89,6 +103,11 @@ export default class ClaudexUsageExtension extends Extension {
             createClaudeProvider);
         this._claudeRuntime = claude.runtime;
         this._unregisterClaude = claude.unregister;
+        try {
+            this._history = new HistoryRuntime();
+        } catch {
+            this._history = null;
+        }
         this._render();
     }
 
@@ -137,6 +156,7 @@ export default class ClaudexUsageExtension extends Extension {
         this._unregisterClaude = null;
         this._claudeRuntime?.dispose();
         this._claudeRuntime = null;
+        this._history = null;
         this._controller?.dispose();
         this._controller = null;
         this._destroyIndicator();
@@ -146,10 +166,27 @@ export default class ClaudexUsageExtension extends Extension {
         this._view = null;
     }
 
+    _recordHistory(snapshot) {
+        const justCompleted = this._wasRefreshing && !snapshot.refreshing;
+        this._wasRefreshing = snapshot.refreshing;
+        if (!justCompleted || !this._preferences.localHistory || !this._history)
+            return;
+        const samples = [];
+        for (const provider of snapshot.providers) {
+            if (provider.availability !== 'available')
+                continue;
+            for (const metric of provider.metrics)
+                samples.push({providerId: provider.id, windowId: metric.windowId,
+                    percent: metric.percent});
+        }
+        this._history.record(samples);
+    }
+
     _render() {
         if (!this._controller || !this._tokens)
             return;
         const snapshot = this._controller.getSnapshot();
+        this._recordHistory(snapshot);
         if (!snapshot.visible) {
             this._destroyIndicator();
             return;
@@ -206,6 +243,9 @@ export default class ClaudexUsageExtension extends Extension {
         }));
         const children = [header, ...snapshot.providers.map(provider =>
             this._providerCard(provider))];
+        const history = this._historySection();
+        if (history)
+            children.push(history);
         children.push(FooterStatus({
             status: snapshot.footer,
             action: {
@@ -216,6 +256,56 @@ export default class ClaudexUsageExtension extends Extension {
             },
         }));
         return children;
+    }
+
+    _historySection() {
+        if (!this._preferences.localHistory || !this._history)
+            return null;
+        const range = this._preferences.historyRange;
+        const series = this._history.series(range.id).filter(item =>
+            HISTORY_SERIES_META[`${item.providerId}:${item.windowId}`]);
+        if (series.length === 0)
+            return null;
+        const key = item => `${item.providerId}:${item.windowId}`;
+        const section = column('selected-history');
+        const head = new St.BoxLayout({
+            style_class: 'selected-history-header',
+            orientation: Clutter.Orientation.HORIZONTAL,
+            x_expand: true,
+        });
+        head.add_child(label('Usage history', 'selected-section-title', {x_expand: true}));
+        head.add_child(RangeSelector({
+            choices: HISTORY_RANGES.map(choice => ({
+                id: choice.id,
+                label: choice.label,
+                accessibleName: `${choice.label} history range`,
+            })),
+            selected: range.id,
+            onSelect: id => this._settings.set_enum('history-range', historyRangeIndex(id)),
+        }));
+        section.add_child(head);
+        section.add_child(HistoryChart({
+            id: 'history-chart',
+            accessibleName: `Usage history for ${range.label}, ` +
+                'from zero to one hundred percent',
+            axisLabels: ['100%', '75%', '50%', '25%', '0%'],
+            series: series.map(item => ({
+                id: `${item.providerId}-${item.windowId}`,
+                values: item.values,
+                dataRole: HISTORY_SERIES_META[key(item)].dataRole,
+                strokeWidth: this._tokens.stroke[HISTORY_SERIES_META[key(item)].stroke],
+            })),
+            tokens: this._tokens,
+        }));
+        section.add_child(Legend({
+            entries: series.map(item => ({
+                id: `${item.providerId}-${item.windowId}`,
+                label: HISTORY_SERIES_META[key(item)].label,
+                dataRole: HISTORY_SERIES_META[key(item)].dataRole,
+            })),
+            tokens: this._tokens,
+        }));
+        return section;
     }
 
     _settingsPopover() {
@@ -252,6 +342,18 @@ export default class ClaudexUsageExtension extends Extension {
                 tokens: this._tokens,
             }));
         }
+        const history = column('selected-settings-section');
+        history.add_child(label('HISTORY', 'selected-settings-kicker'));
+        history.add_child(SettingsRow({
+            id: 'showUsageHistory',
+            title: 'Local usage history',
+            description: 'Record and chart usage on this machine',
+            accessibleName: 'Local usage history',
+            active: this._preferences.localHistory,
+            onToggle: () => this._settings.set_boolean('show-usage-history',
+                !this._preferences.localHistory),
+            tokens: this._tokens,
+        }));
         const updates = column('selected-settings-section');
         updates.add_child(label('UPDATES', 'selected-settings-kicker'));
         const interval = this._preferences.refreshInterval;
@@ -263,7 +365,7 @@ export default class ClaudexUsageExtension extends Extension {
             onActivate: () => this._settings.set_enum('refresh-interval',
                 nextRefreshInterval(interval.index).index),
         }));
-        return [header, panel, updates];
+        return [header, panel, history, updates];
     }
 
     _providerCard(provider) {

@@ -43,14 +43,16 @@ function splitKey(key) {
 export function recordSample(store, sample) {
     try {
         const windows = windowsOf(store);
+        const unchanged = isRecord(store) && isRecord(store.windows)
+            ? store : emptyStore();
         if (!isValidSample(sample)) {
-            return frozenStore({...windows});
+            return unchanged;
         }
         const key = `${sample.providerId}:${sample.windowId}`;
         const existing = Array.isArray(windows[key]) ? windows[key] : [];
         const last = existing[existing.length - 1];
         if (last && sample.atMs <= last.atMs) {
-            return frozenStore({...windows});
+            return unchanged;
         }
         let next = existing.concat(
             Object.freeze({atMs: sample.atMs, percent: sample.percent}));
