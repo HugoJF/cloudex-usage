@@ -1,7 +1,7 @@
 ---
 id: SPEC-USAGE-SURFACE
 type: spec
-status: draft
+status: done
 owner: hugo
 created: 2026-07-16
 updated: 2026-07-17
@@ -113,9 +113,8 @@ its build slice.
 - Providers are in-process GJS adapter modules registered against the surface's
   provider-slot contract; the surface owns lifecycle — registration,
   eligibility-driven visibility, and poll start/stop.
-- SURF-003 adds the GSettings schema for panel preferences and a persisted cadence
-  choice. Until then, refresh is pull-based while at least one provider is eligible
-  at the fixed accepted default.
+- The production schema persists panel preferences and the accepted cadence choice;
+  refresh remains pull-based while at least one provider is eligible.
 
 ## Preserve
 
@@ -133,7 +132,7 @@ its build slice.
 - [x] `SURF-002` — production extension shell, provider contract with harness-only
   stubs, glance behavior including unavailable and absent states, J-002 journey test,
   and capture evidence.
-- [ ] `SURF-003` — settings view with persisted visibility and cadence, J-003
+- [x] `SURF-003` — settings view with persisted visibility and cadence, J-003
   journey test, capture evidence for the new production states.
 
 ## Non-Scope

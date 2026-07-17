@@ -44,7 +44,7 @@ Live Claude Code and Codex adapters are the next milestone.
 | Capability | Status |
 | --- | --- |
 | Design system and primitive catalog | ✅ Done — Direction D, installable with a screenshot harness |
-| Unified usage surface | ✅ Done — production UUID `claudex-usage@hugo.local`, five-minute fail-closed polling while eligible providers exist |
+| Unified usage surface | ✅ Done — production UUID `claudex-usage@hugo.local`, persisted panel choices, and fail-closed polling while eligible providers exist |
 | Claude Code / Codex provider adapters | 🔜 Planned |
 
 The [feature horizon](docs/product/feature-horizon.md) tracks the full capability map.

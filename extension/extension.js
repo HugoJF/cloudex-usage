@@ -10,11 +10,19 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {
     FooterStatus,
+    IconButton,
     PanelIndicator,
     PopoverScaffold,
     ProviderCard,
     ProviderGroup,
+    ChoiceRow,
+    SettingsRow,
 } from './shared/primitives.js';
+import {
+    nextRefreshInterval,
+    PANEL_LIMITS,
+    readPanelPreferences,
+} from './panel-preferences.js';
 import {validateTokens} from './shared/token-geometry.js';
 import {SurfaceController} from './surface-controller.js';
 
@@ -35,9 +43,30 @@ function column(styleClass, name = null) {
     });
 }
 
+function label(text, styleClass, properties = {}) {
+    return new St.Label({
+        text,
+        style_class: styleClass,
+        y_align: Clutter.ActorAlign.CENTER,
+        ...properties,
+    });
+}
+
 export default class ClaudexUsageExtension extends Extension {
     enable() {
         this._tokens = loadTokens(this.path);
+        this._settings = this.getSettings();
+        this._preferences = readPanelPreferences(this._settings);
+        this._view = 'usage';
+        this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
+            if (!PANEL_LIMITS.some(limit => limit.key === key) && key !== 'refresh-interval')
+                return;
+            const previous = this._preferences.refreshInterval.ms;
+            this._preferences = readPanelPreferences(this._settings);
+            if (previous !== this._preferences.refreshInterval.ms)
+                this._controller?.setRefreshIntervalMs(this._preferences.refreshInterval.ms);
+            this._render();
+        });
         this._colorSchemeChangedId = St.Settings.get().connect(
             'notify::color-scheme', () => this._render());
         this._controller = new SurfaceController({
@@ -49,6 +78,7 @@ export default class ClaudexUsageExtension extends Extension {
                 }),
             cancel: sourceId => GLib.Source.remove(sourceId),
             onChange: () => this._render(),
+            refreshIntervalMs: this._preferences.refreshInterval.ms,
         });
         this._render();
     }
@@ -62,7 +92,11 @@ export default class ClaudexUsageExtension extends Extension {
     }
 
     getSurfaceSnapshot() {
-        return this._controller.getSnapshot();
+        return {
+            ...this._controller.getSnapshot(),
+            view: this._view,
+            preferences: this._preferences,
+        };
     }
 
     disable() {
@@ -70,10 +104,17 @@ export default class ClaudexUsageExtension extends Extension {
             St.Settings.get().disconnect(this._colorSchemeChangedId);
             this._colorSchemeChangedId = null;
         }
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
+        }
         this._controller?.dispose();
         this._controller = null;
         this._destroyIndicator();
         this._tokens = null;
+        this._settings = null;
+        this._preferences = null;
+        this._view = null;
     }
 
     _render() {
@@ -86,34 +127,56 @@ export default class ClaudexUsageExtension extends Extension {
         }
         this._ensureIndicator();
         const lightPanel = Main.sessionMode.colorScheme === 'prefer-light';
-        const groups = snapshot.providers
-            .filter(provider => provider.metrics.length > 0)
-            .map(provider => ({
+        const groups = snapshot.providers.map(provider => ({
                 id: provider.id,
                 accessibleName: provider.marks.accessibleName,
                 iconPath: `${this.path}/${lightPanel
                     ? provider.marks.lightPanel : provider.marks.darkPanel}`,
-                values: provider.metrics.map(metric => ({
+                values: provider.metrics
+                    .filter(metric => this._preferences.visibility[metric.dataRole])
+                    .map(metric => ({
                     id: metric.id,
                     percent: metric.percent,
                 })),
             }));
-        const emptyGroups = snapshot.providers
-            .filter(provider => provider.metrics.length === 0)
-            .map(provider => ({
-                id: provider.id,
-                accessibleName: provider.marks.accessibleName,
-                iconPath: `${this.path}/${lightPanel
-                    ? provider.marks.lightPanel : provider.marks.darkPanel}`,
-            }));
         this._replaceChild(this._panelHost, PanelIndicator({
             id: 'claudex-live-panel',
             groups,
-            emptyGroups,
             tokens: this._tokens,
         }));
-        const children = snapshot.providers.map(provider =>
-            this._providerCard(provider));
+        const children = this._view === 'settings'
+            ? this._settingsPopover()
+            : this._usagePopover(snapshot);
+        this._replaceChild(this._popoverHost, PopoverScaffold({
+            id: 'claudex-live-popover',
+            view: this._view,
+            children,
+        }));
+    }
+
+    _usagePopover(snapshot) {
+        const header = new St.BoxLayout({
+            style_class: 'selected-header',
+            orientation: Clutter.Orientation.HORIZONTAL,
+            x_expand: true,
+        });
+        const copy = column('selected-title-copy');
+        copy.x_expand = true;
+        copy.add_child(label('USAGE', 'selected-kicker'));
+        copy.add_child(label('Claude + Codex', 'selected-title'));
+        header.add_child(copy);
+        header.add_child(IconButton({
+            id: 'settings-button',
+            iconName: 'preferences-system-symbolic',
+            accessibleName: 'Open settings',
+            onActivate: () => {
+                this._view = 'settings';
+                this._render();
+            },
+            tokens: this._tokens,
+        }));
+        const children = [header, ...snapshot.providers.map(provider =>
+            this._providerCard(provider))];
         children.push(FooterStatus({
             status: snapshot.footer,
             action: {
@@ -123,11 +186,55 @@ export default class ClaudexUsageExtension extends Extension {
                 onActivate: () => this._controller.refresh(),
             },
         }));
-        this._replaceChild(this._popoverHost, PopoverScaffold({
-            id: 'claudex-live-popover',
-            view: 'usage',
-            children,
+        return children;
+    }
+
+    _settingsPopover() {
+        const header = new St.BoxLayout({
+            style_class: 'selected-settings-header',
+            orientation: Clutter.Orientation.HORIZONTAL,
+            x_expand: true,
+        });
+        const back = new St.Button({
+            name: 'back-button',
+            style_class: 'selected-back-button',
+            can_focus: true,
+            reactive: true,
+            track_hover: true,
+            child: label('← Usage', 'claudex-button-label'),
+        });
+        back.set_accessible_name('Back to usage');
+        back.connect('clicked', () => {
+            this._view = 'usage';
+            this._render();
+        });
+        header.add_child(back);
+        header.add_child(label('Settings', 'selected-settings-title', {x_expand: true}));
+
+        const panel = column('selected-settings-section');
+        panel.add_child(label('PANEL', 'selected-settings-kicker'));
+        for (const limit of PANEL_LIMITS) {
+            panel.add_child(SettingsRow({
+                ...limit,
+                accessibleName: limit.title,
+                active: this._preferences.visibility[limit.dataRole],
+                onToggle: () => this._settings.set_boolean(limit.key,
+                    !this._preferences.visibility[limit.dataRole]),
+                tokens: this._tokens,
+            }));
+        }
+        const updates = column('selected-settings-section');
+        updates.add_child(label('UPDATES', 'selected-settings-kicker'));
+        const interval = this._preferences.refreshInterval;
+        updates.add_child(ChoiceRow({
+            id: 'refresh-interval-choice',
+            title: 'Refresh while visible',
+            value: `${interval.label}  ›`,
+            accessibleName: `Refresh while visible, ${interval.label}`,
+            onActivate: () => this._settings.set_enum('refresh-interval',
+                nextRefreshInterval(interval.index).index),
         }));
+        return [header, panel, updates];
     }
 
     _providerCard(provider) {

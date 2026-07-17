@@ -160,6 +160,33 @@ test('first eligible provider refreshes immediately and one timer follows comple
     assert.equal(state.timers.size, 1);
 });
 
+test('cadence changes replace one pending timer without forcing an overlapping refresh', async () => {
+    const state = harness();
+    const first = deferred();
+    let calls = 0;
+    state.controller.registerProvider(provider({refresh: () => {
+        calls += 1;
+        return calls === 1 ? first.promise : Promise.resolve({status: 'available', readings: [
+            {id: 'short', percent: 25, resetAtMs: 1_120_000},
+        ]});
+    }}));
+    await settle();
+    state.controller.setRefreshIntervalMs(600000);
+    assert.equal(state.timers.size, 0, 'pending first cycle owns no timer');
+    first.resolve({status: 'available', readings: [
+        {id: 'short', percent: 25, resetAtMs: 1_120_000},
+    ]});
+    await settle();
+    assert.equal(state.runTimer(), 600000);
+    await settle();
+    state.controller.setRefreshIntervalMs(900000);
+    assert.equal(state.runTimer(), 900000);
+    await settle();
+    assert.equal(calls, 3, 'rescheduling does not trigger a duplicate cycle');
+    assert.throws(() => state.controller.setRefreshIntervalMs(0));
+    assert.throws(() => state.controller.setRefreshIntervalMs(Number.MAX_SAFE_INTEGER + 1));
+});
+
 test('manual refresh coalesces, resets scheduling, and independent failures clear stale readings', async () => {
     const state = harness();
     const first = deferred();

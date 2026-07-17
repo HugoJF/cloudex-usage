@@ -10,6 +10,11 @@ registered through its public contract: dark panel and popup, refresh focus/hove
 unavailable treatment, light panel, and 200% panel scaling. The production surface's
 absent state is asserted by the journey rather than captured.
 
+J-003 covers the same production package's persisted settings: dark settings,
+visibility-switch focus/hover, cadence-choice focus/hover, and light settings. It
+also proves the selected values in a separate fresh Shell session using a disposable
+GSettings keyfile.
+
 Regenerate the evidence from an isolated GNOME Shell 50.1 session:
 
 ```bash

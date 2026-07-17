@@ -223,6 +223,18 @@ export class SurfaceController {
         this._startRefresh();
     }
 
+    setRefreshIntervalMs(refreshIntervalMs) {
+        if (!Number.isSafeInteger(refreshIntervalMs) || refreshIntervalMs <= 0)
+            throw new Error('Refresh interval must be a positive safe integer');
+        if (this._refreshIntervalMs === refreshIntervalMs)
+            return;
+        this._refreshIntervalMs = refreshIntervalMs;
+        if (this._disposed || !this._hasEligible() || this._refreshing)
+            return;
+        this._clearTimer();
+        this._scheduleNext();
+    }
+
     getSnapshot() {
         const now = this._now();
         const providers = this._orderedEligible().map(state => {

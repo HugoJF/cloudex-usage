@@ -42,5 +42,8 @@ One five-minute timer exists only while at least one provider is eligible. A ref
 starts immediately when the first provider becomes eligible, scheduling begins after
 completion, and failure or ineligibility clears retained readings before rendering.
 
-No settings schema or provider data persistence exists in this slice. SURF-003 owns
-preference storage and a user-selectable cadence.
+The package declares `org.gnome.shell.extensions.claudex-usage` and includes its
+GSettings schema, which GNOME compiles on installation. It persists only the three panel-visibility booleans and
+the accepted refresh enum; settings changes rerender the panel immediately and
+reschedule the single timer without a concurrent refresh. The J-003 harness proves
+the values survive two fresh Shell sessions through a disposable keyfile backend.

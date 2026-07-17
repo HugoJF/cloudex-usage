@@ -166,30 +166,22 @@ export function PanelIndicator({id, groups, emptyGroups = [], tokens}) {
     requireId(id, 'Panel indicator');
     requireUniqueIds(groups, 'Panel group');
     requireUniqueIds(emptyGroups, 'Empty panel group');
+    for (const group of emptyGroups) {
+        requireText(group.accessibleName, 'Empty panel group accessible name');
+        requireText(group.iconPath, 'Empty panel group icon path');
+    }
     for (const group of groups) {
         requireUniqueIds(group.values, 'Panel value');
         requireText(group.accessibleName, 'Panel group accessible name');
+        requireText(group.iconPath, 'Panel group icon path');
         group.values.forEach(value => {
             requirePercent(value.percent, `Panel value ${value.id}`);
         });
     }
     const actor = box('claudex-panel claudex-panel-selected',
         Clutter.Orientation.HORIZONTAL, {name: id});
-    const visible = groups.filter(group => group.values.length > 0);
-
-    if (visible.length === 0) {
-        for (const group of emptyGroups) {
-            actor.add_child(providerIcon({
-                path: group.iconPath,
-                size: tokens.size.panelProviderIcon,
-                styleClass: 'claudex-panel-provider-icon muted',
-                accessibleName: group.accessibleName,
-            }));
-        }
-        return actor;
-    }
-
-    visible.forEach((group, index) => {
+    const rendered = groups.length > 0 ? groups : emptyGroups;
+    rendered.forEach((group, index) => {
         if (index > 0) {
             actor.add_child(new St.Widget({
                 style_class: 'claudex-panel-provider-divider',
@@ -198,14 +190,18 @@ export function PanelIndicator({id, groups, emptyGroups = [], tokens}) {
             }));
         }
         const item = box('claudex-panel-provider');
+        const values = group.values ?? [];
+        const empty = values.length === 0;
         item.add_child(providerIcon({
             path: group.iconPath,
             size: tokens.size.panelProviderIcon,
-            styleClass: 'claudex-panel-provider-icon',
+            styleClass: `claudex-panel-provider-icon${empty ? ' muted' : ''}`,
             accessibleName: group.accessibleName,
         }));
-        item.add_child(label(group.values.map(value => `${value.percent}%`).join(' · '),
-            'claudex-panel-selected-value'));
+        if (!empty) {
+            item.add_child(label(values.map(value => `${value.percent}%`).join(' · '),
+                'claudex-panel-selected-value'));
+        }
         actor.add_child(item);
     });
     return actor;

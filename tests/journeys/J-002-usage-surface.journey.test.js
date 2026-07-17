@@ -197,8 +197,8 @@ export async function run() {
     assert(fill.width === 25, 'percentage uses the canonical zero-origin bar geometry');
     assert(fill.get_parent().accessible_role === Atk.Role.PROGRESS_BAR,
         'usage bar has a progress accessibility role');
-    assert(!findActor(popover, 'history-chart') && !findActor(popover, 'settings-button'),
-        'SURF-002 omits history and settings');
+    assert(!findActor(popover, 'history-chart') && findActor(popover, 'settings-button'),
+        'SURF-003 adds settings without adding history');
     await captureActor(indicator.menu.actor, EXPECTED_CAPTURES[1]);
 
     claudeDeferred = deferred();

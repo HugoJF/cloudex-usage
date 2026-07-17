@@ -38,6 +38,10 @@ const surfaceCaptures = [
     'surface-unavailable-popup.png',
     'surface-panel-light-100.png',
     'surface-panel-dark-200.png',
+    'surface-settings-dark-100.png',
+    'surface-settings-toggle-off-focus-hover.png',
+    'surface-settings-cadence-focus-hover.png',
+    'surface-settings-light-100.png',
 ];
 
 function run(command, args, options = {}) {
@@ -131,6 +135,8 @@ function assertProductionVerifierRejects(entries) {
     const expectFailure = (fixture, message) => {
         try {
             assertPackageEntries(fixture, 'invalid', ['surface-controller.js',
+                'panel-preferences.js',
+                'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
                 'icons/claude.svg', 'icons/codex.svg']);
             for (const forbidden of ['catalog-state.js', 'stub-provider.js']) {
                 if (fixture.has(forbidden))
@@ -141,8 +147,10 @@ function assertProductionVerifierRejects(entries) {
         }
         throw new Error(`Production package verifier accepted ${message}`);
     };
-    for (const required of ['surface-controller.js', 'shared/primitives.js',
-        'tokens.json', 'icons/claude.svg']) {
+    for (const required of ['surface-controller.js', 'panel-preferences.js',
+        'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
+        'shared/primitives.js', 'tokens.json',
+        'icons/claude.svg']) {
         const absent = new Set(entries);
         absent.delete(required);
         expectFailure(absent, `an absent ${required}`);
@@ -412,6 +420,7 @@ const productionPackageDir = path.join(temporaryRoot, 'production-package');
 const proofSourceDir = path.join(temporaryRoot, 'shared-proof');
 const proofPackageDir = path.join(temporaryRoot, 'shared-proof-package');
 const proofJourneyPath = path.join(temporaryRoot, 'shared-proof.journey.js');
+const settingsFixtureDir = path.join(temporaryRoot, 'settings-fixture');
 const captureDir = updateCaptures
     ? path.join(root, 'design/captures')
     : path.join(temporaryRoot, 'captures');
@@ -419,12 +428,14 @@ mkdirSync(packageDir, {recursive: true});
 mkdirSync(productionPackageDir, {recursive: true});
 mkdirSync(proofPackageDir, {recursive: true});
 mkdirSync(captureDir, {recursive: true});
+mkdirSync(settingsFixtureDir, {recursive: true});
 
 try {
     run('node', ['scripts/doc-lint.mjs', 'docs/product', 'docs/engineering']);
     run('node', ['scripts/render-catalog-styles.mjs', '--check']);
     run('node', ['--test', 'tests/unit/catalog-state.test.js',
-        'tests/unit/design-tokens.test.js', 'tests/unit/surface-controller.test.js']);
+        'tests/unit/design-tokens.test.js', 'tests/unit/panel-preferences.test.js',
+        'tests/unit/surface-controller.test.js']);
     run('gnome-extensions', [
         'pack',
         '--force',
@@ -449,7 +460,9 @@ try {
     run('gnome-extensions', [
         'pack',
         '--force',
+        '--schema=schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
         '--extra-source=surface-controller.js',
+        '--extra-source=panel-preferences.js',
         '--extra-source=shared',
         '--extra-source=../design/system/tokens.json',
         '--extra-source=../design/direction-lab/icons',
@@ -460,6 +473,8 @@ try {
         'claudex-usage@hugo.local.shell-extension.zip');
     const productionEntries = assertPackage(productionZipPath, 'production', [
         'surface-controller.js',
+        'panel-preferences.js',
+        'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
         'icons/claude.svg',
         'icons/claude-light.svg',
         'icons/codex.svg',
@@ -500,6 +515,24 @@ try {
     ], {
         env: {...process.env, CLAUDEX_CAPTURE_DIR: captureDir},
     });
+    for (const phase of ['write', 'restore']) {
+        run('dbus-run-session', [
+            '--',
+            'gnome-shell-test-tool',
+            '--devkit',
+            '--disable-animations',
+            '--wrap', path.join(root, 'scripts/gsettings-session-wrapper.sh'),
+            '--extension', productionZipPath,
+            'tests/journeys/J-003-panel-preferences.journey.test.js',
+        ], {
+            env: {
+                ...process.env,
+                CLAUDEX_CAPTURE_DIR: captureDir,
+                CLAUDEX_GSETTINGS_FIXTURE_DIR: settingsFixtureDir,
+                CLAUDEX_J003_PHASE: phase,
+            },
+        });
+    }
     run('dbus-run-session', [
         '--',
         'gnome-shell-test-tool',
