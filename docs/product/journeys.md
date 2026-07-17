@@ -8,6 +8,8 @@ each Spec declares which journeys it creates, extends, or joins.
 | ID | Name | Owning specs | Test |
 | --- | --- | --- | --- |
 | J-001 | Review usage interface primitives | SPEC-PRIMITIVE-CATALOG | `tests/journeys/J-001-primitive-catalog.journey.test.js` |
+| J-002 | Glance at live usage | SPEC-USAGE-SURFACE | `tests/journeys/J-002-usage-surface.journey.test.js` |
+| J-003 | Persist panel preferences | SPEC-USAGE-SURFACE | `tests/journeys/J-003-panel-preferences.journey.test.js` |
 
 ## J-001 — Review usage interface primitives
 
@@ -23,3 +25,30 @@ Owning Spec: [SPEC-PRIMITIVE-CATALOG](specs/2026-07-16-primitive-catalog.md)
    preview reflects the state without closing the popup.
 5. The developer captures the catalog state matrix across required themes, scaling,
    keyboard focus, hover, ranges, and switch states.
+
+## J-002 — Glance at live usage
+
+Owning Spec: [SPEC-USAGE-SURFACE](specs/2026-07-16-usage-surface.md)
+
+1. While at least one eligible provider is present, the unified panel item shows
+   each eligible provider's mark and enabled percentages at native panel height.
+2. The user opens the popup and reviews provider cards: window percentages,
+   zero-origin bars, reset times, and the freshness footer with its refresh action.
+3. The user triggers refresh; values and freshness text update without the popup
+   closing.
+4. A provider's data becomes unavailable; its card presents the unavailable notice
+   with no numeric values while other providers stay live.
+5. The last eligible provider goes away; the panel item disappears and all polling
+   stops.
+
+## J-003 — Persist panel preferences
+
+Owning Spec: [SPEC-USAGE-SURFACE](specs/2026-07-16-usage-surface.md)
+
+1. The user opens the settings view from the popup's gear action.
+2. The user switches a limit's visibility off; the panel reflects the change
+   immediately and the popup stays open.
+3. The user changes the refresh-cadence choice; the new cadence applies without a
+   restart.
+4. After GNOME Shell restarts, the panel and popup honor the persisted visibility
+   and cadence choices.

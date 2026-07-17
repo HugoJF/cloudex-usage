@@ -9,7 +9,8 @@ source_docs:
   - docs/product/pitch.md
   - docs/product/feature-horizon.md
 parent_ids: [PITCH-CLAUDEX-USAGE]
-child_docs: []
+child_docs:
+  - docs/product/specs/2026-07-16-usage-surface.md
 tags: [gnome, claude, codex, usage]
 supersedes: []
 ---
@@ -91,7 +92,7 @@ capability:
 | Approved popup design renders a history chart while local history is parked | Resolved — chart deferred from this chapter; the parked horizon decision stays untouched. |
 | The surface shell alone shows a user nothing | Resolved — shell acceptance uses a stub provider in the isolated review harness; first user value lands with the Claude adapter. |
 | Concrete app IDs, window classes, and process-vs-window detection are unknown | Deferred — open questions on the adapter specs. |
-| Refresh cadence balancing usefulness and provider load | Deferred — tuning-level; decision log at implementation. |
+| Refresh cadence balancing usefulness and provider load | Resolved — a user-facing cadence choice ships in the surface settings (owner decision 2026-07-16); the value set and default stay decision-log territory. |
 
 ## Decision
 

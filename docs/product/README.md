@@ -17,6 +17,7 @@
 | Document | Status | Purpose |
 | --- | --- | --- |
 | [SPEC-PRIMITIVE-CATALOG](specs/2026-07-16-primitive-catalog.md) | done | Builds the approved GNOME visual primitives and review harness. |
+| [SPEC-USAGE-SURFACE](specs/2026-07-16-usage-surface.md) | draft | Ships the production extension shell, provider contract, and persisted preferences. |
 
 ## Supporting documents
 
