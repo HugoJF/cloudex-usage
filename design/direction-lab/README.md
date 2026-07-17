@@ -20,7 +20,13 @@ Regenerate the canonical evidence under [`design/captures`](../captures/):
 npm run capture
 ```
 
-The package includes `extension.js`, the pure process-local catalog state, the GJS
-primitive module, both provider-mark contrast variants, and the canonical token
-manifest. `gnome-shell-test-tool` installs the resulting ZIP into a disposable XDG
-home, so development review does not alter the user's installed extensions.
+The package includes `extension.js`, the process-local catalog fixtures and state,
+the neutral `shared/` presentation directory, both provider-mark contrast variants,
+the canonical token manifest, and the generated root stylesheet GNOME loads. The
+catalog owns all Direction D copy and adapts its frozen snapshot into explicit
+shared presentation models.
+
+The gate also generates a temporary second-consumer package from the same shared
+JavaScript, tokens, and stylesheet. It constructs noncatalog actors, exercises
+callbacks and invalid inputs, then destroys the tree. Both packages run in
+disposable XDG homes, so review does not alter installed extensions.

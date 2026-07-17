@@ -89,7 +89,7 @@ gnome-extensions pack \
   --force \
   --extra-source=icons \
   --extra-source=catalog-state.js \
-  --extra-source=primitives.js \
+  --extra-source=../../extension/shared \
   --extra-source=../system/tokens.json \
   --out-dir=/tmp/claudex-usage-package \
   design/direction-lab
@@ -113,8 +113,9 @@ log out and back in. To remove the catalog:
 gnome-extensions uninstall claudex-usage-design@hugo.local
 ```
 
-This installs the static design catalog only. Claude and Codex provider integration
-has not been implemented yet.
+This installs the static design catalog only. Its package contains the neutral
+`shared/` presentation source used by the SURF-001 reuse proof; the persistent
+production extension and provider integration have not been implemented yet.
 
 ## Development
 

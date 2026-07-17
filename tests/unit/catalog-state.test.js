@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import {CatalogState} from '../../design/direction-lab/catalog-state.js';
 import {
-    CatalogState,
     colorToRgba,
     progressWidth,
-} from '../../design/direction-lab/catalog-state.js';
+} from '../../extension/shared/token-geometry.js';
 
 test('catalog state starts in the selected Direction D review state', () => {
     const state = new CatalogState();
@@ -41,19 +41,38 @@ test('refresh choice cycles deterministically in process-local state', () => {
     assert.equal(state.cycleRefreshInterval(), '5 min');
 });
 
-test('progress geometry is zero-origin and exact at both endpoints', () => {
+test('progress geometry clamps, rounds, and stays monotonic at multiple widths', () => {
     assert.equal(progressWidth(0, 316), 0);
     assert.equal(progressWidth(8, 316), 25);
+    assert.equal(progressWidth(8.4, 316), 27);
     assert.equal(progressWidth(50, 316), 158);
     assert.equal(progressWidth(100, 316), 316);
     assert.equal(progressWidth(-10, 316), 0);
     assert.equal(progressWidth(120, 316), 316);
+    for (const width of [0, 1, 17, 316]) {
+        let previous = -1;
+        for (let percent = 0; percent <= 100; percent += 0.5) {
+            const current = progressWidth(percent, width);
+            assert.ok(current >= previous);
+            previous = current;
+        }
+        assert.equal(progressWidth(0, width), 0);
+        assert.equal(progressWidth(100, width), width);
+    }
     assert.throws(() => progressWidth(Number.NaN, 316), /finite/);
+    assert.throws(() => progressWidth(20, Number.POSITIVE_INFINITY), /finite/);
     assert.throws(() => progressWidth(20, -1), /non-negative/);
 });
 
-test('chart colors convert from token CSS values to Cairo channels', () => {
+test('one strict CSS parser produces normalized Cairo channels', () => {
     assert.deepEqual(colorToRgba('#ff8000'), [1, 128 / 255, 0, 1]);
+    assert.deepEqual(colorToRgba('rgb(0, 127.5, 255)'), [0, 0.5, 1, 1]);
+    assert.deepEqual(colorToRgba('rgba(0, 255, 1, 0)'), [0, 1, 1 / 255, 0]);
+    assert.deepEqual(colorToRgba('rgba(0, 255, 1, 1)'), [0, 1, 1 / 255, 1]);
     assert.deepEqual(colorToRgba('rgba(255, 255, 255, 0.10)'), [1, 1, 1, 0.1]);
+    assert.throws(() => colorToRgba('rgb(256, 0, 0)'), /out of range/);
+    assert.throws(() => colorToRgba('rgb(-1, 0, 0)'), /out of range/);
+    assert.throws(() => colorToRgba('rgba(0, 0, 0, 1.01)'), /out of range/);
+    assert.throws(() => colorToRgba('rgba(0, 0, nope, 1)'), /Unsupported/);
     assert.throws(() => colorToRgba('rebeccapurple'), /Unsupported color/);
 });

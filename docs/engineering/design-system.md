@@ -50,20 +50,27 @@ status, or decorative surfaces.
 
 | Primitive | Props / variants |
 | --- | --- |
-| `PopoverScaffold` | `view`, `title`, `kicker`, `trailingAction`, `children` |
-| `PanelIndicator` | visible provider groups, per-window percentage visibility |
-| `ProviderGroup` | `provider`, `icon`, `detail`, `children`; Claude / Codex |
-| `ProviderCard` | `provider`, `metrics`; raised-surface variant only |
-| `UsageMetric` | `window`, `percent`, `reset`, `dataRole` |
-| `ProgressBar` | `percent`, `dataRole`; always zero-origin |
-| `HistoryChart` | visible series, time range, Y-axis labels; continuous lines only |
-| `Legend` | full series names and reserved data colors |
-| `RangeSelector` | available ranges, selected range |
-| `IconButton` | symbolic icon, accessible name; transparent / hover / focus states |
-| `SettingsRow` | title, description, boolean state, activation callback |
+| `PopoverScaffold` | safe `id`, `view`, actor `children` |
+| `PanelIndicator` | safe provider/value IDs, icon paths and accessible names, validated percentage values; optional explicit empty groups |
+| `ProviderGroup` | safe `id`, label, detail, icon path and accessible name |
+| `ProviderCard` | safe `id`, provider model, metric models; raised-surface variant only |
+| `UsageMetric` | safe `id`, label, finite 0–100 percent, reset label, semantic `dataRole`, accessible name |
+| `ProgressBar` | presentation-ready metric model; always zero-origin |
+| `HistoryChart` | safe ID, accessible name, axis labels, equal-length 0–100 series with semantic data roles and explicit stroke widths |
+| `Legend` | safe, unique entry IDs, full labels, semantic data roles |
+| `RangeSelector` | nonempty unique choices, valid selected ID, accessible names, selection callback receiving the stable ID |
+| `IconButton` | safe ID, symbolic icon, accessible name, activation callback; transparent / hover / focus states |
+| `SettingsRow` | safe ID, title, description, accessible name, boolean state, callback receiving the stable ID |
 | `Switch` | on / off; fixed 32 × 18 track and 14 px thumb |
-| `ChoiceRow` | title, current value, disclosure affordance |
-| `FooterStatus` | freshness text, refresh action |
+| `ChoiceRow` | safe ID, title, presentation-ready value, accessible name, activation callback |
+| `FooterStatus` | status text and an explicit labeled, accessible action model |
+
+Shared primitives accept presentation-ready data only. Provider lifecycle,
+normalization, persistence, unavailable-state decisions, fixture copy, and
+provider-specific fallback assets stay in the composing consumer. Presentation IDs
+are safe and unique; percentages and history samples are finite and within 0–100;
+history series have at least two equal-length points; and range selections fail
+closed unless they name a unique available choice.
 
 The selected usage popup introduces no primitives beyond this inventory. A future
 screen must list composed primitives and explicitly justify additions.

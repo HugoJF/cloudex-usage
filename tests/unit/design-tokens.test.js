@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 
 import {
     validateTokens,
-} from '../../design/direction-lab/catalog-state.js';
+} from '../../extension/shared/token-geometry.js';
 import {renderStyles} from '../../scripts/render-catalog-styles.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -18,6 +18,9 @@ async function loadFixture() {
 test('the canonical token manifest is accepted', async () => {
     const tokens = await loadFixture();
     assert.equal(validateTokens(tokens), tokens);
+    const before = JSON.stringify(tokens);
+    assert.equal(validateTokens(tokens), tokens);
+    assert.equal(JSON.stringify(tokens), before);
 });
 
 test('token validation fails closed for missing, malformed, and invalid geometry', async () => {
@@ -28,6 +31,10 @@ test('token validation fails closed for missing, malformed, and invalid geometry
     const malformed = await loadFixture();
     malformed.color.focus = 'blue-ish';
     assert.throws(() => validateTokens(malformed), /not a supported CSS color/);
+
+    const outOfRange = await loadFixture();
+    outOfRange.color.grid = 'rgba(256, 0, 0, 1)';
+    assert.throws(() => validateTokens(outOfRange), /not a supported CSS color/);
 
     const invalidGeometry = await loadFixture();
     invalidGeometry.size.switchTrackWidth = 14;

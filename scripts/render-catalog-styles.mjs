@@ -7,11 +7,11 @@ import {fileURLToPath} from 'node:url';
 import {
     tokenValue,
     validateTokens,
-} from '../design/direction-lab/catalog-state.js';
+} from '../extension/shared/token-geometry.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const tokenPath = path.join(root, 'design/system/tokens.json');
-const templatePath = path.join(root, 'design/direction-lab/stylesheet.template.css');
+const templatePath = path.join(root, 'extension/shared/stylesheet.template.css');
 const outputPath = path.join(root, 'design/direction-lab/stylesheet.css');
 
 export function renderStyles(template, tokens) {

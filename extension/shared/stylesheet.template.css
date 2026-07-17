@@ -152,21 +152,6 @@
   border-radius: {{radius.pill}}px;
 }
 
-.color-claudeShort {
-  background-color: {{color.dataClaudeShort}};
-  color: {{color.dataClaudeShort}};
-}
-
-.color-claudeWeekly {
-  background-color: {{color.dataClaudeWeekly}};
-  color: {{color.dataClaudeWeekly}};
-}
-
-.color-codexWeekly {
-  background-color: {{color.dataCodexWeekly}};
-  color: {{color.dataCodexWeekly}};
-}
-
 .selected-history {
   padding-top: {{space.micro}}px;
 }

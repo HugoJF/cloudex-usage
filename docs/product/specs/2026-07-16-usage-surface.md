@@ -4,7 +4,7 @@ type: spec
 status: draft
 owner: hugo
 created: 2026-07-16
-updated: 2026-07-16
+updated: 2026-07-17
 source_docs:
   - docs/product/briefs/2026-07-16-live-usage.md
   - design/direction-lab/DIRECTION-BRIEF.md
@@ -103,10 +103,13 @@ its build slice.
 
 ## Architecture
 
-- A separate production extension source (`extension/`) with its own UUID; the
-  direction-lab catalog remains the unchanged developer review vehicle.
-- Token manifest, primitives, and pure state modules are shared sources packed
-  into both extensions; the existing gate guards drift.
+- Neutral token/geometry, primitive, and stylesheet sources live under
+  `extension/shared`; the direction-lab catalog remains the unchanged developer
+  review vehicle.
+- `SURF-001` proves reuse with a generated temporary second-consumer GNOME package
+  using the same shared JavaScript, tokens, and generated stylesheet.
+- The persistent production extension source and its own UUID begin in `SURF-002`;
+  the temporary proof is not the production shell.
 - Providers are in-process GJS adapter modules registered against the surface's
   provider-slot contract; the surface owns lifecycle — registration,
   eligibility-driven visibility, and poll start/stop.
@@ -125,9 +128,9 @@ its build slice.
 
 ## Build Slices
 
-- [ ] `SURF-001` — shared-module extraction: pure token/geometry module and
-  data-driven primitives shared with the production package; catalog behavior
-  and the J-001 journey unchanged.
+- [x] `SURF-001` — shared-module extraction: pure token/geometry, data-driven
+  primitives, and stylesheet contract reused by the catalog and a temporary
+  second-consumer GNOME package; catalog behavior and J-001 remain unchanged.
 - [ ] `SURF-002` — production extension shell, provider contract with stub
   provider, glance behavior including unavailable and absent states, J-002
   journey test and its capture evidence.

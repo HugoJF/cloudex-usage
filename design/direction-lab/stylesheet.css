@@ -153,21 +153,6 @@
   border-radius: 999px;
 }
 
-.color-claudeShort {
-  background-color: #ef9c7a;
-  color: #ef9c7a;
-}
-
-.color-claudeWeekly {
-  background-color: #b84f33;
-  color: #b84f33;
-}
-
-.color-codexWeekly {
-  background-color: #619c7d;
-  color: #619c7d;
-}
-
 .selected-history {
   padding-top: 2px;
 }

@@ -3,18 +3,27 @@
 The product constraints governing provider boundaries are canonical in the
 [product pitch](../product/pitch.md).
 
-## Primitive catalog topology
+## Shared presentation topology
 
-The first executable surface is a developer-only GNOME Shell 50.1 extension under
-`design/direction-lab`. `extension.js` owns Shell lifecycle and composition;
-`primitives.js` owns St/Clutter presentation; `catalog-state.js` owns disposable
-static state and geometry with no GNOME imports.
+`extension/shared` is the neutral presentation source. `token-geometry.js` owns
+token validation, strict CSS-color conversion, and percentage geometry;
+`primitives.js` owns only the documented St/Clutter primitive inventory; and
+`stylesheet.template.css` is the canonical Shell stylesheet contract. Both
+JavaScript modules fail closed on invalid presentation input and import no catalog
+fixtures or state.
 
-The packaged token manifest drives runtime drawing and actor geometry. A generated
-Shell stylesheet consumes the same manifest, with drift checked by the repository
-gate. Provider marks are local attributed assets with unmodified dark- and
-light-chrome variants.
+The developer-only GNOME Shell 50.1 catalog remains under
+`design/direction-lab`. Its `extension.js` adapts disposable `catalog-state.js`
+snapshots and static fixtures into presentation models, composes the shared
+primitives, and destroys the prior actor tree on every rerender. Provider marks
+remain local attributed assets with unmodified dark- and light-chrome variants.
+
+The packaged token manifest drives runtime drawing and actor geometry. The shared
+template generates the catalog's root `stylesheet.css`, which GNOME loads, and the
+gate rejects source or generated-file drift. Packaging includes the complete
+`shared/` directory and tokens while forbidding stale root shared modules.
 
 The catalog has no provider boundary, credential access, network process, polling,
-or durable storage. `gnome-shell-test-tool` installs each package into a disposable
-XDG home and runs J-001 inside an isolated D-Bus GNOME devkit session.
+or durable storage. The gate installs it and a generated, noncanonical temporary
+second consumer into separate disposable GNOME devkit sessions. The persistent
+production extension topology and UUID begin in `SURF-002`.
