@@ -6,6 +6,8 @@
     "test": "node scripts/check.mjs",
     "check": "node scripts/check.mjs",
     "capture": "node scripts/check.mjs --update-captures",
-    "styles": "node scripts/render-catalog-styles.mjs"
+    "styles": "node scripts/render-catalog-styles.mjs",
+    "validate:live": "bash scripts/live-check.sh",
+    "validate:nested": "bash scripts/live-nested.sh"
   }
 }
