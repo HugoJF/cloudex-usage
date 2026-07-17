@@ -4,7 +4,7 @@ type: pitch
 status: active
 owner: hugo
 created: 2026-07-16
-updated: 2026-07-16
+updated: 2026-07-17
 child_docs:
   - docs/product/briefs/2026-07-16-live-usage.md
   - docs/product/specs/2026-07-16-primitive-catalog.md
@@ -36,8 +36,9 @@ usage windows and reset times; otherwise it stays out of the way.
 - One panel surface for both providers, with provider-specific adapters.
 - Opportunistic visibility: each indicator is hidden unless its matching app is
   active or present, rather than continuously polling in the background.
-- Codex attaches only to an already-running managed app-server; if it cannot
-  connect, it shows nothing and never starts one solely to obtain usage.
+- Codex attaches only to an already-running, separately user-managed app-server
+  daemon; ordinary Codex CLI processes are not a presence signal, and it never starts
+  one solely to obtain usage.
 - Claude uses the existing authenticated Claude Code OAuth credential and its
   usage endpoint, following the approach of the Claude Usage Extension.
 - No credentials or raw provider responses are persisted, logged, or displayed.

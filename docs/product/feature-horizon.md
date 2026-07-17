@@ -13,8 +13,8 @@ Status values: `idea`, `brief`, `spec`, and `done`.
   preferences, unified panel item, popup, and fail-closed provider slot ([SPEC-USAGE-SURFACE](specs/2026-07-16-usage-surface.md)).
 - Claude adapter — `brief`; live Claude Code windows from the existing OAuth
   credential ([BRIEF-LIVE-USAGE](briefs/2026-07-16-live-usage.md)).
-- Codex adapter — `spec`; live weekly usage from an already-running managed
-  app-server ([SPEC-CODEX-ADAPTER](specs/2026-07-17-codex-adapter.md)).
+- Codex adapter — `spec`; live weekly usage from a separately user-managed
+  app-server daemon ([SPEC-CODEX-ADAPTER](specs/2026-07-17-codex-adapter.md)).
 
 ## Later / Parking Lot
 

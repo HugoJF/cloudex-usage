@@ -4,7 +4,7 @@ type: product-brief
 status: active
 owner: hugo
 created: 2026-07-16
-updated: 2026-07-16
+updated: 2026-07-17
 source_docs:
   - docs/product/pitch.md
   - docs/product/feature-horizon.md
@@ -59,8 +59,8 @@ capability:
 
 - During a real Claude Code session, panel values match the provider's own status
   view and reset times are correct.
-- The Codex indicator appears only when a managed app-server is already running,
-  and the extension spawns no Codex process at any point.
+- The Codex indicator appears only when a separately user-managed app-server daemon
+  is already running, and the extension spawns no Codex process at any point.
 - Closing the last eligible agent removes the panel item and stops all polling.
 - A provider outage or expired session presents the unavailable state; no stale
   value is ever displayed.
@@ -82,7 +82,7 @@ capability:
 |---|---|---|
 | Surface shell | Production extension: unified panel item and popup composing the approved primitives (chart deferred), provider-slot contract, unavailable states, persisted visibility settings, stub provider for isolated review | SPEC-USAGE-SURFACE |
 | Claude adapter | Claude Code presence detection plus the existing OAuth credential and usage endpoint feeding live windows | SPEC-CLAUDE-ADAPTER |
-| Codex adapter | Attach to an already-running managed app-server for live windows; show nothing otherwise | SPEC-CODEX-ADAPTER |
+| Codex adapter | Attach to a separately user-managed app-server daemon for live windows; show nothing otherwise | SPEC-CODEX-ADAPTER |
 
 ## Red-Team
 
@@ -93,7 +93,7 @@ capability:
 | Approved popup design renders a history chart while local history is parked | Resolved — chart deferred from this chapter; the parked horizon decision stays untouched. |
 | The surface shell alone shows a user nothing | Resolved — shell acceptance uses a stub provider in the isolated review harness; first user value lands with the Claude adapter. |
 | Concrete app IDs, window classes, and process-vs-window detection are unknown | Deferred — open questions on the adapter specs. |
-| Codex's local app-server protocol is not a public repository contract | Resolved — CODEX-001 evidences the supported local boundary before CODEX-002 integrates it; no endpoint is guessed. |
+| Codex's local app-server protocol is not a public repository contract | Resolved — a separate user-managed daemon is the only Codex presence signal; CODEX-001 evidences its supported local boundary before CODEX-002 integrates it. |
 | Refresh cadence balancing usefulness and provider load | Resolved — a user-facing cadence choice ships in the surface settings (owner decision 2026-07-16); the value set and default stay decision-log territory. |
 
 ## Decision
@@ -104,4 +104,4 @@ were confirmed at the promotion gate.
 ## Next Step
 
 Plan CODEX-001 before implementing the Codex adapter: it establishes the supported
-local server boundary the provider must use.
+local daemon boundary the provider must use.
