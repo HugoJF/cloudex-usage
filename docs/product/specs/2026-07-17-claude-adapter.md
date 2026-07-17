@@ -1,7 +1,7 @@
 ---
 id: SPEC-CLAUDE-ADAPTER
 type: spec
-status: draft
+status: done
 owner: hugo
 created: 2026-07-17
 updated: 2026-07-17
@@ -99,7 +99,7 @@ spawned by either layer.
   signal; add deterministic sanitized fixtures and record the fail-closed mapping
   decision. Medium: one credential-to-response boundary invariant, at most 14 files and
   750 handwritten lines.
-- [ ] `CLAUDE-002` — implement the provider module against the evidenced contract,
+- [x] `CLAUDE-002` — implement the provider module against the evidenced contract,
   package it, and prove J-005 through the production surface. Medium: one
   eligibility-to-presentation invariant, at most 15 files and 800 handwritten lines.
 

@@ -17,8 +17,9 @@ This file contains only Claudex Usage project facts.
 - Target desktop: GNOME Shell 50.1 on Linux.
 - Intended UI surface: a GNOME Shell extension written in GJS.
 - Current phase: approved visual system, developer-only primitive catalog, persisted
-  panel preferences, and a built-in account-weekly Codex adapter; the Claude adapter
-  remains unimplemented.
+  panel preferences, and built-in Codex (account-weekly) and Claude (5-hour and weekly)
+  adapters that read usage from the existing CLI/OAuth logins while a local session is
+  present.
 
 ```bash
 npm test

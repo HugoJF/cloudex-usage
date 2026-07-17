@@ -95,3 +95,20 @@ drift as unavailable rather than guessing. Credential expiry remains a later
 authentication failure surfaced as unavailable: the boundary neither decodes JWT claims
 nor refreshes or initiates login. Presence detection — an exact current-user `claude`
 process, mirroring Codex — is evidenced but deferred to CLAUDE-002 with the runtime.
+
+## 2026-07-17 — Gate Claude usage on an exact local process
+
+The production Claude adapter treats an exact current-user `/proc/*/comm` value of
+`claude` as eligibility and rescans every two seconds because `/proc` provides no usable
+create/delete monitor events. It does not read command lines or count processes, and the
+`--chrome-native-host` helper is not matched because its `comm` is a version string.
+
+Every eligible refresh rereads the file-backed `.credentials.json` under
+`CLAUDE_CONFIG_DIR` (absolute, else `~/.claude`), then performs one cancellable request
+with a 15-second timeout, redirects disabled, and an exact HTTP 200 requirement, sending
+`Authorization: Bearer` and the `anthropic-beta: oauth-2025-04-20` header the endpoint
+requires. Auth and response streams have incremental 64 KiB and 256 KiB ceilings and
+fatal UTF-8 decoding. Per-request identity prevents stale cleanup from touching a new
+attempt. A relative inherited `CLAUDE_CONFIG_DIR` fails closed rather than adding another
+secret source. The Claude and Codex providers register through the same in-process slot
+and share the surface's one refresh cycle; neither spawns a process.

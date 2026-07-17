@@ -24,6 +24,7 @@ import {
     readPanelPreferences,
 } from './panel-preferences.js';
 import {createCodexProvider, CodexRuntime} from './codex-runtime.js';
+import {createClaudeProvider, ClaudeRuntime} from './claude-runtime.js';
 import {validateTokens} from './shared/token-geometry.js';
 import {SurfaceController} from './surface-controller.js';
 
@@ -81,18 +82,26 @@ export default class ClaudexUsageExtension extends Extension {
             onChange: () => this._render(),
             refreshIntervalMs: this._preferences.refreshInterval.ms,
         });
+        const codex = this._startProvider(() => new CodexRuntime(), createCodexProvider);
+        this._codexRuntime = codex.runtime;
+        this._unregisterCodex = codex.unregister;
+        const claude = this._startProvider(() => new ClaudeRuntime(),
+            createClaudeProvider);
+        this._claudeRuntime = claude.runtime;
+        this._unregisterClaude = claude.unregister;
+        this._render();
+    }
+
+    _startProvider(create, wrap) {
         let runtime = null;
         try {
-            runtime = new CodexRuntime();
-            this._codexRuntime = runtime;
-            this._unregisterCodex = this.registerProvider(
-                createCodexProvider(runtime));
+            runtime = create();
+            const unregister = this.registerProvider(wrap(runtime));
+            return {runtime, unregister};
         } catch {
             runtime?.dispose();
-            this._codexRuntime = null;
-            this._unregisterCodex = null;
+            return {runtime: null, unregister: null};
         }
-        this._render();
     }
 
     registerProvider(provider) {
@@ -124,6 +133,10 @@ export default class ClaudexUsageExtension extends Extension {
         this._unregisterCodex = null;
         this._codexRuntime?.dispose();
         this._codexRuntime = null;
+        this._unregisterClaude?.();
+        this._unregisterClaude = null;
+        this._claudeRuntime?.dispose();
+        this._claudeRuntime = null;
         this._controller?.dispose();
         this._controller = null;
         this._destroyIndicator();

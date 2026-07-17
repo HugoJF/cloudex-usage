@@ -38,15 +38,16 @@ These constraints are product-level commitments, not implementation details
 
 ## Project status
 
-The approved visual system, production surface, and live account-weekly Codex adapter
-ship today. The Claude Code adapter is the next provider milestone.
+The approved visual system, production surface, and both live provider adapters ship
+today: Codex account-weekly usage, and Claude Code 5-hour and weekly usage, each read
+from the existing login while a local session is present.
 
 | Capability | Status |
 | --- | --- |
 | Design system and primitive catalog | ✅ Done — Direction D, installable with a screenshot harness |
 | Unified usage surface | ✅ Done — production UUID `claudex-usage@hugo.local`, persisted panel choices, and fail-closed polling while eligible providers exist |
 | Codex provider adapter | ✅ Done — current account-weekly usage from the existing file-backed CLI login |
-| Claude Code provider adapter | 🔜 Planned |
+| Claude Code provider adapter | ✅ Done — 5-hour and weekly usage from the existing file-backed OAuth login |
 
 The [feature horizon](docs/product/feature-horizon.md) tracks the full capability map.
 
