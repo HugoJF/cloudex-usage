@@ -11,6 +11,7 @@ source_docs:
 parent_ids: [PITCH-CLAUDEX-USAGE]
 child_docs:
   - docs/product/specs/2026-07-16-usage-surface.md
+  - docs/product/specs/2026-07-17-codex-adapter.md
 tags: [gnome, claude, codex, usage]
 supersedes: []
 ---
@@ -92,6 +93,7 @@ capability:
 | Approved popup design renders a history chart while local history is parked | Resolved — chart deferred from this chapter; the parked horizon decision stays untouched. |
 | The surface shell alone shows a user nothing | Resolved — shell acceptance uses a stub provider in the isolated review harness; first user value lands with the Claude adapter. |
 | Concrete app IDs, window classes, and process-vs-window detection are unknown | Deferred — open questions on the adapter specs. |
+| Codex's local app-server protocol is not a public repository contract | Resolved — CODEX-001 evidences the supported local boundary before CODEX-002 integrates it; no endpoint is guessed. |
 | Refresh cadence balancing usefulness and provider load | Resolved — a user-facing cadence choice ships in the surface settings (owner decision 2026-07-16); the value set and default stay decision-log territory. |
 
 ## Decision
@@ -101,5 +103,5 @@ were confirmed at the promotion gate.
 
 ## Next Step
 
-Spec the Surface shell bundle first (Aura `spec`): both adapters depend on its
-provider contract, and the stub provider makes it acceptable without credentials.
+Plan CODEX-001 before implementing the Codex adapter: it establishes the supported
+local server boundary the provider must use.

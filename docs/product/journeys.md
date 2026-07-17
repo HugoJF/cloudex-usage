@@ -10,6 +10,7 @@ each Spec declares which journeys it creates, extends, or joins.
 | J-001 | Review usage interface primitives | SPEC-PRIMITIVE-CATALOG | `tests/journeys/J-001-primitive-catalog.journey.test.js` |
 | J-002 | Glance at live usage | SPEC-USAGE-SURFACE | `tests/journeys/J-002-usage-surface.journey.test.js` |
 | J-003 | Persist panel preferences | SPEC-USAGE-SURFACE | `tests/journeys/J-003-panel-preferences.journey.test.js` |
+| J-004 | See Codex usage | SPEC-CODEX-ADAPTER | `tests/journeys/J-004-codex-usage.journey.test.js` |
 
 ## J-001 — Review usage interface primitives
 
@@ -52,3 +53,16 @@ Owning Spec: [SPEC-USAGE-SURFACE](specs/2026-07-16-usage-surface.md)
    restart.
 4. After GNOME Shell restarts, the panel and popup honor the persisted visibility
    and cadence choices.
+
+## J-004 — See Codex usage
+
+Owning Spec: [SPEC-CODEX-ADAPTER](specs/2026-07-17-codex-adapter.md)
+
+1. The user starts or already has a supported managed Codex app-server running; the
+   GNOME panel adds the Codex mark and its current weekly usage.
+2. The user opens the unified popup and reviews Codex's weekly percentage and reset
+   time alongside any other eligible provider.
+3. The managed server becomes unavailable; Codex disappears from the surface without
+   the extension starting or retaining a Codex process.
+4. A supported server returns unusable usage data; Codex shows the unavailable state
+   without stale metrics or exposed response details.
