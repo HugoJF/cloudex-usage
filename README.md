@@ -29,8 +29,8 @@ These constraints are product-level commitments, not implementation details
   providers.
 - **Opportunistic visibility.** An indicator appears only while its matching
   application is active — no permanent background monitoring obligation.
-- **Never wake an agent to watch it.** Codex is only attached to an already-running
-  app-server; nothing is started solely to obtain usage.
+- **Never wake an agent to watch it.** Codex usage uses the existing CLI login while a
+  local session is present; nothing is started solely to obtain usage.
 - **Privacy by default.** Credentials and raw provider responses are never persisted,
   logged, or displayed, and nothing is shared with another service.
 - **Fail closed.** An outage, expired session, or unavailable server produces an

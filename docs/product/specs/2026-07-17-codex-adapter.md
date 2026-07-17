@@ -19,26 +19,23 @@ supersedes: []
 ## Goal
 
 Show trustworthy live Codex weekly usage in the existing GNOME Shell surface while
-a separately user-managed Codex app-server daemon is available, without starting,
+a local Codex session is present, using the existing CLI credential without starting,
 authenticating, or otherwise changing Codex.
 
 ## User Journeys
 
 ### J-004 — See Codex usage (creates)
 
-Intent: see the current Codex weekly limit while the separately managed daemon is
-available.
+Intent: see the current Codex weekly limit while using Codex locally.
 
 Acceptance:
 
-- **J-004.1** A running supported, separately user-managed Codex app-server daemon
-  makes the Codex provider eligible and adds its existing mark and weekly percentage
-  to the unified panel.
+- **J-004.1** A present local Codex session makes the provider eligible and adds its
+  existing mark and weekly percentage to the unified panel.
 - **J-004.2** The popup shows the provider's fresh weekly percentage and reset time
   through the existing usage-card treatment.
-- **J-004.3** Absence or closure of the managed daemon removes Codex eligibility;
-  ordinary Codex CLI processes alone do not make it eligible, and the adapter never
-  starts, authenticates, or keeps a Codex process alive.
+- **J-004.3** Closing the last local Codex session removes eligibility; the adapter
+  never starts, authenticates, or keeps a Codex process alive.
 - **J-004.4** An unsupported, malformed, or failed usage response becomes the
   existing unavailable state and immediately clears prior values.
 
@@ -47,14 +44,15 @@ Acceptance:
 - Unified panel item — existing Codex mark and weekly metric while the adapter is
   eligible.
 - Codex provider card — existing live metric or unavailable treatment.
-- Absent Codex state — no Codex contribution when no supported daemon is available.
+- Absent Codex state — no Codex contribution when no local Codex session is present.
 
 ## Cross-Journey Acceptance
 
 - The adapter persists no server address, credential, raw response, usage value, or
   error detail.
-- It uses only an already-running supported local daemon and makes no process-launch,
-  login, browser, or dashboard-scraping attempt.
+- The internal Codex usage endpoint is the only accepted undocumented provider
+  endpoint; schema drift fails closed.
+- It makes no process-launch, login, browser, or dashboard-scraping attempt.
 
 ## Design
 
@@ -74,11 +72,11 @@ The adapter composes the existing Codex provider mark, `ProviderCard`, `UsageMet
 ## Architecture
 
 The packaged production extension includes a Codex adapter module that registers
-against the in-process provider slot. It observes a separately user-managed local
-Codex app-server daemon, then obtains the daemon's supported usage representation
-asynchronously. The adapter owns local presence and transport handling; the surface
-continues to own polling, rendering, and provider lifecycle. No process is spawned by
-either layer.
+against the in-process provider slot. It observes local Codex-session presence, reads
+the existing CLI credential at refresh time, and requests the accepted internal usage
+endpoint asynchronously. The adapter owns presence, credential access, and transport
+handling; the surface continues to own polling, rendering, and provider lifecycle.
+No process is spawned by either layer.
 
 ## Preserve
 
@@ -89,10 +87,10 @@ either layer.
 
 ## Build Slices
 
-- [ ] `CODEX-001` — evidence the separately user-managed daemon's supported local
-  presence, transport, and usage contract; add a deterministic protocol fixture and
-  record the resulting mapping decision. Medium: one transport-boundary invariant,
-  at most 14 files and 750 handwritten lines.
+- [ ] `CODEX-001` — evidence the existing CLI auth-file and accepted internal HTTP
+  usage contract; add deterministic sanitized fixtures and record the fail-closed
+  mapping decision. Medium: one credential-to-response boundary invariant, at most
+  14 files and 750 handwritten lines.
 - [ ] `CODEX-002` — implement the provider module against the evidenced contract,
   package it, and prove J-004 through the production surface. Medium: one
   eligibility-to-presentation invariant, at most 15 files and 800 handwritten lines.
@@ -100,11 +98,11 @@ either layer.
 ## Non-Scope
 
 - Starting or authenticating Codex, browser/dashboard automation, or undocumented
-  remote endpoint probing.
-- Treating ordinary Codex CLI processes as provider presence.
+  remote endpoint discovery beyond the accepted usage endpoint.
+- App-server daemon or Remote Control integration.
 - Claude Code integration, usage history, notifications, or new visual primitives.
 
 ## Open Questions
 
-- `CODEX-001` must establish the supported local daemon transport, presence signal,
-  usage request, and response semantics before `CODEX-002` is planned or implemented.
+- None. The owner accepts the internal usage endpoint's compatibility risk; CODEX-001
+  must define its fail-closed credential and response boundary before CODEX-002.

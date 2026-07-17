@@ -36,9 +36,8 @@ usage windows and reset times; otherwise it stays out of the way.
 - One panel surface for both providers, with provider-specific adapters.
 - Opportunistic visibility: each indicator is hidden unless its matching app is
   active or present, rather than continuously polling in the background.
-- Codex attaches only to an already-running, separately user-managed app-server
-  daemon; ordinary Codex CLI processes are not a presence signal, and it never starts
-  one solely to obtain usage.
+- Codex uses the existing Codex CLI credential to request current usage only while a
+  local Codex session is present; it never starts or authenticates Codex.
 - Claude uses the existing authenticated Claude Code OAuth credential and its
   usage endpoint, following the approach of the Claude Usage Extension.
 - No credentials or raw provider responses are persisted, logged, or displayed.
@@ -49,8 +48,8 @@ usage windows and reset times; otherwise it stays out of the way.
 - Starting, authenticating, or keeping Codex/Claude running for monitoring.
 - Scraping browser dashboards or requiring browser automation.
 - Sharing telemetry, credentials, or usage history with another service.
-- Treating provider endpoints not documented as public contracts; adapters must
-  fail closed and present an unavailable state.
+- Probing provider endpoints beyond the explicitly accepted Codex usage endpoint;
+  adapters must fail closed when their supported response contract changes.
 
 ## Success Definition
 

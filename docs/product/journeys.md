@@ -58,12 +58,11 @@ Owning Spec: [SPEC-USAGE-SURFACE](specs/2026-07-16-usage-surface.md)
 
 Owning Spec: [SPEC-CODEX-ADAPTER](specs/2026-07-17-codex-adapter.md)
 
-1. The user starts or already has a supported, separately managed Codex app-server
-   daemon running; the GNOME panel adds the Codex mark and its current weekly usage.
+1. The user starts or already has a local Codex session; the GNOME panel adds the
+   Codex mark and its current weekly usage using the existing CLI login.
 2. The user opens the unified popup and reviews Codex's weekly percentage and reset
    time alongside any other eligible provider.
-3. The managed daemon becomes unavailable; Codex disappears from the surface without
-   the extension starting or retaining a Codex process. Ordinary Codex CLI processes
-   alone do not add Codex to the surface.
-4. A supported server returns unusable usage data; Codex shows the unavailable state
+3. The last local Codex session closes; Codex disappears from the surface without the
+   extension starting or retaining a Codex process.
+4. The credential or usage service returns unusable data; Codex shows the unavailable state
    without stale metrics or exposed response details.
