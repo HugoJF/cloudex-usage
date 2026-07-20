@@ -33,6 +33,10 @@
   font-weight: {{type.bodyStrong.weight}};
 }
 
+.claudex-panel-selected-value.muted {
+  color: {{color.foregroundMuted}};
+}
+
 .direction-selected {
   min-width: {{size.popoverMinWidth}}px;
   padding: {{space.popoverInset}}px;

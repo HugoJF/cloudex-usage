@@ -4,7 +4,7 @@ type: spec
 status: draft
 owner: hugo
 created: 2026-07-16
-updated: 2026-07-19
+updated: 2026-07-20
 source_docs:
   - docs/product/briefs/2026-07-16-live-usage.md
   - design/direction-lab/DIRECTION-BRIEF.md
@@ -141,7 +141,7 @@ ProgressBar marker. Shared changes land only in their owning slices.
   make the footer status-only, and advance freshness and reset copy through one
   visibility-bound presentation tick with no provider request. Medium: one temporal
   presentation invariant, at most 15 edited files and 700 handwritten lines.
-- [ ] `SURF-007` — remove redundant provider detail and give the compact Claude
+- [x] `SURF-007` — remove redundant provider detail and give the compact Claude
   5-hour value the existing muted foreground role while preserving explicit window
   accessibility. Small: one hierarchy invariant, at most 8 edited files and 350
   handwritten lines.

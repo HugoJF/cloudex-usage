@@ -220,10 +220,18 @@ export default class ClaudexUsageExtension extends Extension {
         const groups = snapshot.providers.map(provider => {
             const values = provider.metrics
                 .filter(metric => this._preferences.visibility[metric.dataRole])
-                .map(metric => ({
-                    id: metric.id,
-                    percent: this._displayPercent(metric.percent),
-                }));
+                .map(metric => {
+                    const percent = this._displayPercent(metric.percent);
+                    return {
+                        id: metric.id,
+                        percent,
+                        accessibleName: `${metric.label}, ${percent} percent ` +
+                            this._preferences.usageDisplay.id,
+                        tone: metric.dataRole === 'dataClaudeShort'
+                            ? 'muted'
+                            : 'normal',
+                    };
+                });
             const valueDescription = values.length === 0
                 ? 'no panel percentages'
                 : values.map(value => `${value.percent} percent ` +
@@ -458,7 +466,6 @@ export default class ClaudexUsageExtension extends Extension {
         const presentation = {
             id: `provider-${provider.id}`,
             label: provider.label,
-            detail: provider.detail,
             iconPath: `${this.path}/${provider.marks.popup}`,
             iconAccessibleName: provider.marks.accessibleName,
         };

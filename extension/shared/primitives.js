@@ -31,6 +31,12 @@ function requirePercent(value, context) {
     return value;
 }
 
+function requirePanelValueTone(value) {
+    if (value !== 'normal' && value !== 'muted')
+        throw new Error('Panel value tone must be normal or muted');
+    return value;
+}
+
 function requirePositiveInteger(value, context) {
     if (!Number.isInteger(value) || value <= 0)
         throw new Error(`${context} must be a positive integer`);
@@ -182,6 +188,11 @@ export function PanelIndicator({id, groups, emptyGroups = [], tokens}) {
         requireText(group.iconPath, 'Panel group icon path');
         group.values.forEach(value => {
             requirePercent(value.percent, `Panel value ${value.id}`);
+            if (value.tone !== undefined)
+                requirePanelValueTone(value.tone);
+            if (value.accessibleName !== undefined)
+                requireText(value.accessibleName,
+                    `Panel value ${value.id} accessible name`);
         });
     }
     const actor = box('claudex-panel claudex-panel-selected',
@@ -205,8 +216,18 @@ export function PanelIndicator({id, groups, emptyGroups = [], tokens}) {
             accessibleName: group.accessibleName,
         }));
         if (!empty) {
-            item.add_child(label(values.map(value => `${value.percent}%`).join(' · '),
-                'claudex-panel-selected-value'));
+            values.forEach((value, valueIndex) => {
+                if (valueIndex > 0)
+                    item.add_child(label('·', 'claudex-panel-value-separator'));
+                const tone = value.tone ?? 'normal';
+                const valueActor = label(`${value.percent}%`,
+                    `claudex-panel-selected-value${tone === 'muted' ? ' muted' : ''}`, {
+                        name: `panel-value-${group.id}--${value.id}`,
+                    });
+                valueActor.set_accessible_name(value.accessibleName ??
+                    `${value.percent} percent`);
+                item.add_child(valueActor);
+            });
         }
         actor.add_child(item);
     });
@@ -226,7 +247,10 @@ export function ProviderGroup({model, tokens}) {
     }));
     const copy = column('claudex-provider-copy', {x_expand: true});
     copy.add_child(label(model.label, 'claudex-provider-name'));
-    copy.add_child(label(model.detail, 'claudex-provider-detail'));
+    if (model.detail !== undefined && model.detail !== null) {
+        copy.add_child(label(requireText(model.detail, 'Provider detail'),
+            'claudex-provider-detail'));
+    }
     actor.add_child(copy);
     return actor;
 }

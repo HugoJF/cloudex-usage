@@ -223,6 +223,15 @@ export async function run() {
     assert(collectLabelText(panel).join(' ').includes('8%') &&
         collectLabelText(panel).join(' ').includes('42%'),
     'panel exposes both textual percentages');
+    const shortPanelValue = findActor(panel, 'panel-value-claude--short');
+    const weeklyPanelValue = findActor(panel, 'panel-value-codex--weekly');
+    assert(shortPanelValue.has_style_class_name('muted') &&
+        shortPanelValue.get_accessible_name() ===
+            '5-hour window, 8 percent used' &&
+        !weeklyPanelValue.has_style_class_name('muted') &&
+        weeklyPanelValue.get_accessible_name() ===
+            'Weekly window, 42 percent used',
+    'panel mutes only the short window and names each window accessibly');
     await captureActor(panel, EXPECTED_CAPTURES[0], 6);
 
     indicator.menu.open();
@@ -235,6 +244,9 @@ export async function run() {
         '8%', '42%', 'Resets in']) {
         assert(text.some(value => value.includes(expected)), `popup includes ${expected}`);
     }
+    assert(!text.includes('5-hour usage window') &&
+        !text.includes('Weekly usage window'),
+    'provider cards omit redundant provider detail');
     const fill = findActor(popover, 'progress-fill-claude--short');
     assert(fill.width === 25, 'percentage uses the canonical zero-origin bar geometry');
     assert(fill.get_parent().accessible_role === Atk.Role.PROGRESS_BAR,

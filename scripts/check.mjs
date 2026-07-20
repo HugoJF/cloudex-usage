@@ -346,6 +346,7 @@ import {
     PanelIndicator,
     PopoverScaffold,
     ProgressBar,
+    ProviderGroup,
     RangeSelector,
     SettingsRow,
     Switch,
@@ -389,8 +390,35 @@ export default class SharedProofExtension extends Extension {
                 id: 'aurora',
                 iconPath: '/tmp/noncanonical-aurora.svg',
                 accessibleName: 'Aurora',
-                values: [{id: 'burst', percent: 37.5}],
+                values: [
+                    {
+                        id: 'burst',
+                        percent: 37.5,
+                        accessibleName: 'Burst window, 37.5 percent',
+                        tone: 'muted',
+                    },
+                    {id: 'season', percent: 62.5},
+                ],
             }],
+            tokens,
+        });
+        this.compactProvider = ProviderGroup({
+            model: {
+                id: 'compact-provider',
+                label: 'Compact provider',
+                iconPath: '/tmp/noncanonical-compact.svg',
+                iconAccessibleName: 'Compact provider mark',
+            },
+            tokens,
+        });
+        this.detailedProvider = ProviderGroup({
+            model: {
+                id: 'detailed-provider',
+                label: 'Detailed provider',
+                detail: 'Optional detail',
+                iconPath: '/tmp/noncanonical-detailed.svg',
+                iconAccessibleName: 'Detailed provider mark',
+            },
             tokens,
         });
         this.range = RangeSelector({
@@ -470,8 +498,9 @@ export default class SharedProofExtension extends Extension {
         this.root = PopoverScaffold({
             id: 'proof-popover',
             view: 'proof',
-            children: [this.panel, this.progress, this.range, this.select,
-                this.setting, this.refreshIdle, this.refreshBusy, this.footer,
+            children: [this.panel, this.compactProvider, this.detailedProvider,
+                this.progress, this.range, this.select, this.setting,
+                this.refreshIdle, this.refreshBusy, this.footer,
                 this.actionFooter, this.metric, this.chart],
         });
         this.destroyed = false;
@@ -484,6 +513,8 @@ export default class SharedProofExtension extends Extension {
         return {
             root: this.root,
             panel: this.panel,
+            compactProvider: this.compactProvider,
+            detailedProvider: this.detailedProvider,
             range: this.range,
             select: this.select,
             setting: this.setting,
@@ -562,6 +593,36 @@ export default class SharedProofExtension extends Extension {
                 tokens: this.tokens,
                 busy: null,
             })],
+            ['invalid panel tone', () => PanelIndicator({
+                id: 'bad-tone-panel',
+                groups: [{
+                    id: 'aurora',
+                    iconPath: '/tmp/noncanonical-aurora.svg',
+                    accessibleName: 'Aurora',
+                    values: [{id: 'burst', percent: 37.5, tone: 'quiet'}],
+                }],
+                tokens: this.tokens,
+            })],
+            ['invalid panel value accessible name', () => PanelIndicator({
+                id: 'bad-value-name-panel',
+                groups: [{
+                    id: 'aurora',
+                    iconPath: '/tmp/noncanonical-aurora.svg',
+                    accessibleName: 'Aurora',
+                    values: [{id: 'burst', percent: 37.5, accessibleName: ''}],
+                }],
+                tokens: this.tokens,
+            })],
+            ['invalid provider detail', () => ProviderGroup({
+                model: {
+                    id: 'bad-provider',
+                    label: 'Bad provider',
+                    detail: '',
+                    iconPath: '/tmp/noncanonical-bad.svg',
+                    iconAccessibleName: 'Bad provider mark',
+                },
+                tokens: this.tokens,
+            })],
             ['empty footer status', () => FooterStatus({status: ''})],
             ['invalid footer action', () => FooterStatus({
                 status: 'Ready',
@@ -620,6 +681,8 @@ export default class SharedProofExtension extends Extension {
         this.range = null;
         this.select = null;
         this.panel = null;
+        this.compactProvider = null;
+        this.detailedProvider = null;
         this.setting = null;
         this.refreshIdle = null;
         this.refreshBusy = null;
@@ -673,6 +736,17 @@ export async function run() {
     const proof = extension.getProof();
     assert(proof.panel.get_name() === 'proof-panel',
         'documented panel model works without catalog empty groups');
+    const mutedPanelValue = findActor(proof.panel, 'panel-value-aurora--burst');
+    const defaultPanelValue = findActor(proof.panel, 'panel-value-aurora--season');
+    assert(mutedPanelValue.has_style_class_name('muted') &&
+        mutedPanelValue.get_accessible_name() ===
+            'Burst window, 37.5 percent' &&
+        !defaultPanelValue.has_style_class_name('muted') &&
+        defaultPanelValue.get_accessible_name() === '62.5 percent',
+    'panel values support explicit muted tone and accessible-name defaults');
+    assert(proof.compactProvider.get_children()[1].get_children().length === 1 &&
+        proof.detailedProvider.get_children()[1].get_children().length === 2,
+    'provider detail is explicitly optional');
     assert(proof.progress.accessible_role === Atk.Role.PROGRESS_BAR,
         'progress role is preserved');
     assert(proof.progress.get_accessible_name() ===

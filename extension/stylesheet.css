@@ -34,6 +34,10 @@
   font-weight: 700;
 }
 
+.claudex-panel-selected-value.muted {
+  color: #898c84;
+}
+
 .direction-selected {
   min-width: 380px;
   padding: 17px;

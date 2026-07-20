@@ -51,8 +51,8 @@ status, or decorative surfaces.
 | Primitive | Props / variants |
 | --- | --- |
 | `PopoverScaffold` | safe `id`, `view`, actor `children` |
-| `PanelIndicator` | safe provider/value IDs, icon paths and accessible names, validated percentage values; optional explicit empty groups |
-| `ProviderGroup` | safe `id`, label, detail, icon path and accessible name |
+| `PanelIndicator` | safe provider/value IDs, icon paths and accessible names, validated percentage values; optional per-value accessible name and `normal` / `muted` tone; optional explicit empty groups |
+| `ProviderGroup` | safe `id`, label, optional nonempty detail, icon path and accessible name |
 | `ProviderCard` | safe `id`, provider model, metric models; raised-surface variant only |
 | `UsageMetric` | safe `id`, label, finite 0–100 percent, reset label with stable `reset-label-{id}` actor name, semantic `dataRole`, accessible name |
 | `ProgressBar` | presentation-ready metric model; always zero-origin |
@@ -85,6 +85,9 @@ screen must list composed primitives and explicitly justify additions.
 - Use unabbreviated legend labels even when the panel itself is compact.
 - Give the graph the full content width, with Y-axis labels outside its plot field.
 - Use provider SVGs in headers and the panel. Do not redraw, tint, or distort marks.
+- Keep compact panel values in stable window order. The Claude 5-hour value alone
+  uses the muted foreground role; accessibility names every visible window and basis.
+- Omit provider detail when its window names already appear in the card metrics.
 - Keep the settings entry point visually transparent until hover or keyboard focus.
 
 ## Interaction Idioms
