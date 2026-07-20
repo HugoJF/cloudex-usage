@@ -1,7 +1,7 @@
 ---
 id: SPEC-USAGE-SURFACE
 type: spec
-status: draft
+status: done
 owner: hugo
 created: 2026-07-16
 updated: 2026-07-20
@@ -147,7 +147,7 @@ ProgressBar marker. Shared changes land only in their owning slices.
   handwritten lines.
 - [x] `SURF-008` — snapshot optional fixed provider-window duration, require it from
   built-ins, and derive bounded elapsed percentage. Medium: ≤12 files / 500 lines.
-- [ ] `SURF-009` — add default-on Time pace markers that follow Used/Left and the
+- [x] `SURF-009` — add default-on Time pace markers that follow Used/Left and the
   visible tick without changing usage. Medium: ≤15 files / 800 lines.
 
 ## Non-Scope

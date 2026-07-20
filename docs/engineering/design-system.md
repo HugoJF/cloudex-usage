@@ -55,7 +55,7 @@ status, or decorative surfaces.
 | `ProviderGroup` | safe `id`, label, optional nonempty detail, icon path and accessible name |
 | `ProviderCard` | safe `id`, provider model, metric models; raised-surface variant only |
 | `UsageMetric` | safe `id`, label, finite 0–100 percent, reset label with stable `reset-label-{id}` actor name, semantic `dataRole`, accessible name |
-| `ProgressBar` | presentation-ready metric model; always zero-origin |
+| `ProgressBar` | presentation-ready metric model; always zero-origin; optional finite 0–100 `pacePercent` renders a neutral 2 px `pace-{id}` marker |
 | `HistoryChart` | safe ID, accessible name, axis labels, equal-length 0–100 series with semantic data roles and explicit stroke widths |
 | `Legend` | safe, unique entry IDs, full labels, semantic data roles |
 | `RangeSelector` | nonempty unique choices, valid selected ID, accessible names, selection callback receiving the stable ID |
@@ -80,6 +80,8 @@ screen must list composed primitives and explicitly justify additions.
 
 - Group limits by provider before grouping them by window duration.
 - Show utilization as a zero-origin bar and an explicit percentage.
+- When enabled, place a neutral Time pace marker over the bar at the elapsed-window
+  percentage in the selected Used/Left basis; keep it distinct from provider data color.
 - Keep reset timing adjacent to its own limit.
 - Merge visible series into one chart; do not split providers into separate graphs.
 - Use unabbreviated legend labels even when the panel itself is compact.
@@ -112,7 +114,9 @@ screen must list composed primitives and explicitly justify additions.
 - Provider unavailability, staleness, and lifecycle visibility require feature-spec
   behavior before they may appear in production UI.
 - Visible relative-time changes update stable reset/footer actors in place so a
-  minute tick does not replace focus or collapse an open control.
+  minute tick does not replace focus or collapse an open control. The same tick moves
+  a live marker through `setProgressBarPace` and refreshes its bar's accessibility
+  without replacing either actor.
 
 ## Accessibility and Theme Review
 

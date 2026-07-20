@@ -196,6 +196,7 @@ export async function run() {
                 id: 'weekly',
                 label: 'Weekly window',
                 dataRole: 'dataCodexWeekly',
+                durationMs: 7 * 86400 * 1000,
             }],
             isEligible: () => companionEligible,
             subscribeEligibility: callback => {
@@ -291,11 +292,17 @@ export async function run() {
             leftLabels.includes('55%'),
         'current cards show every Left complement');
         const shortFill = findActor(shortProgress, 'progress-fill-claude--short');
+        const shortPace = findActor(shortProgress, 'pace-claude--short');
         assert(shortFill.width === 218,
             'current progress geometry uses the Left complement');
-        assert(shortProgress.get_accessible_name() ===
-            'Claude 5-hour window at 69 percent left',
-        'current progress accessibility names the Left complement');
+        assert(shortPace?.x === 314 &&
+            shortProgress.get_accessible_name() ===
+                'Claude 5-hour window at 69 percent left; Time pace 100 percent left',
+        'current progress accessibility and Time pace name the Left complement');
+        assert(findActor(indicator.menu.actor, 'pace-claude--weekly') &&
+            findActor(indicator.menu.actor,
+                'pace-history-eligibility-companion--weekly'),
+        'every current duration-bearing bar renders a Time pace marker');
         assert(findActor(indicator.menu.actor, 'history-chart').get_accessible_name() ===
             'Usage history for 6h, percentage left, from zero to one hundred percent',
         'the composed chart names its Left data basis');
@@ -325,11 +332,12 @@ export async function run() {
         await pressKey(keyboard, Clutter.KEY_space);
         rangeOptions = findActor(indicator.menu.actor,
             'select-history-range-options');
-        assert(rangeOptions.visible && rangeOptions.is_mapped() &&
-            hasState(rangeTrigger, Atk.StateType.EXPANDED) &&
+        await waitFor(() => rangeOptions.visible && rangeOptions.is_mapped() &&
             [...rangeOptions.get_children()].every(option => option.can_focus) &&
             global.stage.get_key_focus()?.get_name() ===
                 'select-history-range-option-6h',
+        'Space opens the list and focuses its selected option');
+        assert(hasState(rangeTrigger, Atk.StateType.EXPANDED),
         'Space opens the list and focuses its selected option');
         await captureActor(() => indicator.menu.actor, RANGE_CAPTURES.dark);
 

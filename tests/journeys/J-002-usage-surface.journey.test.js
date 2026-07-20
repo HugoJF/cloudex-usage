@@ -169,7 +169,12 @@ export async function run() {
         order: 0,
         label: 'Claude',
         detail: '5-hour usage window',
-        window: {id: 'short', label: '5-hour window', dataRole: 'dataClaudeShort'},
+        window: {
+            id: 'short',
+            label: '5-hour window',
+            dataRole: 'dataClaudeShort',
+            durationMs: 5 * 60 * 60 * 1000,
+        },
         reading: () => ({id: 'short', percent: claudePercent, resetAtMs: claudeReset}),
         refresh: () => {
             claudeCalls++;
@@ -188,7 +193,12 @@ export async function run() {
         order: 1,
         label: 'Codex',
         detail: 'Weekly usage window',
-        window: {id: 'weekly', label: 'Weekly window', dataRole: 'dataCodexWeekly'},
+        window: {
+            id: 'weekly',
+            label: 'Weekly window',
+            dataRole: 'dataCodexWeekly',
+            durationMs: 7 * 24 * 60 * 60 * 1000,
+        },
         reading: () => ({id: 'weekly', percent: codexPercent,
             resetAtMs: nowMs + 4 * 86400000}),
         refresh: () => {
@@ -251,6 +261,13 @@ export async function run() {
     assert(fill.width === 25, 'percentage uses the canonical zero-origin bar geometry');
     assert(fill.get_parent().accessible_role === Atk.Role.PROGRESS_BAR,
         'usage bar has a progress accessibility role');
+    const initialShortProgress = findActor(popover, 'progress-claude--short');
+    const initialShortPace = findActor(popover, 'pace-claude--short');
+    const initialCodexPace = findActor(popover, 'pace-codex--weekly');
+    assert(initialShortPace.x === 73 && initialCodexPace.x === 134 &&
+        initialShortProgress.get_accessible_name() ===
+            'Claude 5-hour window at 8 percent used; Time pace 23 percent used',
+    'every duration-bearing bar shows its neutral elapsed-time marker');
     const refresh = findActor(popover, 'refresh-button');
     const settings = findActor(popover, 'settings-button');
     const headerChildren = refresh.get_parent().get_children();
@@ -290,7 +307,7 @@ export async function run() {
     await captureActor(indicator.menu.actor, EXPECTED_CAPTURES[2]);
     refreshButton.remove_style_pseudo_class('hover');
     claudePercent = 28;
-    claudeReset = nowMs + 55 * 60 * 1000;
+    claudeReset = nowMs + 56 * 60 * 1000;
     claudeDeferred.resolve({status: 'available', readings: [
         {id: 'short', percent: claudePercent, resetAtMs: claudeReset},
     ]});
@@ -307,6 +324,12 @@ export async function run() {
         !idleRefresh.get_accessible().ref_state_set()
             .contains_state(Atk.StateType.BUSY),
     'refresh completion restores the idle icon state');
+    const refreshedShortProgress = findActor(popover, 'progress-claude--short');
+    const refreshedShortPace = findActor(popover, 'pace-claude--short');
+    assert(refreshedShortPace.x === 256 &&
+        refreshedShortProgress.get_accessible_name() ===
+            'Claude 5-hour window at 28 percent used; Time pace 81 percent used',
+    'fresh reset timing updates Time pace geometry and accessibility');
 
     const rangeTrigger = findActor(popover, 'select-history-range');
     rangeTrigger.emit('clicked', 1);
@@ -326,8 +349,13 @@ export async function run() {
     const sourceAfterTick = extension._presentationSourceId;
     assert(sourceAfterTick !== null && sourceAfterTick !== sourceBeforeTick &&
         findActor(popover, 'footer-status').text === 'Updated 1 min ago' &&
-        findActor(popover, 'reset-label-claude--short').text === 'Resets in 54 mins',
+        findActor(popover, 'reset-label-claude--short').text === 'Resets in 55 mins',
     'one realigned tick advances freshness and reset copy');
+    assert(findActor(popover, 'pace-claude--short') === refreshedShortPace &&
+        refreshedShortPace.x === 257 &&
+        refreshedShortProgress.get_accessible_name() ===
+            'Claude 5-hour window at 28 percent used; Time pace 82 percent used',
+    'presentation tick moves the same Time pace actor and advances its accessibility');
     assert(findActor(popover, 'select-history-range') === rangeTrigger &&
         findActor(popover, 'select-history-range-options') === rangeOptions &&
         findActor(popover, 'select-history-range-option-6h') === selectedOption &&
@@ -346,6 +374,8 @@ export async function run() {
         'failed provider presents the unavailable treatment');
     assert(!collectLabelText(codexCard).some(value => value.includes('42%') ||
         value.startsWith('Resets')), 'unavailable card drops every stale metric');
+    assert(!findActor(codexCard, 'pace-codex--weekly'),
+        'unavailable provider drops its Time pace marker with the numeric bar');
     assert(collectLabelText(findActor(popover, 'provider-card-claude')).includes('28%'),
         'other provider remains live when one provider fails');
     await captureActor(indicator.menu.actor, EXPECTED_CAPTURES[3]);

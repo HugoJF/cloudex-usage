@@ -131,8 +131,18 @@ function registerFixtures(extension) {
         extension.registerProvider(provider({
             id: 'claude', order: 0, label: 'Claude', detail: 'Two usage windows',
             windows: [
-                {id: 'short', label: '5-hour window', dataRole: 'dataClaudeShort'},
-                {id: 'weekly', label: 'Weekly window', dataRole: 'dataClaudeWeekly'},
+                {
+                    id: 'short',
+                    label: '5-hour window',
+                    dataRole: 'dataClaudeShort',
+                    durationMs: 5 * 3600000,
+                },
+                {
+                    id: 'weekly',
+                    label: 'Weekly window',
+                    dataRole: 'dataClaudeWeekly',
+                    durationMs: 7 * 86400000,
+                },
             ],
             readings: [
                 {id: 'short', percent: 8, resetAtMs: Date.now() + 3 * 3600000},
@@ -142,7 +152,12 @@ function registerFixtures(extension) {
         })),
         extension.registerProvider(provider({
             id: 'codex', order: 1, label: 'Codex', detail: 'Weekly usage window',
-            windows: [{id: 'weekly', label: 'Weekly window', dataRole: 'dataCodexWeekly'}],
+            windows: [{
+                id: 'weekly',
+                label: 'Weekly window',
+                dataRole: 'dataCodexWeekly',
+                durationMs: 7 * 86400000,
+            }],
             readings: [{id: 'weekly', percent: 42, resetAtMs: Date.now() + 4 * 86400000}],
             refreshCounts,
         })),
@@ -165,6 +180,9 @@ async function writePhase(extension, indicator, refreshCounts) {
     assert(initial.usageDisplay.id === 'used' &&
         extension._settings.get_user_value('usage-display') === null,
     'a legacy backend with no usage-display key resolves to Used without writing it');
+    assert(initial.timePace === true &&
+        extension._settings.get_user_value('show-time-pace') === null,
+    'a legacy backend with no Time pace key resolves on without writing it');
     let icons = findClasses(findActor(indicator, 'claudex-live-panel'),
         'claudex-panel-provider-icon');
     assert(icons[0]?.get_accessible_name() === 'Claude mark, 68 percent used' &&
@@ -191,13 +209,41 @@ async function writePhase(extension, indicator, refreshCounts) {
     assert(!findActor(popover, 'history-chart') &&
         !collectLabelText(popover).includes('Keep local usage history'),
         'settings omits deferred history controls');
-    const usedChoice = findActor(popover, 'usage-display-choice');
+    let usedChoice = findActor(popover, 'usage-display-choice');
     assert(usedChoice.get_accessible_name() === 'Usage display, Used' &&
         collectLabelText(usedChoice).includes('Used  ›'),
     'settings exposes the default Used display choice');
+    assert(findActor(popover, 'toggle-showTimePace').checked,
+        'settings exposes the default-on Time pace switch');
     await captureActor(indicator.menu.actor, CAPTURES[0]);
 
+    const beforePaceChange = {...refreshCounts};
+    findActor(popover, 'toggle-showTimePace').emit('clicked', 1);
+    await settle();
+    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    assert(preferences(extension.getSurfaceSnapshot()).timePace === false &&
+        findActor(popover, 'toggle-showTimePace').checked === false &&
+        JSON.stringify(refreshCounts) === JSON.stringify(beforePaceChange),
+    'Time pace turns off in place without refreshing a provider');
+    findActor(popover, 'back-button').emit('clicked', 1);
+    await settle();
+    assert(!findActor(indicator.menu.actor, 'pace-claude--short') &&
+        !findActor(indicator.menu.actor, 'pace-claude--weekly') &&
+        !findActor(indicator.menu.actor, 'pace-codex--weekly'),
+    'turning Time pace off removes every current marker');
+    findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
+    await settle();
+    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    findActor(popover, 'toggle-showTimePace').emit('clicked', 1);
+    await settle();
+    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    assert(preferences(extension.getSurfaceSnapshot()).timePace === true &&
+        findActor(popover, 'toggle-showTimePace').checked &&
+        JSON.stringify(refreshCounts) === JSON.stringify(beforePaceChange),
+    'Time pace turns back on without refreshing a provider');
+
     const beforeDisplayChange = {...refreshCounts};
+    usedChoice = findActor(popover, 'usage-display-choice');
     usedChoice.emit('clicked', 1);
     await settle();
     popover = findActor(indicator.menu.actor, 'claudex-live-popover');
@@ -222,15 +268,17 @@ async function writePhase(extension, indicator, refreshCounts) {
     let usageText = collectLabelText(indicator.menu.actor).join(' ');
     const shortProgress = findActor(indicator.menu.actor, 'progress-claude--short');
     const shortFill = findActor(shortProgress, 'progress-fill-claude--short');
+    const shortPace = findActor(shortProgress, 'pace-claude--short');
     assert(indicator.menu.isOpen && usageText.includes('USAGE') &&
         usageText.includes('92%') && usageText.includes('32%') &&
         usageText.includes('58%'),
     'back shows every complemented popup value');
     assert(shortFill.width === 291,
         'back shows complemented popup progress geometry');
-    assert(shortProgress.get_accessible_name() ===
-        'Claude 5-hour window at 92 percent left',
-    'back shows complemented popup accessibility');
+    assert(shortPace?.x === 189 &&
+        shortProgress.get_accessible_name() ===
+            'Claude 5-hour window at 92 percent left; Time pace 60 percent left',
+    'back complements Time pace geometry and accessibility with the display basis');
     const rawProviders = extension.getSurfaceSnapshot().providers;
     assert(rawProviders[0].metrics[0].percent === 8 &&
         rawProviders[0].metrics[1].percent === 68 &&
@@ -281,6 +329,15 @@ async function writePhase(extension, indicator, refreshCounts) {
     await captureActor(indicator.menu.actor, CAPTURES[2]);
     focusedChoice.remove_style_pseudo_class('hover');
 
+    const beforeFinalPaceChange = {...refreshCounts};
+    findActor(popover, 'toggle-showTimePace').emit('clicked', 1);
+    await settle();
+    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    assert(preferences(extension.getSurfaceSnapshot()).timePace === false &&
+        findActor(popover, 'toggle-showTimePace').checked === false &&
+        JSON.stringify(refreshCounts) === JSON.stringify(beforeFinalPaceChange),
+    'the final Time pace choice persists without provider activity');
+
     const scheme = Main.sessionMode.colorScheme;
     Main.sessionMode.colorScheme = 'prefer-light';
     St.Settings.get().notify('color-scheme');
@@ -290,7 +347,7 @@ async function writePhase(extension, indicator, refreshCounts) {
     St.Settings.get().notify('color-scheme');
 }
 
-async function readPhase(extension, indicator) {
+async function readPhase(extension, indicator, refreshCounts) {
     const snapshot = extension.getSurfaceSnapshot();
     assert(preferences(snapshot).visibility.dataClaudeShort === false &&
         preferences(snapshot).visibility.dataClaudeWeekly === false &&
@@ -298,7 +355,8 @@ async function readPhase(extension, indicator) {
         preferences(snapshot).refreshInterval.ms === 600000 &&
         preferences(snapshot).localHistory === true &&
         preferences(snapshot).historyRange.id === '6h' &&
-        preferences(snapshot).usageDisplay.id === 'left',
+        preferences(snapshot).usageDisplay.id === 'left' &&
+        preferences(snapshot).timePace === false,
     'fresh Shell restores every persisted preference');
     const panel = findActor(indicator, 'claudex-live-panel');
     const panelIcons = findClasses(panel, 'claudex-panel-provider-icon');
@@ -312,19 +370,36 @@ async function readPhase(extension, indicator) {
     await settle();
     findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
     await settle();
-    const popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    let popover = findActor(indicator.menu.actor, 'claudex-live-popover');
     assert(collectLabelText(popover).some(text => text.includes('10 min')) &&
         findActor(popover, 'toggle-showClaudeShort').checked === false &&
         findActor(popover, 'toggle-showClaudeWeekly').checked === false &&
+        findActor(popover, 'toggle-showTimePace').checked === false &&
         findActor(popover, 'usage-display-choice').get_accessible_name() ===
             'Usage display, Left',
     'restored settings are rendered in the fresh popup');
     findActor(popover, 'back-button').emit('clicked', 1);
     await settle();
+    assert(!findActor(indicator.menu.actor, 'pace-codex--weekly'),
+        'the restored off choice omits Time pace markers');
+    findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
+    await settle();
+    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    const beforePaceChange = {...refreshCounts};
+    findActor(popover, 'toggle-showTimePace').emit('clicked', 1);
+    await settle();
+    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    assert(preferences(extension.getSurfaceSnapshot()).timePace === true &&
+        findActor(popover, 'toggle-showTimePace').checked &&
+        JSON.stringify(refreshCounts) === JSON.stringify(beforePaceChange),
+    'the fresh session can restore Time pace without refreshing providers');
+    findActor(popover, 'back-button').emit('clicked', 1);
+    await settle();
     const codexProgress = findActor(indicator.menu.actor, 'progress-codex--weekly');
-    assert(codexProgress.get_accessible_name() ===
-        'Codex Weekly window at 58 percent left',
-    'restored popup accessibility names the persisted Left basis');
+    assert(findActor(codexProgress, 'pace-codex--weekly') &&
+        codexProgress.get_accessible_name() ===
+            'Codex Weekly window at 58 percent left; Time pace 57 percent left',
+    'restored popup accessibility and geometry use the persisted Left basis');
 }
 
 export async function run() {
@@ -342,7 +417,7 @@ export async function run() {
     const indicator = Main.panel.statusArea[UUID];
     assert(indicator, 'eligible providers create the surface');
     if (GLib.getenv('CLAUDEX_J003_PHASE') === 'restore')
-        await readPhase(extension, indicator);
+        await readPhase(extension, indicator, refreshCounts);
     else
         await writePhase(extension, indicator, refreshCounts);
     removers.forEach(remove => remove());

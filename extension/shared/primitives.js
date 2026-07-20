@@ -6,6 +6,8 @@ import St from 'gi://St';
 import {colorToRgba, progressWidth} from './token-geometry.js';
 
 const SAFE_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
+const PACE_MARKER_WIDTH = 2;
+const PACE_MARKERS = new WeakMap();
 
 function requireId(id, context) {
     if (typeof id !== 'string' || !SAFE_ID.test(id))
@@ -255,6 +257,16 @@ export function ProviderGroup({model, tokens}) {
     return actor;
 }
 
+export function setProgressBarPace(actor, pacePercent) {
+    requirePercent(pacePercent, 'Time pace percentage');
+    const state = PACE_MARKERS.get(actor);
+    if (!state)
+        throw new Error('Progress bar has no live Time pace marker');
+    state.marker.x = Math.max(0, Math.min(
+        state.width - PACE_MARKER_WIDTH,
+        progressWidth(pacePercent, state.width) - PACE_MARKER_WIDTH / 2));
+}
+
 export function ProgressBar({metric, tokens}) {
     requireId(metric.id, 'Progress');
     requirePercent(metric.percent, 'Progress percentage');
@@ -283,6 +295,24 @@ export function ProgressBar({metric, tokens}) {
             x: 0,
             y: 0,
         }));
+    }
+    if (metric.pacePercent !== undefined) {
+        requirePercent(metric.pacePercent, 'Time pace percentage');
+        if (!Number.isFinite(width) || width < PACE_MARKER_WIDTH)
+            throw new Error('Time pace marker requires a track at least 2 pixels wide');
+        const marker = new St.Widget({
+            name: `pace-${metric.id}`,
+            style: `background-color: ${tokens.color.foregroundPrimary};`,
+            width: PACE_MARKER_WIDTH,
+            height,
+            x: 0,
+            y: 0,
+            accessible_role: Atk.Role.REDUNDANT_OBJECT,
+        });
+        actor.add_child(marker);
+        PACE_MARKERS.set(actor, {marker, width});
+        actor.connect('destroy', () => PACE_MARKERS.delete(actor));
+        setProgressBarPace(actor, metric.pacePercent);
     }
     return actor;
 }

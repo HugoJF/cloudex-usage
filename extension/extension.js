@@ -19,6 +19,7 @@ import {
     ProviderCard,
     ProviderGroup,
     ChoiceRow,
+    setProgressBarPace,
     SettingsRow,
 } from './shared/primitives.js';
 import {
@@ -30,6 +31,7 @@ import {
     nextUsageDisplay,
     PANEL_LIMITS,
     readPanelPreferences,
+    TIME_PACE_KEY,
     USAGE_DISPLAY_KEY,
 } from './panel-preferences.js';
 import {createCodexProvider, CodexRuntime} from './codex-runtime.js';
@@ -223,7 +225,7 @@ export default class ClaudexUsageExtension extends Extension {
                 .map(metric => {
                     const percent = this._displayPercent(metric.percent);
                     return {
-                        id: metric.id,
+                        id: metric.windowId,
                         percent,
                         accessibleName: `${metric.label}, ${percent} percent ` +
                             this._preferences.usageDisplay.id,
@@ -422,6 +424,18 @@ export default class ClaudexUsageExtension extends Extension {
             onActivate: () => this._settings.set_enum(USAGE_DISPLAY_KEY,
                 nextUsageDisplay(display.index).index),
         }));
+        const displaySettings = column('selected-settings-section');
+        displaySettings.add_child(label('DISPLAY', 'selected-settings-kicker'));
+        displaySettings.add_child(SettingsRow({
+            id: 'showTimePace',
+            title: 'Time pace markers',
+            description: 'Compare usage with elapsed window time',
+            accessibleName: 'Time pace markers',
+            active: this._preferences.timePace,
+            onToggle: () => this._settings.set_boolean(TIME_PACE_KEY,
+                !this._preferences.timePace),
+            tokens: this._tokens,
+        }));
         const history = column('selected-settings-section');
         history.add_child(label('HISTORY', 'selected-settings-kicker'));
         history.add_child(SettingsRow({
@@ -445,7 +459,7 @@ export default class ClaudexUsageExtension extends Extension {
             onActivate: () => this._settings.set_enum('refresh-interval',
                 nextRefreshInterval(interval.index).index),
         }));
-        return [header, panel, history, updates];
+        return [header, panel, displaySettings, history, updates];
     }
 
     _displayPercent(percent) {
@@ -454,11 +468,20 @@ export default class ClaudexUsageExtension extends Extension {
 
     _displayMetric(provider, metric) {
         const percent = this._displayPercent(metric.percent);
+        const pacePercent = this._preferences.timePace &&
+            metric.elapsedPercent !== undefined
+            ? this._displayPercent(metric.elapsedPercent)
+            : undefined;
+        const paceAccessible = pacePercent === undefined
+            ? ''
+            : `; Time pace ${Math.round(pacePercent)} percent ` +
+                this._preferences.usageDisplay.id;
         return {
             ...metric,
             percent,
+            ...(pacePercent === undefined ? {} : {pacePercent}),
             accessibleName: `${provider.label} ${metric.label} at ${percent} percent ` +
-                this._preferences.usageDisplay.id,
+                this._preferences.usageDisplay.id + paceAccessible,
         };
     }
 
@@ -566,6 +589,12 @@ export default class ClaudexUsageExtension extends Extension {
                 const reset = findActor(root, `reset-label-${metric.id}`);
                 if (reset)
                     reset.text = metric.resetLabel;
+                const presentation = this._displayMetric(provider, metric);
+                const progress = findActor(root, `progress-${metric.id}`);
+                if (progress && presentation.pacePercent !== undefined) {
+                    setProgressBarPace(progress, presentation.pacePercent);
+                    progress.set_accessible_name(presentation.accessibleName);
+                }
             }
         }
     }

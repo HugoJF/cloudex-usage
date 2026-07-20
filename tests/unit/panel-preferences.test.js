@@ -12,12 +12,13 @@ import {
     readPanelPreferences,
     REFRESH_INTERVALS,
     refreshInterval,
+    TIME_PACE_KEY,
     usageDisplay,
 } from '../../extension/panel-preferences.js';
 
 function settings({booleans = {}, interval = 0, range = 0, display = 0} = {}) {
     return {
-        get_boolean: key => booleans[key] ?? true,
+        get_boolean: key => Object.hasOwn(booleans, key) ? booleans[key] : true,
         get_enum: key => {
             if (key === 'history-range')
                 return range;
@@ -42,6 +43,7 @@ test('panel preferences map each semantic role to its durable boolean', () => {
     });
     assert.equal(snapshot.refreshInterval.label, '10 min');
     assert.equal(snapshot.refreshInterval.ms, 600000);
+    assert.equal(snapshot.timePace, true);
     assert.deepEqual(snapshot.usageDisplay, {index: 0, id: 'used', label: 'Used'});
     assert(Object.isFrozen(snapshot) && Object.isFrozen(snapshot.visibility));
     assert.deepEqual(PANEL_LIMITS.map(limit => limit.key), [
@@ -60,6 +62,22 @@ test('history preferences expose the local-history flag and selected range', () 
     assert.throws(() => historyRange(5));
     assert.throws(() => historyRangeIndex('2h'));
     assert(isPreferenceKey('show-usage-history') && isPreferenceKey('history-range'));
+});
+
+test('Time pace is a strict persisted boolean preference', () => {
+    const disabled = readPanelPreferences(settings({
+        booleans: {[TIME_PACE_KEY]: false},
+    }));
+    assert.equal(disabled.timePace, false);
+    assert(isPreferenceKey(TIME_PACE_KEY));
+    for (const value of ['true', 1, null, undefined]) {
+        const booleans = {};
+        Object.defineProperty(booleans, TIME_PACE_KEY, {
+            value,
+            enumerable: true,
+        });
+        assert.throws(() => readPanelPreferences(settings({booleans})));
+    }
 });
 
 test('usage display is strict, frozen, cyclic, and included in preference reads', () => {

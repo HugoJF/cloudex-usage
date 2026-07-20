@@ -32,6 +32,7 @@ export const REFRESH_INTERVAL_KEY = 'refresh-interval';
 export const LOCAL_HISTORY_KEY = 'show-usage-history';
 export const HISTORY_RANGE_KEY = 'history-range';
 export const USAGE_DISPLAY_KEY = 'usage-display';
+export const TIME_PACE_KEY = 'show-time-pace';
 
 export const HISTORY_RANGES = Object.freeze([
     Object.freeze({index: 0, id: '1h', label: '1h'}),
@@ -58,7 +59,7 @@ function frozen(value) {
 export function isPreferenceKey(key) {
     return LIMIT_BY_KEY.has(key) || key === REFRESH_INTERVAL_KEY ||
         key === LOCAL_HISTORY_KEY || key === HISTORY_RANGE_KEY ||
-        key === USAGE_DISPLAY_KEY;
+        key === USAGE_DISPLAY_KEY || key === TIME_PACE_KEY;
 }
 
 export function refreshInterval(index) {
@@ -118,11 +119,15 @@ export function readPanelPreferences(settings) {
     const localHistory = settings.get_boolean(LOCAL_HISTORY_KEY);
     if (typeof localHistory !== 'boolean')
         throw new Error(`Panel preference ${LOCAL_HISTORY_KEY} must be boolean`);
+    const timePace = settings.get_boolean(TIME_PACE_KEY);
+    if (typeof timePace !== 'boolean')
+        throw new Error(`Panel preference ${TIME_PACE_KEY} must be boolean`);
     return frozen({
         visibility: frozen(visibility),
         refreshInterval: interval,
         localHistory,
         historyRange: historyRange(settings.get_enum(HISTORY_RANGE_KEY)),
         usageDisplay: usageDisplay(settings.get_enum(USAGE_DISPLAY_KEY)),
+        timePace,
     });
 }

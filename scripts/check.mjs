@@ -96,8 +96,10 @@ function validateLegacySettingsSeed(source) {
         !source.includes('[org/gnome/shell/extensions/claudex-usage]') ||
         requiredKeys.some(key => !source.includes(`\n${key}=`)))
         throw new Error('legacy GSettings seed is incomplete');
-    if (source.includes('\nusage-display='))
-        throw new Error('legacy GSettings seed already contains usage-display');
+    for (const additiveKey of ['usage-display', 'show-time-pace']) {
+        if (source.includes(`\n${additiveKey}=`))
+            throw new Error(`legacy GSettings seed already contains ${additiveKey}`);
+    }
     return source;
 }
 
@@ -114,16 +116,21 @@ function legacySettingsSeed() {
 
 function assertLegacySettingsSeedGuard() {
     const valid = legacySettingsSeed();
-    let rejected = false;
-    try {
-        validateLegacySettingsSeed(`${valid}usage-display='left'\n`);
-    } catch (error) {
-        rejected = error.message ===
-            'legacy GSettings seed already contains usage-display';
+    for (const [line, key] of [
+        ["usage-display='left'", 'usage-display'],
+        ['show-time-pace=false', 'show-time-pace'],
+    ]) {
+        let rejected = false;
+        try {
+            validateLegacySettingsSeed(`${valid}${line}\n`);
+        } catch (error) {
+            rejected = error.message ===
+                `legacy GSettings seed already contains ${key}`;
+        }
+        if (!rejected)
+            throw new Error(`legacy GSettings seed guard accepted ${key}`);
     }
-    if (!rejected)
-        throw new Error('legacy GSettings seed guard accepted usage-display');
-    process.stdout.write('legacy GSettings seed guard: both verdicts passed\n');
+    process.stdout.write('legacy GSettings seed guard: all verdicts passed\n');
 }
 
 function packageEntries(zipPath) {
@@ -348,6 +355,7 @@ import {
     ProgressBar,
     ProviderGroup,
     RangeSelector,
+    setProgressBarPace,
     SettingsRow,
     Switch,
     UsageMetric,
@@ -478,8 +486,18 @@ export default class SharedProofExtension extends Extension {
             metric: {
                 id: 'burstLoad',
                 percent: 37.5,
+                pacePercent: 37.5,
                 accessibleName: 'Burst load at 37.5 percent',
                 dataRole: 'dataCodexWeekly',
+            },
+            tokens,
+        });
+        this.plainProgress = ProgressBar({
+            metric: {
+                id: 'plainLoad',
+                percent: 62.5,
+                accessibleName: 'Plain load at 62.5 percent',
+                dataRole: 'dataClaudeWeekly',
             },
             tokens,
         });
@@ -499,7 +517,7 @@ export default class SharedProofExtension extends Extension {
             id: 'proof-popover',
             view: 'proof',
             children: [this.panel, this.compactProvider, this.detailedProvider,
-                this.progress, this.range, this.select, this.setting,
+                this.progress, this.plainProgress, this.range, this.select, this.setting,
                 this.refreshIdle, this.refreshBusy, this.footer,
                 this.actionFooter, this.metric, this.chart],
         });
@@ -524,9 +542,14 @@ export default class SharedProofExtension extends Extension {
             actionFooter: this.actionFooter,
             metric: this.metric,
             progress: this.progress,
+            plainProgress: this.plainProgress,
             events: this.events,
             destroyed: this.destroyed,
         };
+    }
+
+    setProofPace(actor, percent) {
+        setProgressBarPace(actor, percent);
     }
 
     validationFailures() {
@@ -623,6 +646,39 @@ export default class SharedProofExtension extends Extension {
                 },
                 tokens: this.tokens,
             })],
+            ['invalid pace null', () => ProgressBar({
+                metric: {
+                    id: 'bad-pace-null',
+                    percent: 37.5,
+                    pacePercent: null,
+                    accessibleName: 'Bad pace null',
+                    dataRole: 'dataCodexWeekly',
+                },
+                tokens: this.tokens,
+            })],
+            ['invalid pace overflow', () => ProgressBar({
+                metric: {
+                    id: 'bad-pace-overflow',
+                    percent: 37.5,
+                    pacePercent: 101,
+                    accessibleName: 'Bad pace overflow',
+                    dataRole: 'dataCodexWeekly',
+                },
+                tokens: this.tokens,
+            })],
+            ['pace track too narrow', () => ProgressBar({
+                metric: {
+                    id: 'bad-pace-track',
+                    percent: 37.5,
+                    pacePercent: 50,
+                    accessibleName: 'Bad pace track',
+                    dataRole: 'dataCodexWeekly',
+                },
+                tokens: {
+                    ...this.tokens,
+                    size: {...this.tokens.size, progressWidth: 1},
+                },
+            })],
             ['empty footer status', () => FooterStatus({status: ''})],
             ['invalid footer action', () => FooterStatus({
                 status: 'Ready',
@@ -690,6 +746,7 @@ export default class SharedProofExtension extends Extension {
         this.actionFooter = null;
         this.metric = null;
         this.progress = null;
+        this.plainProgress = null;
         this.chart = null;
         this.tokens = null;
         this.events = null;
@@ -707,6 +764,14 @@ export function init() {}
 function assert(condition, message) {
     if (!condition)
         throw new Error(\`SURF-001 proof failed: \${message}\`);
+}
+function rejects(callback) {
+    try {
+        callback();
+        return false;
+    } catch {
+        return true;
+    }
 }
 function findActor(root, name) {
     if (root?.get_name?.() === name)
@@ -751,6 +816,17 @@ export async function run() {
         'progress role is preserved');
     assert(proof.progress.get_accessible_name() ===
         'Burst load at 37.5 percent', 'progress accessible name is model-driven');
+    const paceMarker = findActor(proof.progress, 'pace-burstLoad');
+    const progressChildren = proof.progress.get_children();
+    assert(paceMarker?.x === 118 &&
+        progressChildren[progressChildren.length - 1] === paceMarker &&
+        !findActor(proof.plainProgress, 'pace-plainLoad'),
+    'optional Time pace marker uses canonical geometry and stacks above the fill');
+    extension.setProofPace(proof.progress, 100);
+    assert(paceMarker.x === 314 &&
+        rejects(() => extension.setProofPace(proof.plainProgress, 50)) &&
+        rejects(() => extension.setProofPace(proof.progress, -1)),
+    'Time pace setter clamps endpoints and rejects plain or invalid bars');
     const choices = proof.range.get_children();
     assert(choices[0].accessible_role === Atk.Role.RADIO_BUTTON,
         'range role is preserved');
@@ -798,8 +874,10 @@ export async function run() {
         'callbacks receive stable model ids');
     for (const [name, rejected] of Object.entries(extension.validationFailures()))
         assert(rejected, \`invalid presentation model fails closed: \${name}\`);
+    const destroyedProgress = proof.progress;
     extension.destroyProof();
-    assert(extension.getProof().root === null && extension.getProof().destroyed,
+    assert(extension.getProof().root === null && extension.getProof().destroyed &&
+        rejects(() => extension.setProofPace(destroyedProgress, 50)),
         'second consumer destroys its actor tree');
 }
 `);

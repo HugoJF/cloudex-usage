@@ -1,10 +1,11 @@
 # Data Model
 
 The catalog retains only process-local presentation state. The production shell
-persists seven preferences in its GSettings schema: three boolean visibility choices,
-one refresh-cadence enum, a global `usage-display` enum defaulting to `used`, the
-local-history boolean, and the history-range enum. Raw responses, credentials, errors,
-and popup view state are never persisted.
+persists eight preferences in its GSettings schema: three boolean visibility choices,
+one refresh-cadence enum, a global `usage-display` enum defaulting to `used`, a global
+`show-time-pace` boolean defaulting to true, the local-history boolean, and the
+history-range enum. Raw responses, credentials, errors, pace values, and popup view
+state are never persisted.
 
 Local usage history adds one durable, local-only store, defined by the
 `extension/history-store.js` boundary and written during the existing refresh cycle. It
@@ -21,3 +22,8 @@ Provider results and stored samples always remain percentages used. Selecting Le
 computes `100 - used` only for disposable presentation models. IEEE-754 subtraction can
 collapse extreme subnormal values, and signed negative zero is normalized visually;
 neither loss feeds back into the controller, provider, or durable store.
+
+Provider window duration is immutable adapter metadata. The controller derives an
+ephemeral bounded elapsed percentage from duration, reset time, and the current clock;
+the composer maps that percentage through Used or Left only for the optional Time pace
+marker and its accessibility text.

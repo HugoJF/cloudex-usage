@@ -43,9 +43,11 @@ function label(text, styleClass, properties = {}) {
 
 function metricModel(usage) {
     return {
-        ...usage,
+        id: usage.id,
         label: usage.window,
+        percent: usage.percent,
         resetLabel: usage.reset,
+        dataRole: usage.dataRole,
         accessibleName: `${usage.percent}% of ${usage.window} used`,
     };
 }

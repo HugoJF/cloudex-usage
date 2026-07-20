@@ -48,10 +48,11 @@ completion, and failure or ineligibility clears retained readings before renderi
 
 The Shell composer owns a separate minute-aligned presentation source only while the
 usage popup is open. It reads a fresh immutable controller snapshot and updates the
-named footer and reset labels in place, preserving the focused actor tree and any open
-history select. Popup close, Settings, last-provider removal, indicator destruction,
-and extension teardown remove the source. This presentation path never calls a
-provider; the existing cadence timer remains the sole scheduled refresh path.
+named footer, reset labels, Time pace marker geometry, and progress accessibility in
+place, preserving the focused actor tree and any open history select. Popup close,
+Settings, last-provider removal, indicator destruction, and extension teardown remove
+the source. This presentation path never calls a provider; the existing cadence timer
+remains the sole scheduled refresh path.
 
 `codex-runtime.js` scans numeric `/proc` entries every two seconds for an exact
 current-user `codex` command name. While present, each surface refresh opens the
@@ -63,14 +64,15 @@ source values. J-004 keeps this composition intact while substituting only dispo
 endpoint and process-root inputs.
 
 The package declares `org.gnome.shell.extensions.claudex-usage` and includes its
-GSettings schema, which GNOME compiles on installation. It persists seven preferences:
+GSettings schema, which GNOME compiles on installation. It persists eight preferences:
 three panel-visibility booleans, the refresh enum, the global Used/Left display enum,
-and the local-history boolean and range enum. Display changes map canonical used
-percentages only while composing the panel, provider cards, progress accessibility,
-and chart; they neither refresh providers nor rewrite history. Other settings changes
-rerender immediately and cadence changes reschedule the single timer without a
-concurrent refresh. J-003 proves the additive Used default and every value across two
-fresh Shell sessions through a disposable keyfile backend.
+the global default-on Time pace boolean, and the local-history boolean and range enum.
+Display changes map canonical used percentages and elapsed-window pace only while
+composing the panel, provider cards, progress accessibility, and chart; they neither
+refresh providers nor rewrite history. Other settings changes rerender immediately
+and cadence changes reschedule the single timer without a concurrent refresh. J-003
+proves both additive defaults and every value across two fresh Shell sessions through
+a disposable keyfile backend.
 
 `history-store.js` is a pure sample-store boundary shared by Node and GJS; `history-runtime.js`
 loads and persists its serialized form as a durable JSON file under the user data
