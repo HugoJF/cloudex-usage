@@ -338,6 +338,7 @@ function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
             accessibleName: variant === 'b' ? 'Refreshing usage' : 'Refresh usage',
             onActivate: actions.refresh,
             tokens,
+            busy: variant === 'b',
         }));
     }
     header.add_child(IconButton({

@@ -340,13 +340,16 @@ import Gio from 'gi://Gio';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {
     CompactSelect,
+    FooterStatus,
     HistoryChart,
+    IconButton,
     PanelIndicator,
     PopoverScaffold,
     ProgressBar,
     RangeSelector,
     SettingsRow,
     Switch,
+    UsageMetric,
     validatePresentationModels,
 } from './shared/primitives.js';
 import {validateTokens} from './shared/token-geometry.js';
@@ -407,6 +410,42 @@ export default class SharedProofExtension extends Extension {
             onToggle: id => this.events.push(['toggle', id]),
             tokens,
         });
+        this.refreshIdle = IconButton({
+            id: 'proof-refresh-idle',
+            iconName: 'view-refresh-symbolic',
+            accessibleName: 'Refresh proof',
+            onActivate: () => {},
+            tokens,
+        });
+        this.refreshBusy = IconButton({
+            id: 'proof-refresh-busy',
+            iconName: 'process-working-symbolic',
+            accessibleName: 'Refreshing proof',
+            onActivate: () => {},
+            tokens,
+            busy: true,
+        });
+        this.footer = FooterStatus({status: 'Updated 1 min ago'});
+        this.actionFooter = FooterStatus({
+            status: 'Updated just now',
+            action: {
+                id: 'proof-footer-action',
+                label: 'Act',
+                accessibleName: 'Act on proof',
+                onActivate: () => {},
+            },
+        });
+        this.metric = UsageMetric({
+            metric: {
+                id: 'proof--burst',
+                label: 'Burst window',
+                percent: 37.5,
+                resetLabel: 'Resets in 1 hr',
+                accessibleName: 'Burst window at 37.5 percent',
+                dataRole: 'dataCodexWeekly',
+            },
+            tokens,
+        });
         this.progress = ProgressBar({
             metric: {
                 id: 'burstLoad',
@@ -432,7 +471,8 @@ export default class SharedProofExtension extends Extension {
             id: 'proof-popover',
             view: 'proof',
             children: [this.panel, this.progress, this.range, this.select,
-                this.setting, this.chart],
+                this.setting, this.refreshIdle, this.refreshBusy, this.footer,
+                this.actionFooter, this.metric, this.chart],
         });
         this.destroyed = false;
         this.root.connect('destroy', () => {
@@ -447,6 +487,11 @@ export default class SharedProofExtension extends Extension {
             range: this.range,
             select: this.select,
             setting: this.setting,
+            refreshIdle: this.refreshIdle,
+            refreshBusy: this.refreshBusy,
+            footer: this.footer,
+            actionFooter: this.actionFooter,
+            metric: this.metric,
             progress: this.progress,
             events: this.events,
             destroyed: this.destroyed,
@@ -501,6 +546,28 @@ export default class SharedProofExtension extends Extension {
                 tokens: this.tokens,
             })],
             ['invalid switch', () => Switch({active: 'false', tokens: this.tokens})],
+            ['invalid busy string', () => IconButton({
+                id: 'bad-busy',
+                iconName: 'view-refresh-symbolic',
+                accessibleName: 'Bad busy',
+                onActivate: () => {},
+                tokens: this.tokens,
+                busy: 'true',
+            })],
+            ['invalid busy null', () => IconButton({
+                id: 'bad-busy-null',
+                iconName: 'view-refresh-symbolic',
+                accessibleName: 'Bad busy null',
+                onActivate: () => {},
+                tokens: this.tokens,
+                busy: null,
+            })],
+            ['empty footer status', () => FooterStatus({status: ''})],
+            ['invalid footer action', () => FooterStatus({
+                status: 'Ready',
+                action: {id: 'bad-action', label: 'Act',
+                    accessibleName: 'Bad action'},
+            })],
             ['compact duplicate ids', () => CompactSelect({
                 ...compact,
                 choices: compact.choices.map(choice => ({...choice, id: 'same'})),
@@ -554,6 +621,11 @@ export default class SharedProofExtension extends Extension {
         this.select = null;
         this.panel = null;
         this.setting = null;
+        this.refreshIdle = null;
+        this.refreshBusy = null;
+        this.footer = null;
+        this.actionFooter = null;
+        this.metric = null;
         this.progress = null;
         this.chart = null;
         this.tokens = null;
@@ -610,6 +682,18 @@ export async function run() {
         'range role is preserved');
     assert(proof.setting.accessible_role === Atk.Role.SWITCH,
         'settings role is preserved');
+    assert(!proof.refreshIdle.has_style_class_name('busy') &&
+        !hasState(proof.refreshIdle, Atk.StateType.BUSY) &&
+        proof.refreshBusy.has_style_class_name('busy') &&
+        hasState(proof.refreshBusy, Atk.StateType.BUSY),
+    'icon button busy state is explicit and defaults off');
+    assert(proof.footer.get_children().length === 1 &&
+        findActor(proof.footer, 'footer-status')?.text === 'Updated 1 min ago' &&
+        findActor(proof.actionFooter, 'proof-footer-action'),
+    'footer supports status-only and explicit-action consumers');
+    const reset = findActor(proof.metric, 'reset-label-proof--burst');
+    assert(reset?.text === 'Resets in 1 hr',
+        'usage metric exposes its stable reset-label actor contract');
     const selectTrigger = findActor(proof.select, 'select-proof-window');
     const selectOptions = findActor(proof.select, 'select-proof-window-options');
     const burstOption = findActor(proof.select,
@@ -668,6 +752,8 @@ const claudeConfigHome = path.join(temporaryRoot, 'claude-home');
 const codexAdapterHistoryDir = path.join(temporaryRoot, 'codex-adapter-history');
 const claudeAdapterHistoryDir = path.join(temporaryRoot, 'claude-adapter-history');
 const claudeHistoryDir = path.join(temporaryRoot, 'claude-history');
+const surfaceHistoryDir = path.join(temporaryRoot, 'surface-history');
+const settingsHistoryDir = path.join(temporaryRoot, 'settings-history');
 const missingSettingsFixtureDir = path.join(temporaryRoot, 'missing-settings-fixture');
 const missingSettingsConfigDir = path.join(temporaryRoot, 'missing-settings-config');
 const fakeCodex = path.join(temporaryRoot, 'codex');
@@ -679,7 +765,8 @@ for (const directory of [packageDir, productionPackageDir, proofPackageDir,
     captureDir, settingsFixtureDir, fixturePackageDir, journeyPackageDir,
     claudeJourneyPackageDir, fixtureProcRoot, journeyProcRoot, claudeJourneyProcRoot,
     codexHome, claudeConfigHome, codexAdapterHistoryDir,
-    claudeAdapterHistoryDir, claudeHistoryDir])
+    claudeAdapterHistoryDir, claudeHistoryDir, surfaceHistoryDir,
+    settingsHistoryDir])
     mkdirSync(directory, {recursive: true});
 assertLegacySettingsSeedGuard();
 assertCommandRejects('sh', [path.join(root, 'scripts/gsettings-session-wrapper.sh'),
@@ -886,6 +973,7 @@ try {
                 CLAUDEX_CAPTURE_DIR: captureDir,
                 CLAUDEX_GSETTINGS_FIXTURE_DIR: settingsFixtureDir,
                 CLAUDEX_J003_PHASE: phase,
+                CLAUDEX_HISTORY_DIR: settingsHistoryDir,
             },
         });
     }
@@ -897,7 +985,9 @@ try {
         '--extension', fixtureZipPath,
         'tests/journeys/J-002-usage-surface.journey.test.js',
     ], {
-        env: {...process.env, CLAUDEX_CAPTURE_DIR: captureDir},
+        env: {...process.env, GSETTINGS_BACKEND: 'memory',
+            CLAUDEX_CAPTURE_DIR: captureDir,
+            CLAUDEX_HISTORY_DIR: surfaceHistoryDir},
     });
     assertCaptures(captureDir, catalogCaptures, 'catalog', !updateCaptures);
     assertCaptures(captureDir, surfaceCaptures, 'production surface', !updateCaptures);

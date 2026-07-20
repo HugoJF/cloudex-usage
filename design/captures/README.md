@@ -26,8 +26,12 @@ restoration, native Shell Escape, persisted enum, uncovered-range escape, and
 request/store invariance.
 
 J-002's default, pending-refresh, and unavailable popup captures retain the compact
-select in its closed empty-history state, so those production baselines cover the
+select in its closed uncovered-range state, so those production baselines cover the
 control alongside provider success, refresh, and partial-failure presentation.
+The journey records that sample only in a disposable history directory. Its refined
+popup evidence places idle/busy refresh beside Settings and leaves freshness as
+status-only footer metadata; the presentation tick advances that footer and reset
+copy without replacing an open select or requesting provider data.
 
 Regenerate the evidence from an isolated GNOME Shell 50.1 session:
 

@@ -54,17 +54,17 @@ status, or decorative surfaces.
 | `PanelIndicator` | safe provider/value IDs, icon paths and accessible names, validated percentage values; optional explicit empty groups |
 | `ProviderGroup` | safe `id`, label, detail, icon path and accessible name |
 | `ProviderCard` | safe `id`, provider model, metric models; raised-surface variant only |
-| `UsageMetric` | safe `id`, label, finite 0–100 percent, reset label, semantic `dataRole`, accessible name |
+| `UsageMetric` | safe `id`, label, finite 0–100 percent, reset label with stable `reset-label-{id}` actor name, semantic `dataRole`, accessible name |
 | `ProgressBar` | presentation-ready metric model; always zero-origin |
 | `HistoryChart` | safe ID, accessible name, axis labels, equal-length 0–100 series with semantic data roles and explicit stroke widths |
 | `Legend` | safe, unique entry IDs, full labels, semantic data roles |
 | `RangeSelector` | nonempty unique choices, valid selected ID, accessible names, selection callback receiving the stable ID |
 | `CompactSelect` | safe ID, nonempty unique choices, valid selected ID, top-level and option accessible names, stable-ID callback, validated icon geometry |
-| `IconButton` | safe ID, symbolic icon, accessible name, activation callback; transparent / hover / focus states |
+| `IconButton` | safe ID, symbolic icon, accessible name, activation callback, strict optional busy state; transparent / hover / focus states |
 | `SettingsRow` | safe ID, title, description, accessible name, boolean state, callback receiving the stable ID |
 | `Switch` | on / off; fixed 32 × 18 track and 14 px thumb |
 | `ChoiceRow` | safe ID, title, presentation-ready value, accessible name, activation callback |
-| `FooterStatus` | status text and an explicit labeled, accessible action model |
+| `FooterStatus` | validated status text with stable `footer-status` actor name; optional explicit labeled, accessible action model |
 
 Shared primitives accept presentation-ready data only. Provider lifecycle,
 normalization, persistence, unavailable-state decisions, fixture copy, and
@@ -93,6 +93,8 @@ screen must list composed primitives and explicitly justify additions.
   click dismissal, and popup placement.
 - Every action is keyboard-focusable and exposes an accessible name.
 - Hover and focus may reveal a restrained surface; resting icon actions stay flat.
+- Busy icon actions expose the ATK busy state while their composer supplies the
+  corresponding symbolic icon and accessible name.
 - A settings row is one activation target. Its switch is a state indicator, not a
   second nested button.
 - Boolean changes update the static panel preview immediately without closing the
@@ -106,6 +108,8 @@ screen must list composed primitives and explicitly justify additions.
   and keyboard-focus trees.
 - Provider unavailability, staleness, and lifecycle visibility require feature-spec
   behavior before they may appear in production UI.
+- Visible relative-time changes update stable reset/footer actors in place so a
+  minute tick does not replace focus or collapse an open control.
 
 ## Accessibility and Theme Review
 

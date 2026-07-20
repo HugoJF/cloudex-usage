@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
     formatFreshness,
     formatReset,
+    nextMinuteDelay,
     SurfaceController,
 } from '../../extension/surface-controller.js';
 
@@ -577,6 +578,41 @@ test('manual refresh coalesces, resets scheduling, and independent failures clea
     assert.equal(state.timers.size, 1, 'manual completion schedules one replacement timer');
 });
 
+test('refreshing keeps the last completion freshness while initial work stays unchecked',
+    async () => {
+        const state = harness();
+        const first = deferred();
+        const second = deferred();
+        let calls = 0;
+        state.controller.registerProvider(provider({refresh: () => {
+            calls += 1;
+            return calls === 1 ? first.promise : second.promise;
+        }}));
+        await settle();
+        let snapshot = state.controller.getSnapshot();
+        assert.equal(snapshot.refreshing, true);
+        assert.equal(snapshot.footer, 'Not checked yet');
+
+        first.resolve({status: 'available', readings: [
+            {id: 'short', percent: 25, resetAtMs: 1_120_000},
+        ]});
+        await settle();
+        assert.equal(state.controller.getSnapshot().footer, 'Updated just now');
+
+        state.advance(61_000);
+        state.controller.refresh();
+        await settle();
+        snapshot = state.controller.getSnapshot();
+        assert.equal(snapshot.refreshing, true);
+        assert.equal(snapshot.footer, 'Updated 1 min ago');
+
+        second.resolve({status: 'unavailable'});
+        await settle();
+        snapshot = state.controller.getSnapshot();
+        assert.equal(snapshot.refreshing, false);
+        assert.equal(snapshot.footer, 'Checked just now');
+    });
+
 test('result validation requires exact readings and rejects unavailable readings', async () => {
     const invalidResults = [
         {status: 'available', readings: []},
@@ -622,4 +658,18 @@ test('reset and freshness display round at the intended minute boundaries', () =
     assert.equal(formatReset(90_001_000, 1_000), 'Resets in 1 day, 1 hr');
     assert.equal(formatFreshness(1_000, 1_000), 'Updated just now');
     assert.equal(formatFreshness(1_000, 61_000), 'Updated 1 min ago');
+});
+
+test('minute alignment stays bounded and rejects clocks outside its integer domain', () => {
+    assert.equal(nextMinuteDelay(0), 60_000);
+    assert.equal(nextMinuteDelay(1), 59_999);
+    assert.equal(nextMinuteDelay(59_999), 1);
+    assert.equal(nextMinuteDelay(60_000), 60_000);
+    assert.equal(nextMinuteDelay(65_000), 55_000);
+    const extreme = nextMinuteDelay(Number.MAX_SAFE_INTEGER);
+    assert(Number.isSafeInteger(extreme) && extreme >= 1 && extreme <= 60_000);
+    for (const invalid of [-1, 1.5, NaN, Infinity,
+        Number.MAX_SAFE_INTEGER + 1]) {
+        assert.throws(() => nextMinuteDelay(invalid));
+    }
 });

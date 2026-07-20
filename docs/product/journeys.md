@@ -42,7 +42,8 @@ Owning Spec: [SPEC-USAGE-SURFACE](specs/2026-07-16-usage-surface.md)
    neutral marker comparing utilization with elapsed window time.
 3. The user triggers the refresh action beside settings; its busy state, current
    values, freshness text, reset countdowns, and time markers update in place without
-   the popup closing or a passage-of-time update requesting provider data.
+   the popup closing, moving keyboard focus, collapsing an open range select, or a
+   passage-of-time update requesting provider data.
 4. A provider's data becomes unavailable; its card presents the unavailable notice
    with no numeric values while other providers stay live.
 5. The last eligible provider goes away; the panel item disappears and all polling

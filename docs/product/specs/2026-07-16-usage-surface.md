@@ -111,8 +111,8 @@ ProgressBar marker. Shared changes land only in their owning slices.
 - Providers are in-process GJS adapter modules registered against the surface's
   provider-slot contract; the surface owns lifecycle and pull-based refresh.
 - GSettings persists presentation and cadence preferences.
-- One minute-aligned presentation timer exists only while the surface is visible. It
-  advances relative copy and Time pace geometry but never invokes a provider.
+- One minute-aligned presentation timer exists only while the usage popup is open; it
+  advances relative copy and Time pace in place without provider work or actor rebuilds.
 
 ## Preserve
 
@@ -137,7 +137,7 @@ ProgressBar marker. Shared changes land only in their owning slices.
   immediately to current values, progress geometry, accessibility, and local-history
   charting without rewriting provider or stored usage. Medium: one presentation
   invariant, at most 15 edited files and 700 handwritten lines.
-- [ ] `SURF-006` — move manual refresh beside settings, expose in-flight feedback,
+- [x] `SURF-006` — move manual refresh beside settings, expose in-flight feedback,
   make the footer status-only, and advance freshness and reset copy through one
   visibility-bound presentation tick with no provider request. Medium: one temporal
   presentation invariant, at most 15 edited files and 700 handwritten lines.

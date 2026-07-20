@@ -46,6 +46,13 @@ cadence timer or coalesces into one follow-up after an in-flight cycle. Each com
 is emitted before a queued successor begins, scheduling starts after the final
 completion, and failure or ineligibility clears retained readings before rendering.
 
+The Shell composer owns a separate minute-aligned presentation source only while the
+usage popup is open. It reads a fresh immutable controller snapshot and updates the
+named footer and reset labels in place, preserving the focused actor tree and any open
+history select. Popup close, Settings, last-provider removal, indicator destruction,
+and extension teardown remove the source. This presentation path never calls a
+provider; the existing cadence timer remains the sole scheduled refresh path.
+
 `codex-runtime.js` scans numeric `/proc` entries every two seconds for an exact
 current-user `codex` command name. While present, each surface refresh opens the
 current file-backed Codex auth JSON and sends one cancellable, non-redirecting request
@@ -79,3 +86,8 @@ their ordering survives the store's strict monotonic boundary. J-006 seeds a sto
 proves the chart, ordered live samples, keyboard range selection, native Shell Escape,
 theme and scale states, request/store invariance, and the disable path, and reuses the
 J-005 Claude endpoint and process-root inputs.
+
+Every production journey that can enable history receives a disposable history
+directory. J-002 keeps history enabled and proves its presentation tick against the
+isolated recorded sample; J-003 isolates the persisted-settings restore phase as
+well. Neither journey consults or mutates the user's default history path.

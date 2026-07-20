@@ -111,6 +111,12 @@ function setShellColorScheme(scheme) {
     St.Settings.get().notify('color-scheme');
 }
 
+function readFileText(file) {
+    const [loaded, bytes] = file.load_contents(null);
+    assert(loaded, `${file.get_path()} loads`);
+    return new TextDecoder('utf-8').decode(bytes);
+}
+
 function usageProvider({id, order, label, detail, window, reading, refresh}) {
     let eligible = true;
     let listener = null;
@@ -150,8 +156,12 @@ export async function run() {
     assert(extension.getSurfaceSnapshot().visible === false,
         'provider-free production package schedules no visible work');
 
+    const productionClock = extension._now;
+    let nowMs = Math.floor(Date.now() / 60000) * 60000 + 5000;
+    extension._now = () => nowMs;
+    try {
     let claudePercent = 8;
-    let claudeReset = Date.now() + 3 * 60 * 60 * 1000 + 50 * 60 * 1000;
+    let claudeReset = nowMs + 3 * 60 * 60 * 1000 + 50 * 60 * 1000;
     let claudeDeferred = null;
     let claudeCalls = 0;
     const claude = usageProvider({
@@ -180,14 +190,14 @@ export async function run() {
         detail: 'Weekly usage window',
         window: {id: 'weekly', label: 'Weekly window', dataRole: 'dataCodexWeekly'},
         reading: () => ({id: 'weekly', percent: codexPercent,
-            resetAtMs: Date.now() + 4 * 86400000}),
+            resetAtMs: nowMs + 4 * 86400000}),
         refresh: () => {
             codexCalls++;
             return codexUnavailable
                 ? Promise.reject(new Error('provider response deliberately hidden'))
                 : Promise.resolve({status: 'available', readings: [{
                     id: 'weekly', percent: codexPercent,
-                    resetAtMs: Date.now() + 4 * 86400000,
+                    resetAtMs: nowMs + 4 * 86400000,
                 }]});
         },
     });
@@ -229,23 +239,46 @@ export async function run() {
     assert(fill.width === 25, 'percentage uses the canonical zero-origin bar geometry');
     assert(fill.get_parent().accessible_role === Atk.Role.PROGRESS_BAR,
         'usage bar has a progress accessibility role');
-    assert(!findActor(popover, 'history-chart') && findActor(popover, 'settings-button'),
-        'SURF-003 adds settings without adding history');
+    const refresh = findActor(popover, 'refresh-button');
+    const settings = findActor(popover, 'settings-button');
+    const headerChildren = refresh.get_parent().get_children();
+    assert(settings.get_parent() === refresh.get_parent() &&
+        headerChildren.indexOf(refresh) + 1 === headerChildren.indexOf(settings),
+    'refresh sits immediately before settings in the usage header');
+    const footer = findActor(popover, 'footer-status');
+    assert(footer && !findActor(footer.get_parent(), 'refresh-button'),
+        'footer is status-only');
+    const historyRoot = GLib.getenv('CLAUDEX_HISTORY_DIR');
+    const defaultHistoryRoot = GLib.build_filenamev([
+        GLib.get_user_data_dir(), 'claudex-usage',
+    ]);
+    assert(historyRoot && historyRoot !== defaultHistoryRoot &&
+        findActor(popover, 'select-history-range') &&
+        !findActor(popover, 'history-chart'),
+    'surface fixture records uncovered history only inside its isolated store');
+    const historyFile = Gio.File.new_for_path(historyRoot).get_child('history.json');
+    let historyBeforeTick = readFileText(historyFile);
     await captureActor(indicator.menu.actor, EXPECTED_CAPTURES[1]);
 
     claudeDeferred = deferred();
-    findActor(popover, 'refresh-button').emit('clicked', 1);
+    refresh.emit('clicked', 1);
     await settle();
     popover = findActor(indicator.menu.actor, 'claudex-live-popover');
-    assert(collectLabelText(popover).includes('Refreshing…'),
-        'manual refresh visibly enters its in-place pending state');
     const refreshButton = findActor(popover, 'refresh-button');
+    assert(refreshButton.get_child().icon_name === 'process-working-symbolic' &&
+        refreshButton.get_accessible_name() === 'Refreshing usage' &&
+        refreshButton.has_style_class_name('busy') &&
+        refreshButton.get_accessible().ref_state_set()
+            .contains_state(Atk.StateType.BUSY) &&
+        findActor(popover, 'footer-status').text === 'Updated just now' &&
+        !collectLabelText(popover).includes('Refreshing…'),
+    'manual refresh swaps the header icon to its accessible busy state');
     refreshButton.add_style_pseudo_class('hover');
     refreshButton.grab_key_focus();
     await captureActor(indicator.menu.actor, EXPECTED_CAPTURES[2]);
     refreshButton.remove_style_pseudo_class('hover');
     claudePercent = 28;
-    claudeReset = Date.now() + 55 * 60 * 1000;
+    claudeReset = nowMs + 55 * 60 * 1000;
     claudeDeferred.resolve({status: 'available', readings: [
         {id: 'short', percent: claudePercent, resetAtMs: claudeReset},
     ]});
@@ -255,6 +288,42 @@ export async function run() {
     assert(indicator.menu.isOpen && collectLabelText(popover).includes('Updated just now'),
         'manual refresh updates values and freshness without closing the popup');
     assert(collectLabelText(popover).includes('28%'), 'manual refresh changes visible values');
+    const idleRefresh = findActor(popover, 'refresh-button');
+    assert(idleRefresh.get_child().icon_name === 'view-refresh-symbolic' &&
+        idleRefresh.get_accessible_name() === 'Refresh usage' &&
+        !idleRefresh.has_style_class_name('busy') &&
+        !idleRefresh.get_accessible().ref_state_set()
+            .contains_state(Atk.StateType.BUSY),
+    'refresh completion restores the idle icon state');
+
+    const rangeTrigger = findActor(popover, 'select-history-range');
+    rangeTrigger.emit('clicked', 1);
+    const rangeOptions = findActor(popover, 'select-history-range-options');
+    const selectedOption = findActor(popover, 'select-history-range-option-6h');
+    assert(rangeOptions.visible && global.stage.get_key_focus() === selectedOption,
+        'history select is open with its selected option focused before the tick');
+    historyBeforeTick = readFileText(historyFile);
+    const callsBeforeTick = [claudeCalls, codexCalls];
+    const sourceBeforeTick = extension._presentationSourceId;
+    assert(sourceBeforeTick !== null && GLib.Source.remove(sourceBeforeTick),
+        'the real presentation source is owned before deterministic replacement');
+    extension._presentationSourceId = null;
+    nowMs += 61_000;
+    assert(extension._runPresentationTick() === GLib.SOURCE_REMOVE,
+        'the exact production presentation callback removes its fired source');
+    const sourceAfterTick = extension._presentationSourceId;
+    assert(sourceAfterTick !== null && sourceAfterTick !== sourceBeforeTick &&
+        findActor(popover, 'footer-status').text === 'Updated 1 min ago' &&
+        findActor(popover, 'reset-label-claude--short').text === 'Resets in 54 mins',
+    'one realigned tick advances freshness and reset copy');
+    assert(findActor(popover, 'select-history-range') === rangeTrigger &&
+        findActor(popover, 'select-history-range-options') === rangeOptions &&
+        findActor(popover, 'select-history-range-option-6h') === selectedOption &&
+        rangeOptions.visible && global.stage.get_key_focus() === selectedOption,
+    'presentation tick preserves the open select actor tree and focused option');
+    assert(JSON.stringify([claudeCalls, codexCalls]) === JSON.stringify(callsBeforeTick) &&
+        readFileText(historyFile) === historyBeforeTick,
+    'presentation tick requests no provider data and does not rewrite history');
 
     codexUnavailable = true;
     extension.refresh();
@@ -270,6 +339,8 @@ export async function run() {
     await captureActor(indicator.menu.actor, EXPECTED_CAPTURES[3]);
 
     indicator.menu.close();
+    assert(extension._presentationSourceId === null,
+        'closing the usage popup removes the presentation source');
     const originalScheme = Main.sessionMode.colorScheme;
     setShellColorScheme('prefer-light');
     await settle();
@@ -287,15 +358,31 @@ export async function run() {
     themeContext.set_scale_factor(originalScale);
     await settle();
 
+    indicator.menu.open();
+    await settle();
+    assert(extension._presentationSourceId !== null,
+        'reopening usage schedules one presentation source');
+    findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
+    await settle();
+    assert(extension._presentationSourceId === null,
+        'settings view owns no presentation source');
+    findActor(indicator.menu.actor, 'back-button').emit('clicked', 1);
+    await settle();
+    assert(extension._presentationSourceId !== null,
+        'returning to visible usage restores one presentation source');
+    indicator.menu.close();
+    assert(extension._presentationSourceId === null,
+        'closing the restored usage popup clears its source');
+
     claudeDeferred = deferred();
     extension.refresh();
     await settle();
     claude.setEligible(false);
     codex.setEligible(false);
-    assert(!Main.panel.statusArea[UUID],
-        'last provider ineligibility removes the status-area entry');
+    assert(!Main.panel.statusArea[UUID] && extension._presentationSourceId === null,
+        'last provider ineligibility removes the item and presentation source');
     claudeDeferred.resolve({status: 'available', readings: [
-        {id: 'short', percent: 99, resetAtMs: Date.now() + 60000},
+        {id: 'short', percent: 99, resetAtMs: nowMs + 60000},
     ]});
     claudeDeferred = null;
     await settle();
@@ -303,4 +390,11 @@ export async function run() {
         'late completion cannot recreate an absent panel item');
     removeClaude();
     removeCodex();
+    } finally {
+        if (extension._presentationSourceId !== null) {
+            GLib.Source.remove(extension._presentationSourceId);
+            extension._presentationSourceId = null;
+        }
+        extension._now = productionClock;
+    }
 }

@@ -272,7 +272,9 @@ export function UsageMetric({metric, tokens}) {
     top.add_child(label(`${metric.percent}%`, 'claudex-percent'));
     actor.add_child(top);
     actor.add_child(ProgressBar({metric, tokens}));
-    actor.add_child(label(metric.resetLabel, 'claudex-reset'));
+    actor.add_child(label(metric.resetLabel, 'claudex-reset', {
+        name: `reset-label-${metric.id}`,
+    }));
     return actor;
 }
 
@@ -559,12 +561,15 @@ export function CompactSelect({id, choices, selected, accessibleName, onSelect,
     return actor;
 }
 
-export function IconButton({id, iconName, accessibleName, onActivate, tokens}) {
+export function IconButton({id, iconName, accessibleName, onActivate, tokens,
+    busy = false}) {
     requireId(id, 'Icon button');
     requireCallback(onActivate, 'Icon button activation');
+    if (typeof busy !== 'boolean')
+        throw new Error('Icon button busy state must be boolean');
     const actor = new St.Button({
         name: id,
-        style_class: 'selected-settings-button',
+        style_class: `selected-settings-button${busy ? ' busy' : ''}`,
         can_focus: true,
         reactive: true,
         track_hover: true,
@@ -577,6 +582,8 @@ export function IconButton({id, iconName, accessibleName, onActivate, tokens}) {
     });
     actor.set_accessible_name(requireText(accessibleName,
         'Icon button accessible name'));
+    if (busy)
+        actor.add_accessible_state(Atk.StateType.BUSY);
     actor.connect('clicked', onActivate);
     return actor;
 }
@@ -659,17 +666,24 @@ export function ChoiceRow({id, title, value, accessibleName, onActivate}) {
     return actor;
 }
 
-export function FooterStatus({status, action}) {
+export function FooterStatus({status, action = null}) {
     const actor = box('claudex-footer', Clutter.Orientation.HORIZONTAL, {
         x_expand: true,
     });
-    actor.add_child(label(status, 'claudex-updated', {x_expand: true}));
-    actor.add_child(button({
-        id: action.id,
-        text: action.label,
-        styleClass: 'claudex-text-button',
-        accessibleName: action.accessibleName,
-        onActivate: action.onActivate,
+    actor.add_child(label(requireText(status, 'Footer status'), 'claudex-updated', {
+        name: 'footer-status',
+        x_expand: true,
     }));
+    if (action !== null) {
+        if (!action || typeof action !== 'object')
+            throw new Error('Footer action must be an object');
+        actor.add_child(button({
+            id: action.id,
+            text: action.label,
+            styleClass: 'claudex-text-button',
+            accessibleName: action.accessibleName,
+            onActivate: action.onActivate,
+        }));
+    }
     return actor;
 }

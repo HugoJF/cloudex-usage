@@ -148,6 +148,13 @@ export function formatFreshness(completedAtMs, nowMs) {
     return minutes === 0 ? 'Updated just now' : `Updated ${plural(minutes, 'min')} ago`;
 }
 
+export function nextMinuteDelay(nowMs) {
+    if (!Number.isSafeInteger(nowMs) || nowMs < 0)
+        throw new Error('Presentation clock must be a non-negative safe integer');
+    const remainder = nowMs % 60000;
+    return remainder === 0 ? 60000 : 60000 - remainder;
+}
+
 export class SurfaceController {
     constructor({now = () => Date.now(), schedule, cancel, onChange = () => {},
         refreshIntervalMs = 5 * 60 * 1000, dataRoles = DEFAULT_DATA_ROLES} = {}) {
@@ -331,14 +338,12 @@ export class SurfaceController {
         });
         const anyAvailable = providers.some(provider => provider.availability === 'available');
         const hasResults = providers.some(provider => provider.availability !== 'pending');
-        const footer = this._refreshing
-            ? 'Refreshing…'
-            : !hasResults
-                ? 'Not checked yet'
-                : anyAvailable
-                    ? formatFreshness(this._lastCompletedAtMs, now)
-                    : `Checked ${this._lastCompletedAtMs === null
-                        ? 'just now' : formatFreshness(this._lastCompletedAtMs, now).replace(/^Updated /, '')}`;
+        const footer = !hasResults
+            ? 'Not checked yet'
+            : anyAvailable
+                ? formatFreshness(this._lastCompletedAtMs, now)
+                : `Checked ${this._lastCompletedAtMs === null
+                    ? 'just now' : formatFreshness(this._lastCompletedAtMs, now).replace(/^Updated /, '')}`;
         return frozen({
             providers: frozen(providers),
             refreshing: this._refreshing,

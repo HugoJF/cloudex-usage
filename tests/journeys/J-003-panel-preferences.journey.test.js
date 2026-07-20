@@ -331,6 +331,12 @@ export async function run() {
     await settle();
     const extension = Main.extensionManager.lookup(UUID)?.stateObj;
     assert(extension, 'production extension is enabled');
+    const historyRoot = GLib.getenv('CLAUDEX_HISTORY_DIR');
+    assert(historyRoot && GLib.path_is_absolute(historyRoot) &&
+        historyRoot !== GLib.build_filenamev([
+            GLib.get_user_data_dir(), 'claudex-usage',
+        ]),
+    'settings journey keeps any enabled history writes in its isolated directory');
     const {removers, refreshCounts} = registerFixtures(extension);
     await settle();
     const indicator = Main.panel.statusArea[UUID];

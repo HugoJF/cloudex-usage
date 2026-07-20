@@ -42,7 +42,7 @@ const HISTORY_SERIES_META = Object.freeze({
     'codex:weekly': {dataRole: 'dataCodexWeekly', stroke: 'weekly', label: 'Codex weekly'},
 });
 import {validateTokens} from './shared/token-geometry.js';
-import {SurfaceController} from './surface-controller.js';
+import {nextMinuteDelay, SurfaceController} from './surface-controller.js';
 
 function loadTokens(extensionPath) {
     const file = Gio.File.new_for_path(`${extensionPath}/tokens.json`);
@@ -70,11 +70,27 @@ function label(text, styleClass, properties = {}) {
     });
 }
 
+function findActor(root, name) {
+    if (!root)
+        return null;
+    if (root.get_name?.() === name)
+        return root;
+    for (const child of root.get_children?.() ?? []) {
+        const found = findActor(child, name);
+        if (found)
+            return found;
+    }
+    return null;
+}
+
 export default class ClaudexUsageExtension extends Extension {
     enable() {
         this._tokens = loadTokens(this.path);
         this._settings = this.getSettings();
         this._preferences = readPanelPreferences(this._settings);
+        this._now = () => Date.now();
+        this._presentationSourceId = null;
+        this._menuOpenChangedId = null;
         this._view = 'usage';
         this._wasRefreshing = false;
         this._focusHistoryRangeAfterRender = false;
@@ -91,7 +107,7 @@ export default class ClaudexUsageExtension extends Extension {
         this._colorSchemeChangedId = St.Settings.get().connect(
             'notify::color-scheme', () => this._render());
         this._controller = new SurfaceController({
-            now: () => Date.now(),
+            now: () => this._now(),
             schedule: (callback, delay) => GLib.timeout_add(GLib.PRIORITY_DEFAULT,
                 delay, () => {
                     callback();
@@ -169,6 +185,7 @@ export default class ClaudexUsageExtension extends Extension {
         this._settings = null;
         this._preferences = null;
         this._view = null;
+        this._now = null;
         this._focusHistoryRangeAfterRender = false;
         this._historyRangeSelect = null;
     }
@@ -237,6 +254,7 @@ export default class ClaudexUsageExtension extends Extension {
             this._focusHistoryRangeAfterRender = false;
             this._historyRangeSelect.focusTrigger();
         }
+        this._syncPresentationTimer();
     }
 
     _usagePopover(snapshot) {
@@ -250,6 +268,16 @@ export default class ClaudexUsageExtension extends Extension {
         copy.add_child(label('USAGE', 'selected-kicker'));
         copy.add_child(label('Claude + Codex', 'selected-title'));
         header.add_child(copy);
+        header.add_child(IconButton({
+            id: 'refresh-button',
+            iconName: snapshot.refreshing
+                ? 'process-working-symbolic'
+                : 'view-refresh-symbolic',
+            accessibleName: snapshot.refreshing ? 'Refreshing usage' : 'Refresh usage',
+            onActivate: () => this._controller.refresh(),
+            tokens: this._tokens,
+            busy: snapshot.refreshing,
+        }));
         header.add_child(IconButton({
             id: 'settings-button',
             iconName: 'preferences-system-symbolic',
@@ -267,12 +295,6 @@ export default class ClaudexUsageExtension extends Extension {
             children.push(history);
         children.push(FooterStatus({
             status: snapshot.footer,
-            action: {
-                id: 'refresh-button',
-                label: 'Refresh',
-                accessibleName: 'Refresh usage',
-                onActivate: () => this._controller.refresh(),
-            },
         }));
         return children;
     }
@@ -475,15 +497,77 @@ export default class ClaudexUsageExtension extends Extension {
         this._popoverHost = new St.Bin({name: 'claudex-popover-host'});
         this._menuItem.add_child(this._popoverHost);
         this._indicator.menu.addMenuItem(this._menuItem);
+        this._menuOpenChangedId = this._indicator.menu.connect(
+            'open-state-changed', (_menu, open) => {
+                if (!this._controller)
+                    return;
+                if (open && this._view === 'usage')
+                    this._updateTemporalPresentation(this._controller.getSnapshot());
+                this._syncPresentationTimer();
+            });
         Main.panel.addToStatusArea(this.uuid, this._indicator, 0, 'right');
     }
 
     _destroyIndicator() {
+        this._clearPresentationTimer();
+        if (this._indicator && this._menuOpenChangedId) {
+            this._indicator.menu.disconnect(this._menuOpenChangedId);
+            this._menuOpenChangedId = null;
+        }
         this._indicator?.destroy();
         this._indicator = null;
         this._panelHost = null;
         this._popoverHost = null;
         this._menuItem = null;
+    }
+
+    _usagePopupVisible() {
+        return this._view === 'usage' && this._indicator?.menu.isOpen === true;
+    }
+
+    _syncPresentationTimer() {
+        if (!this._usagePopupVisible()) {
+            this._clearPresentationTimer();
+            return;
+        }
+        if (this._presentationSourceId !== null)
+            return;
+        this._presentationSourceId = GLib.timeout_add(
+            GLib.PRIORITY_DEFAULT,
+            nextMinuteDelay(this._now()),
+            () => this._runPresentationTick());
+    }
+
+    _runPresentationTick() {
+        this._presentationSourceId = null;
+        if (!this._controller || !this._usagePopupVisible())
+            return GLib.SOURCE_REMOVE;
+        this._updateTemporalPresentation(this._controller.getSnapshot());
+        this._syncPresentationTimer();
+        return GLib.SOURCE_REMOVE;
+    }
+
+    _updateTemporalPresentation(snapshot) {
+        const root = this._popoverHost?.get_child();
+        if (!root)
+            return;
+        const footer = findActor(root, 'footer-status');
+        if (footer)
+            footer.text = snapshot.footer;
+        for (const provider of snapshot.providers) {
+            for (const metric of provider.metrics) {
+                const reset = findActor(root, `reset-label-${metric.id}`);
+                if (reset)
+                    reset.text = metric.resetLabel;
+            }
+        }
+    }
+
+    _clearPresentationTimer() {
+        if (this._presentationSourceId === null)
+            return;
+        GLib.Source.remove(this._presentationSourceId);
+        this._presentationSourceId = null;
     }
 
     _replaceChild(host, actor) {
