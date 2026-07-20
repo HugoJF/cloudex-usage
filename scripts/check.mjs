@@ -43,6 +43,7 @@ const surfaceCaptures = [
     'surface-settings-toggle-off-focus-hover.png',
     'surface-settings-cadence-focus-hover.png',
     'surface-settings-light-100.png',
+    'surface-left-popup-dark-100.png',
 ];
 
 function run(command, args, options = {}) {
@@ -57,6 +58,62 @@ function run(command, args, options = {}) {
         throw result.error;
     if (result.status !== 0)
         throw new Error(`${command} exited with status ${result.status}`);
+}
+
+function assertCommandRejects(command, args, expectedMessage, options = {}) {
+    const result = spawnSync(command, args, {
+        cwd: root,
+        encoding: 'utf8',
+        ...options,
+    });
+    if (result.error)
+        throw result.error;
+    const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+    if (result.status === 0 || !output.includes(expectedMessage))
+        throw new Error(`${command} did not reject with ${expectedMessage}`);
+}
+
+function validateLegacySettingsSeed(source) {
+    const requiredKeys = [
+        'show-claude-short',
+        'show-claude-weekly',
+        'show-codex-weekly',
+        'refresh-interval',
+        'show-usage-history',
+        'history-range',
+    ];
+    if (typeof source !== 'string' ||
+        !source.includes('[org/gnome/shell/extensions/claudex-usage]') ||
+        requiredKeys.some(key => !source.includes(`\n${key}=`)))
+        throw new Error('legacy GSettings seed is incomplete');
+    if (source.includes('\nusage-display='))
+        throw new Error('legacy GSettings seed already contains usage-display');
+    return source;
+}
+
+function legacySettingsSeed() {
+    return validateLegacySettingsSeed(
+        '[org/gnome/shell/extensions/claudex-usage]\n' +
+        'show-claude-short=false\n' +
+        'show-claude-weekly=true\n' +
+        'show-codex-weekly=false\n' +
+        "refresh-interval='fifteen-minutes'\n" +
+        'show-usage-history=false\n' +
+        "history-range='7d'\n");
+}
+
+function assertLegacySettingsSeedGuard() {
+    const valid = legacySettingsSeed();
+    let rejected = false;
+    try {
+        validateLegacySettingsSeed(`${valid}usage-display='left'\n`);
+    } catch (error) {
+        rejected = error.message ===
+            'legacy GSettings seed already contains usage-display';
+    }
+    if (!rejected)
+        throw new Error('legacy GSettings seed guard accepted usage-display');
+    process.stdout.write('legacy GSettings seed guard: both verdicts passed\n');
 }
 
 function packageEntries(zipPath) {
@@ -489,6 +546,8 @@ const claudeJourneyProcRoot = path.join(temporaryRoot, 'claude-journey-proc');
 const codexHome = path.join(temporaryRoot, 'codex-home');
 const claudeConfigHome = path.join(temporaryRoot, 'claude-home');
 const claudeHistoryDir = path.join(temporaryRoot, 'claude-history');
+const missingSettingsFixtureDir = path.join(temporaryRoot, 'missing-settings-fixture');
+const missingSettingsConfigDir = path.join(temporaryRoot, 'missing-settings-config');
 const fakeCodex = path.join(temporaryRoot, 'codex');
 const fakeClaude = path.join(temporaryRoot, 'claude');
 const captureDir = updateCaptures
@@ -499,6 +558,18 @@ for (const directory of [packageDir, productionPackageDir, proofPackageDir,
     claudeJourneyPackageDir, fixtureProcRoot, journeyProcRoot, claudeJourneyProcRoot,
     codexHome, claudeConfigHome, claudeHistoryDir])
     mkdirSync(directory, {recursive: true});
+assertLegacySettingsSeedGuard();
+assertCommandRejects('sh', [path.join(root, 'scripts/gsettings-session-wrapper.sh'),
+    '/usr/bin/true'], 'missing validated legacy GSettings seed', {
+    env: {
+        ...process.env,
+        XDG_CONFIG_HOME: missingSettingsConfigDir,
+        CLAUDEX_GSETTINGS_FIXTURE_DIR: missingSettingsFixtureDir,
+        CLAUDEX_J003_PHASE: 'write',
+    },
+});
+process.stdout.write('GSettings session wrapper: missing-seed rejection passed\n');
+writeFileSync(path.join(settingsFixtureDir, 'legacy-keyfile'), legacySettingsSeed());
 writeFileSync(path.join(codexHome, 'auth.json'),
     JSON.stringify({tokens: {access_token: 'journey-token'}}));
 writeFileSync(path.join(claudeConfigHome, '.credentials.json'),
@@ -640,7 +711,7 @@ try {
     ], {
         env: {...process.env, CLAUDE_CONFIG_DIR: claudeConfigHome,
             CLAUDEX_FAKE_CLAUDE: fakeClaude, CLAUDEX_PROC_ROOT: claudeJourneyProcRoot,
-            CLAUDEX_HISTORY_DIR: claudeHistoryDir},
+            CLAUDEX_HISTORY_DIR: claudeHistoryDir, CLAUDEX_CAPTURE_DIR: captureDir},
     });
     writeSharedConsumer(proofSourceDir, proofJourneyPath);
     run('gnome-extensions', [

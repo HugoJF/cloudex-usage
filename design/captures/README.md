@@ -15,6 +15,10 @@ visibility-switch focus/hover, cadence-choice focus/hover, and light settings. I
 also proves the selected values in a separate fresh Shell session using a disposable
 GSettings keyfile.
 
+J-006 adds the production Left popup: current values and bars are complemented from
+canonical used percentages, and asymmetric seeded history proves the chart trajectory
+is complemented without rewriting the local sample store.
+
 Regenerate the evidence from an isolated GNOME Shell 50.1 session:
 
 ```bash

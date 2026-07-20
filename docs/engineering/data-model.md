@@ -1,9 +1,10 @@
 # Data Model
 
 The catalog retains only process-local presentation state. The production shell
-persists four panel preferences in its GSettings schema: three boolean visibility
-choices and one refresh-cadence enum. Raw responses, credentials, errors, and popup
-view state are never persisted.
+persists seven preferences in its GSettings schema: three boolean visibility choices,
+one refresh-cadence enum, a global `usage-display` enum defaulting to `used`, the
+local-history boolean, and the history-range enum. Raw responses, credentials, errors,
+and popup view state are never persisted.
 
 Local usage history adds one durable, local-only store, defined by the
 `extension/history-store.js` boundary and written during the existing refresh cycle. It
@@ -15,3 +16,8 @@ percent-and-timestamp samples — never a credential, raw response, reset detail
 error — and nothing it records leaves the machine. Two successful refreshes observed at
 the same safe clock millisecond are stored one millisecond apart to retain event order;
 backward, invalid, or exhausted timestamps remain fail-closed.
+
+Provider results and stored samples always remain percentages used. Selecting Left
+computes `100 - used` only for disposable presentation models. IEEE-754 subtraction can
+collapse extreme subnormal values, and signed negative zero is normalized visually;
+neither loss feeds back into the controller, provider, or durable store.

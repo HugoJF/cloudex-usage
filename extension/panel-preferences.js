@@ -31,6 +31,7 @@ export const REFRESH_INTERVALS = Object.freeze([
 export const REFRESH_INTERVAL_KEY = 'refresh-interval';
 export const LOCAL_HISTORY_KEY = 'show-usage-history';
 export const HISTORY_RANGE_KEY = 'history-range';
+export const USAGE_DISPLAY_KEY = 'usage-display';
 
 export const HISTORY_RANGES = Object.freeze([
     Object.freeze({index: 0, id: '1h', label: '1h'}),
@@ -40,8 +41,15 @@ export const HISTORY_RANGES = Object.freeze([
     Object.freeze({index: 4, id: '30d', label: '30d'}),
 ]);
 
+const USAGE_DISPLAYS = Object.freeze([
+    Object.freeze({index: 0, id: 'used', label: 'Used'}),
+    Object.freeze({index: 1, id: 'left', label: 'Left'}),
+]);
+
 const LIMIT_BY_KEY = new Map(PANEL_LIMITS.map(limit => [limit.key, limit]));
 const HISTORY_RANGE_BY_ID = new Map(HISTORY_RANGES.map(range => [range.id, range]));
+const USAGE_DISPLAY_BY_ID = new Map(USAGE_DISPLAYS.map(display =>
+    [display.id, display]));
 
 function frozen(value) {
     return Object.freeze(value);
@@ -49,7 +57,8 @@ function frozen(value) {
 
 export function isPreferenceKey(key) {
     return LIMIT_BY_KEY.has(key) || key === REFRESH_INTERVAL_KEY ||
-        key === LOCAL_HISTORY_KEY || key === HISTORY_RANGE_KEY;
+        key === LOCAL_HISTORY_KEY || key === HISTORY_RANGE_KEY ||
+        key === USAGE_DISPLAY_KEY;
 }
 
 export function refreshInterval(index) {
@@ -75,6 +84,25 @@ export function historyRangeIndex(id) {
     return range.index;
 }
 
+export function usageDisplay(index) {
+    if (!Number.isInteger(index) || !USAGE_DISPLAYS[index])
+        throw new Error('Usage display enum must be a known integer');
+    return USAGE_DISPLAYS[index];
+}
+
+export function nextUsageDisplay(index) {
+    return USAGE_DISPLAYS[(usageDisplay(index).index + 1) % USAGE_DISPLAYS.length];
+}
+
+export function displayPercent(usedPercent, displayId) {
+    if (!Number.isFinite(usedPercent) || usedPercent < 0 || usedPercent > 100)
+        throw new Error('Usage percentage must be finite from 0 to 100');
+    if (!USAGE_DISPLAY_BY_ID.has(displayId))
+        throw new Error(`Unknown usage display: ${displayId}`);
+    const normalized = Object.is(usedPercent, -0) ? 0 : usedPercent;
+    return displayId === 'left' ? 100 - normalized : normalized;
+}
+
 export function readPanelPreferences(settings) {
     if (!settings || typeof settings.get_boolean !== 'function' ||
         typeof settings.get_enum !== 'function')
@@ -95,5 +123,6 @@ export function readPanelPreferences(settings) {
         refreshInterval: interval,
         localHistory,
         historyRange: historyRange(settings.get_enum(HISTORY_RANGE_KEY)),
+        usageDisplay: usageDisplay(settings.get_enum(USAGE_DISPLAY_KEY)),
     });
 }

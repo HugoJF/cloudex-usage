@@ -56,11 +56,14 @@ source values. J-004 keeps this composition intact while substituting only dispo
 endpoint and process-root inputs.
 
 The package declares `org.gnome.shell.extensions.claudex-usage` and includes its
-GSettings schema, which GNOME compiles on installation. It persists the three
-panel-visibility booleans, the accepted refresh enum, and the local-history boolean and
-range enum; settings changes rerender the panel immediately and reschedule the single
-timer without a concurrent refresh. The J-003 harness proves the values survive two fresh
-Shell sessions through a disposable keyfile backend.
+GSettings schema, which GNOME compiles on installation. It persists seven preferences:
+three panel-visibility booleans, the refresh enum, the global Used/Left display enum,
+and the local-history boolean and range enum. Display changes map canonical used
+percentages only while composing the panel, provider cards, progress accessibility,
+and chart; they neither refresh providers nor rewrite history. Other settings changes
+rerender immediately and cadence changes reschedule the single timer without a
+concurrent refresh. J-003 proves the additive Used default and every value across two
+fresh Shell sessions through a disposable keyfile backend.
 
 `history-store.js` is a pure sample-store boundary shared by Node and GJS; `history-runtime.js`
 loads and persists its serialized form as a durable JSON file under the user data

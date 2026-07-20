@@ -2,22 +2,27 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    displayPercent,
     historyRange,
     historyRangeIndex,
     isPreferenceKey,
     nextRefreshInterval,
+    nextUsageDisplay,
     PANEL_LIMITS,
     readPanelPreferences,
     REFRESH_INTERVALS,
     refreshInterval,
+    usageDisplay,
 } from '../../extension/panel-preferences.js';
 
-function settings({booleans = {}, interval = 0, range = 0} = {}) {
+function settings({booleans = {}, interval = 0, range = 0, display = 0} = {}) {
     return {
         get_boolean: key => booleans[key] ?? true,
         get_enum: key => {
             if (key === 'history-range')
                 return range;
+            if (key === 'usage-display')
+                return display;
             assert.equal(key, 'refresh-interval');
             return interval;
         },
@@ -37,6 +42,7 @@ test('panel preferences map each semantic role to its durable boolean', () => {
     });
     assert.equal(snapshot.refreshInterval.label, '10 min');
     assert.equal(snapshot.refreshInterval.ms, 600000);
+    assert.deepEqual(snapshot.usageDisplay, {index: 0, id: 'used', label: 'Used'});
     assert(Object.isFrozen(snapshot) && Object.isFrozen(snapshot.visibility));
     assert.deepEqual(PANEL_LIMITS.map(limit => limit.key), [
         'show-claude-short', 'show-claude-weekly', 'show-codex-weekly',
@@ -54,6 +60,39 @@ test('history preferences expose the local-history flag and selected range', () 
     assert.throws(() => historyRange(5));
     assert.throws(() => historyRangeIndex('2h'));
     assert(isPreferenceKey('show-usage-history') && isPreferenceKey('history-range'));
+});
+
+test('usage display is strict, frozen, cyclic, and included in preference reads', () => {
+    const snapshot = readPanelPreferences(settings({display: 1}));
+    assert.deepEqual(snapshot.usageDisplay, {index: 1, id: 'left', label: 'Left'});
+    assert(Object.isFrozen(snapshot.usageDisplay));
+    assert.equal(usageDisplay(0).id, 'used');
+    assert.equal(nextUsageDisplay(0).id, 'left');
+    assert.equal(nextUsageDisplay(1).id, 'used');
+    assert(isPreferenceKey('usage-display'));
+    for (const value of [-1, 2, 0.5, '0'])
+        assert.throws(() => usageDisplay(value));
+    assert.throws(() => readPanelPreferences(settings({display: 2})));
+});
+
+test('display percentages preserve Used and complement Left within numeric limits', () => {
+    for (const value of [0, 37.5, 100, Number.MIN_VALUE, Number.EPSILON])
+        assert.equal(displayPercent(value, 'used'), value);
+    assert.deepEqual([0, 37.5, 100].map(value => displayPercent(value, 'left')),
+        [100, 62.5, 0]);
+    assert.equal(displayPercent(Number.MIN_VALUE, 'left'), 100);
+    assert.equal(displayPercent(Number.EPSILON, 'left'), 100);
+    assert(!Object.is(displayPercent(-0, 'used'), -0));
+    assert.equal(displayPercent(-0, 'left'), 100);
+    for (const value of [0, 12.25, 37.5, 50, 87.75, 100]) {
+        const displayed = displayPercent(value, 'left');
+        assert(displayed >= 0 && displayed <= 100);
+        assert.equal(displayPercent(displayed, 'left'), value);
+    }
+    for (const value of [-1, 101, NaN, Infinity, -Infinity])
+        assert.throws(() => displayPercent(value, 'used'));
+    for (const display of ['', 'remaining', null, 0])
+        assert.throws(() => displayPercent(50, display));
 });
 
 test('refresh intervals cycle, reject unknown enums, and expose only known keys', () => {

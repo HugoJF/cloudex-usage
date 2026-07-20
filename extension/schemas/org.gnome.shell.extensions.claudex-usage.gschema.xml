@@ -12,6 +12,10 @@
     <value nick="7d" value="3"/>
     <value nick="30d" value="4"/>
   </enum>
+  <enum id="org.gnome.shell.extensions.claudex-usage.UsageDisplay">
+    <value nick="used" value="0"/>
+    <value nick="left" value="1"/>
+  </enum>
   <schema id="org.gnome.shell.extensions.claudex-usage" path="/org/gnome/shell/extensions/claudex-usage/">
     <key name="show-claude-short" type="b"><default>true</default></key>
     <key name="show-claude-weekly" type="b"><default>true</default></key>
@@ -19,5 +23,6 @@
     <key name="refresh-interval" enum="org.gnome.shell.extensions.claudex-usage.RefreshInterval"><default>'five-minutes'</default></key>
     <key name="show-usage-history" type="b"><default>true</default></key>
     <key name="history-range" enum="org.gnome.shell.extensions.claudex-usage.HistoryRange"><default>'6h'</default></key>
+    <key name="usage-display" enum="org.gnome.shell.extensions.claudex-usage.UsageDisplay"><default>'used'</default></key>
   </schema>
 </schemalist>

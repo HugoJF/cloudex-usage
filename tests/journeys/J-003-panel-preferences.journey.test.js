@@ -51,6 +51,16 @@ function findClass(root, fragment) {
     return null;
 }
 
+function findClasses(root, fragment, result = []) {
+    if (!root)
+        return result;
+    if ((root.style_class ?? '').includes(fragment))
+        result.push(root);
+    for (const child of root.get_children?.() ?? [])
+        findClasses(child, fragment, result);
+    return result;
+}
+
 function collectLabelText(root, result = []) {
     if (!root)
         return result;
@@ -87,7 +97,7 @@ async function settle() {
     await Scripting.sleep(260);
 }
 
-function provider({id, order, label, detail, windows, readings}) {
+function provider({id, order, label, detail, windows, readings, refreshCounts}) {
     let listener = null;
     return {
         id,
@@ -108,12 +118,16 @@ function provider({id, order, label, detail, windows, readings}) {
                 listener = null;
             };
         },
-        refresh: async () => ({status: 'available', readings}),
+        refresh: async () => {
+            refreshCounts[id] = (refreshCounts[id] ?? 0) + 1;
+            return {status: 'available', readings};
+        },
     };
 }
 
 function registerFixtures(extension) {
-    return [
+    const refreshCounts = {};
+    const removers = [
         extension.registerProvider(provider({
             id: 'claude', order: 0, label: 'Claude', detail: 'Two usage windows',
             windows: [
@@ -124,20 +138,49 @@ function registerFixtures(extension) {
                 {id: 'short', percent: 8, resetAtMs: Date.now() + 3 * 3600000},
                 {id: 'weekly', percent: 68, resetAtMs: Date.now() + 4 * 86400000},
             ],
+            refreshCounts,
         })),
         extension.registerProvider(provider({
             id: 'codex', order: 1, label: 'Codex', detail: 'Weekly usage window',
             windows: [{id: 'weekly', label: 'Weekly window', dataRole: 'dataCodexWeekly'}],
             readings: [{id: 'weekly', percent: 42, resetAtMs: Date.now() + 4 * 86400000}],
+            refreshCounts,
         })),
     ];
+    return {removers, refreshCounts};
 }
 
 function preferences(snapshot) {
     return snapshot.preferences;
 }
 
-async function writePhase(extension, indicator) {
+async function writePhase(extension, indicator, refreshCounts) {
+    const initial = preferences(extension.getSurfaceSnapshot());
+    assert(initial.visibility.dataClaudeShort === false &&
+        initial.visibility.dataClaudeWeekly === true &&
+        initial.visibility.dataCodexWeekly === false &&
+        initial.refreshInterval.ms === 900000 &&
+        initial.localHistory === false && initial.historyRange.id === '7d',
+    'legacy visibility, cadence, and history preferences survive the additive schema');
+    assert(initial.usageDisplay.id === 'used' &&
+        extension._settings.get_user_value('usage-display') === null,
+    'a legacy backend with no usage-display key resolves to Used without writing it');
+    let icons = findClasses(findActor(indicator, 'claudex-live-panel'),
+        'claudex-panel-provider-icon');
+    assert(icons[0]?.get_accessible_name() === 'Claude mark, 68 percent used' &&
+        icons[1]?.get_accessible_name() === 'Codex mark, no panel percentages',
+    'the additive default names the Used basis in the panel');
+
+    const beforeNormalize = {...refreshCounts};
+    extension._settings.set_boolean('show-claude-short', true);
+    extension._settings.set_boolean('show-codex-weekly', true);
+    extension._settings.set_enum('refresh-interval', 0);
+    extension._settings.set_boolean('show-usage-history', true);
+    extension._settings.set_enum('history-range', 1);
+    await settle();
+    assert(JSON.stringify(refreshCounts) === JSON.stringify(beforeNormalize),
+        'normalizing legacy preferences does not refresh providers');
+
     indicator.menu.open();
     await settle();
     findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
@@ -148,11 +191,51 @@ async function writePhase(extension, indicator) {
     assert(!findActor(popover, 'history-chart') &&
         !collectLabelText(popover).includes('Keep local usage history'),
         'settings omits deferred history controls');
+    const usedChoice = findActor(popover, 'usage-display-choice');
+    assert(usedChoice.get_accessible_name() === 'Usage display, Used' &&
+        collectLabelText(usedChoice).includes('Used  ›'),
+    'settings exposes the default Used display choice');
     await captureActor(indicator.menu.actor, CAPTURES[0]);
+
+    const beforeDisplayChange = {...refreshCounts};
+    usedChoice.emit('clicked', 1);
+    await settle();
+    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    assert(indicator.menu.isOpen &&
+        preferences(extension.getSurfaceSnapshot()).usageDisplay.id === 'left' &&
+        findActor(popover, 'usage-display-choice').get_accessible_name() ===
+            'Usage display, Left' &&
+        JSON.stringify(refreshCounts) === JSON.stringify(beforeDisplayChange),
+    'Left applies in place without refreshing a provider');
+    const panel = findActor(indicator, 'claudex-live-panel');
+    const panelText = collectLabelText(panel).join(' ');
+    icons = findClasses(panel, 'claudex-panel-provider-icon');
+    assert(panelText.includes('92%') && panelText.includes('32%') &&
+        panelText.includes('58%') &&
+        icons[0]?.get_accessible_name() ===
+            'Claude mark, 92 percent left, 32 percent left' &&
+        icons[1]?.get_accessible_name() === 'Codex mark, 58 percent left',
+    'Left immediately complements panel values and names their basis');
+
     findActor(popover, 'back-button').emit('clicked', 1);
     await settle();
-    assert(indicator.menu.isOpen && collectLabelText(indicator.menu.actor).includes('USAGE'),
-        'back returns to usage without closing the same popup');
+    let usageText = collectLabelText(indicator.menu.actor).join(' ');
+    const shortProgress = findActor(indicator.menu.actor, 'progress-claude--short');
+    const shortFill = findActor(shortProgress, 'progress-fill-claude--short');
+    assert(indicator.menu.isOpen && usageText.includes('USAGE') &&
+        usageText.includes('92%') && usageText.includes('32%') &&
+        usageText.includes('58%'),
+    'back shows every complemented popup value');
+    assert(shortFill.width === 291,
+        'back shows complemented popup progress geometry');
+    assert(shortProgress.get_accessible_name() ===
+        'Claude 5-hour window at 92 percent left',
+    'back shows complemented popup accessibility');
+    const rawProviders = extension.getSurfaceSnapshot().providers;
+    assert(rawProviders[0].metrics[0].percent === 8 &&
+        rawProviders[0].metrics[1].percent === 68 &&
+        rawProviders[1].metrics[0].percent === 42,
+    'the surface snapshot remains canonical Used data');
     findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
     await settle();
     popover = findActor(indicator.menu.actor, 'claudex-live-popover');
@@ -163,10 +246,12 @@ async function writePhase(extension, indicator) {
     findActor(popover, 'toggle-showClaudeWeekly').emit('clicked', 1);
     await settle();
     popover = findActor(indicator.menu.actor, 'claudex-live-popover');
-    const panel = findActor(indicator, 'claudex-live-panel');
-    assert(indicator.menu.isOpen && !collectLabelText(panel).join(' ').includes('8%') &&
-        !collectLabelText(panel).join(' ').includes('68%') &&
-        collectLabelText(panel).join(' ').includes('42%') && findClass(panel, 'muted'),
+    const visibilityPanel = findActor(indicator, 'claudex-live-panel');
+    assert(indicator.menu.isOpen &&
+        !collectLabelText(visibilityPanel).join(' ').includes('92%') &&
+        !collectLabelText(visibilityPanel).join(' ').includes('32%') &&
+        collectLabelText(visibilityPanel).join(' ').includes('58%') &&
+        findClass(visibilityPanel, 'muted'),
     'visibility updates panel immediately and preserves a muted Claude mark');
     findActor(popover, 'toggle-showCodexWeekly').emit('clicked', 1);
     await settle();
@@ -210,11 +295,18 @@ async function readPhase(extension, indicator) {
     assert(preferences(snapshot).visibility.dataClaudeShort === false &&
         preferences(snapshot).visibility.dataClaudeWeekly === false &&
         preferences(snapshot).visibility.dataCodexWeekly === true &&
-        preferences(snapshot).refreshInterval.ms === 600000,
+        preferences(snapshot).refreshInterval.ms === 600000 &&
+        preferences(snapshot).localHistory === true &&
+        preferences(snapshot).historyRange.id === '6h' &&
+        preferences(snapshot).usageDisplay.id === 'left',
     'fresh Shell restores every persisted preference');
     const panel = findActor(indicator, 'claudex-live-panel');
-    assert(!collectLabelText(panel).join(' ').includes('8%') &&
-        !collectLabelText(panel).join(' ').includes('68%') && findClass(panel, 'muted'),
+    const panelIcons = findClasses(panel, 'claudex-panel-provider-icon');
+    assert(!collectLabelText(panel).join(' ').includes('92%') &&
+        !collectLabelText(panel).join(' ').includes('32%') &&
+        collectLabelText(panel).join(' ').includes('58%') &&
+        panelIcons[1]?.get_accessible_name() === 'Codex mark, 58 percent left' &&
+        findClass(panel, 'muted'),
     'restored settings control the new session panel');
     indicator.menu.open();
     await settle();
@@ -223,21 +315,29 @@ async function readPhase(extension, indicator) {
     const popover = findActor(indicator.menu.actor, 'claudex-live-popover');
     assert(collectLabelText(popover).some(text => text.includes('10 min')) &&
         findActor(popover, 'toggle-showClaudeShort').checked === false &&
-        findActor(popover, 'toggle-showClaudeWeekly').checked === false,
+        findActor(popover, 'toggle-showClaudeWeekly').checked === false &&
+        findActor(popover, 'usage-display-choice').get_accessible_name() ===
+            'Usage display, Left',
     'restored settings are rendered in the fresh popup');
+    findActor(popover, 'back-button').emit('clicked', 1);
+    await settle();
+    const codexProgress = findActor(indicator.menu.actor, 'progress-codex--weekly');
+    assert(codexProgress.get_accessible_name() ===
+        'Codex Weekly window at 58 percent left',
+    'restored popup accessibility names the persisted Left basis');
 }
 
 export async function run() {
     await settle();
     const extension = Main.extensionManager.lookup(UUID)?.stateObj;
     assert(extension, 'production extension is enabled');
-    const removers = registerFixtures(extension);
+    const {removers, refreshCounts} = registerFixtures(extension);
     await settle();
     const indicator = Main.panel.statusArea[UUID];
     assert(indicator, 'eligible providers create the surface');
     if (GLib.getenv('CLAUDEX_J003_PHASE') === 'restore')
         await readPhase(extension, indicator);
     else
-        await writePhase(extension, indicator);
+        await writePhase(extension, indicator, refreshCounts);
     removers.forEach(remove => remove());
 }

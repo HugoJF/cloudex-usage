@@ -1,7 +1,7 @@
 ---
 id: SPEC-USAGE-SURFACE
 type: spec
-status: active
+status: done
 owner: hugo
 created: 2026-07-16
 updated: 2026-07-19
@@ -67,8 +67,8 @@ Acceptance:
 
 - Absent panel — no eligible provider: no item, no polling.
 - Unified panel item — eligible providers' marks and enabled percentages.
-- Usage popup — provider cards, freshness footer with refresh action; no history
-  chart.
+- Usage popup — provider cards and freshness footer; chart composition remains owned
+  by SPEC-LOCAL-HISTORY.
 - Current and historical percentages — selected Used or Left presentation without
   changing provider or history data.
 - Unavailable card state — dimmed textual notice, no values.
@@ -145,7 +145,7 @@ its build slice.
   immediately through the shared refresh cycle, with atomic registration and ordered
   local-history completion evidence. Medium: one lifecycle/concurrency invariant, at
   most 15 edited files and 800 handwritten lines.
-- [ ] `SURF-005` — persist one global Used/Left presentation choice and apply it
+- [x] `SURF-005` — persist one global Used/Left presentation choice and apply it
   immediately to current values, progress geometry, accessibility, and local-history
   charting without rewriting provider or stored usage. Medium: one presentation
   invariant, at most 15 edited files and 700 handwritten lines.

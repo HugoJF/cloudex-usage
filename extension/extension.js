@@ -22,12 +22,15 @@ import {
     SettingsRow,
 } from './shared/primitives.js';
 import {
+    displayPercent,
     HISTORY_RANGES,
     historyRangeIndex,
     isPreferenceKey,
     nextRefreshInterval,
+    nextUsageDisplay,
     PANEL_LIMITS,
     readPanelPreferences,
+    USAGE_DISPLAY_KEY,
 } from './panel-preferences.js';
 import {createCodexProvider, CodexRuntime} from './codex-runtime.js';
 import {createClaudeProvider, ClaudeRuntime} from './claude-runtime.js';
@@ -193,18 +196,25 @@ export default class ClaudexUsageExtension extends Extension {
         }
         this._ensureIndicator();
         const lightPanel = Main.sessionMode.colorScheme === 'prefer-light';
-        const groups = snapshot.providers.map(provider => ({
+        const groups = snapshot.providers.map(provider => {
+            const values = provider.metrics
+                .filter(metric => this._preferences.visibility[metric.dataRole])
+                .map(metric => ({
+                    id: metric.id,
+                    percent: this._displayPercent(metric.percent),
+                }));
+            const valueDescription = values.length === 0
+                ? 'no panel percentages'
+                : values.map(value => `${value.percent} percent ` +
+                    this._preferences.usageDisplay.id).join(', ');
+            return {
                 id: provider.id,
-                accessibleName: provider.marks.accessibleName,
+                accessibleName: `${provider.marks.accessibleName}, ${valueDescription}`,
                 iconPath: `${this.path}/${lightPanel
                     ? provider.marks.lightPanel : provider.marks.darkPanel}`,
-                values: provider.metrics
-                    .filter(metric => this._preferences.visibility[metric.dataRole])
-                    .map(metric => ({
-                    id: metric.id,
-                    percent: metric.percent,
-                })),
-            }));
+                values,
+            };
+        });
         this._replaceChild(this._panelHost, PanelIndicator({
             id: 'claudex-live-panel',
             groups,
@@ -265,6 +275,10 @@ export default class ClaudexUsageExtension extends Extension {
         const range = this._preferences.historyRange;
         const series = this._history.series(range.id).filter(item =>
             HISTORY_SERIES_META[`${item.providerId}:${item.windowId}`]);
+        const displayedSeries = series.map(item => ({
+            ...item,
+            values: item.values.map(value => this._displayPercent(value)),
+        }));
         const key = item => `${item.providerId}:${item.windowId}`;
         const section = column('selected-history');
         const head = new St.BoxLayout({
@@ -293,10 +307,11 @@ export default class ClaudexUsageExtension extends Extension {
         }
         section.add_child(HistoryChart({
             id: 'history-chart',
-            accessibleName: `Usage history for ${range.label}, ` +
+            accessibleName: `Usage history for ${range.label}, percentage ` +
+                `${this._preferences.usageDisplay.id}, ` +
                 'from zero to one hundred percent',
             axisLabels: ['100%', '75%', '50%', '25%', '0%'],
-            series: series.map(item => ({
+            series: displayedSeries.map(item => ({
                 id: `${item.providerId}-${item.windowId}`,
                 values: item.values,
                 dataRole: HISTORY_SERIES_META[key(item)].dataRole,
@@ -305,7 +320,7 @@ export default class ClaudexUsageExtension extends Extension {
             tokens: this._tokens,
         }));
         section.add_child(Legend({
-            entries: series.map(item => ({
+            entries: displayedSeries.map(item => ({
                 id: `${item.providerId}-${item.windowId}`,
                 label: HISTORY_SERIES_META[key(item)].label,
                 dataRole: HISTORY_SERIES_META[key(item)].dataRole,
@@ -349,6 +364,15 @@ export default class ClaudexUsageExtension extends Extension {
                 tokens: this._tokens,
             }));
         }
+        const display = this._preferences.usageDisplay;
+        panel.add_child(ChoiceRow({
+            id: 'usage-display-choice',
+            title: 'Usage display',
+            value: `${display.label}  ›`,
+            accessibleName: `Usage display, ${display.label}`,
+            onActivate: () => this._settings.set_enum(USAGE_DISPLAY_KEY,
+                nextUsageDisplay(display.index).index),
+        }));
         const history = column('selected-settings-section');
         history.add_child(label('HISTORY', 'selected-settings-kicker'));
         history.add_child(SettingsRow({
@@ -375,6 +399,20 @@ export default class ClaudexUsageExtension extends Extension {
         return [header, panel, history, updates];
     }
 
+    _displayPercent(percent) {
+        return displayPercent(percent, this._preferences.usageDisplay.id);
+    }
+
+    _displayMetric(provider, metric) {
+        const percent = this._displayPercent(metric.percent);
+        return {
+            ...metric,
+            percent,
+            accessibleName: `${provider.label} ${metric.label} at ${percent} percent ` +
+                this._preferences.usageDisplay.id,
+        };
+    }
+
     _providerCard(provider) {
         const presentation = {
             id: `provider-${provider.id}`,
@@ -387,7 +425,8 @@ export default class ClaudexUsageExtension extends Extension {
             return ProviderCard({
                 id: `provider-card-${provider.id}`,
                 provider: presentation,
-                metrics: provider.metrics,
+                metrics: provider.metrics.map(metric =>
+                    this._displayMetric(provider, metric)),
                 tokens: this._tokens,
             });
         }

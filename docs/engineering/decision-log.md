@@ -151,3 +151,17 @@ different values. The history runtime therefore stores the later successful batc
 the next safe millisecond only when the observed clock is equal; backward and invalid
 clocks still fail closed. If an equal timestamp is already the maximum safe integer,
 the colliding history batch is dropped while live presentation remains available.
+
+## 2026-07-19 — Keep usage canonical while presenting Used or Left
+
+One global GSettings enum selects Used or Left across the panel, current-value cards,
+progress accessibility, and local-history chart. It defaults to Used so an existing
+installation gains the additive key without changing presentation. A change rerenders
+from the current snapshot and never requests provider data.
+
+Provider results and durable history stay canonical percentages used. Left is computed
+as `100 - used` only at the final presentation boundary, so changing the choice never
+rewrites or inverts stored samples. JavaScript subtraction may collapse extreme
+subnormal values at 100, and negative zero is displayed as positive zero; this accepted
+precision loss is visual only, and returning to Used recomputes from the untouched
+source value.

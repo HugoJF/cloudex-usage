@@ -18,7 +18,8 @@ Subscription-backed coding agents run on rolling usage windows, but checking how
 capacity remains means leaving your work to open a separate status view. Claudex Usage
 puts those numbers where you already are: while Claude Code or Codex is in use, a small
 GNOME Shell indicator shows each provider's current usage windows and reset times —
-and when the agents close, it gets out of the way.
+as either percentage used or percentage left — and when the agents close, it gets out
+of the way.
 
 ## Principles
 
@@ -41,12 +42,13 @@ These constraints are product-level commitments, not implementation details
 The approved visual system, production surface, and both live provider adapters ship
 today: Codex account-weekly usage, and Claude Code 5-hour and weekly usage, each read
 from the existing login while a local session is present, plus a local-only usage-history
-chart recorded during the same refresh.
+chart recorded during the same refresh. One persisted setting switches current values
+and history together between Used and Left without changing recorded samples.
 
 | Capability | Status |
 | --- | --- |
 | Design system and primitive catalog | ✅ Done — Direction D, installable with a screenshot harness |
-| Unified usage surface | ✅ Done — production UUID `claudex-usage@hugo.local`, persisted panel choices, and fail-closed polling while eligible providers exist |
+| Unified usage surface | ✅ Done — persisted visibility, Used/Left display and cadence choices, with fail-closed polling while eligible providers exist |
 | Codex provider adapter | ✅ Done — current account-weekly usage from the existing file-backed CLI login |
 | Claude Code provider adapter | ✅ Done — 5-hour and weekly usage from the existing file-backed OAuth login |
 | Local usage history | ✅ Done — records samples during refresh and charts the merged trajectory, local-only |
@@ -58,7 +60,8 @@ The [feature horizon](docs/product/feature-horizon.md) tracks the full capabilit
 Every state is captured deterministically from an isolated GNOME Shell 50.1 session.
 J-001 proves the static catalog; J-002 proves the production surface through
 harness-only provider registration; J-004 proves the packaged Codex runtime from
-session presence through credential rotation, unavailable data, and teardown.
+session presence through credential rotation, unavailable data, and teardown; J-006
+proves local history and its presentation in Used or Left.
 
 | Panel indicator (dark) | Panel indicator (light) |
 | --- | --- |

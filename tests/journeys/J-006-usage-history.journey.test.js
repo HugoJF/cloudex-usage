@@ -1,10 +1,14 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Shell from 'gi://Shell';
 import Soup from 'gi://Soup?version=3.0';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 const UUID = 'claudex-usage@hugo.local', PORT = 19876;
+const LEFT_CAPTURE = 'surface-left-popup-dark-100.png';
+Gio._promisify(Shell.Screenshot.prototype, 'screenshot_area',
+    'screenshot_area_finish');
 export const METRICS = {};
 export function init() {}
 function assert(value, message) {
@@ -27,6 +31,43 @@ function labels(root, values = []) {
         labels(child, values);
     return values;
 }
+function captureDirectory() {
+    const override = GLib.getenv('CLAUDEX_CAPTURE_DIR');
+    if (override)
+        return Gio.File.new_for_path(override);
+    return Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent()
+        .get_child('design').get_child('captures');
+}
+async function captureActor(target, filename, padding = 8) {
+    let actor = null;
+    let width = 0;
+    let height = 0;
+    for (let attempt = 0; attempt < 40; attempt++) {
+        actor = typeof target === 'function' ? target() : target;
+        if (actor?.is_mapped())
+            [width, height] = actor.get_transformed_size();
+        if (width > 0 && height > 0)
+            break;
+        await Scripting.sleep(50);
+    }
+    assert(actor?.is_mapped(), `${filename} actor is not mapped`);
+    assert(width > 0 && height > 0, `${filename} actor has no allocated geometry`);
+    const directory = captureDirectory();
+    if (!directory.query_exists(null))
+        directory.make_directory_with_parents(null);
+    const [actorX, actorY] = actor.get_transformed_position();
+    const x = Math.max(0, Math.floor(actorX - padding));
+    const y = Math.max(0, Math.floor(actorY - padding));
+    const captureWidth = Math.min(global.screen_width - x,
+        Math.ceil(width + padding * 2));
+    const captureHeight = Math.min(global.screen_height - y,
+        Math.ceil(height + padding * 2));
+    const stream = directory.get_child(filename).replace(null, false,
+        Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+    const screenshot = new Shell.Screenshot();
+    await screenshot.screenshot_area(x, y, captureWidth, captureHeight, stream);
+    stream.close(null);
+}
 async function waitFor(callback, message) {
     for (let attempt = 0; attempt < 120; attempt++) {
         if (callback())
@@ -47,6 +88,12 @@ function historyWindows() {
         return {};
     return JSON.parse(new TextDecoder('utf-8').decode(bytes)).windows ?? {};
 }
+function historyText() {
+    const path = GLib.build_filenamev([GLib.getenv('CLAUDEX_HISTORY_DIR'), 'history.json']);
+    const [ok, bytes] = GLib.file_get_contents(path);
+    assert(ok, 'history file is readable');
+    return new TextDecoder('utf-8').decode(bytes);
+}
 function startClaude() {
     const process = Gio.Subprocess.new([GLib.getenv('CLAUDEX_FAKE_CLAUDE'),
         '-c', 'import time; time.sleep(30)'], Gio.SubprocessFlags.NONE);
@@ -64,7 +111,7 @@ function stopClaude(process) {
     directory.delete(null);
 }
 export async function run() {
-    const state = {short: 12, weekly: 37, hold: false, held: null};
+    const state = {short: 12, weekly: 37, hold: false, held: null, requests: 0};
     const server = new Soup.Server();
     const reply = message => {
         const iso = offsetMs => new Date(Date.now() + offsetMs).toISOString();
@@ -77,6 +124,7 @@ export async function run() {
             new TextEncoder().encode(body));
     };
     server.add_handler('/usage', (_server, message) => {
+        state.requests++;
         if (state.hold) {
             state.hold = false;
             state.held = message;
@@ -169,6 +217,45 @@ export async function run() {
             'chart legend names both Claude series');
         assert(findActor(indicator.menu.actor, 'range-6h').has_style_class_name('active'),
             'the default range is selected');
+
+        const historyBeforeDisplayChange = historyText();
+        const requestsBeforeDisplayChange = state.requests;
+        findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
+        await waitFor(() => findActor(indicator.menu.actor, 'usage-display-choice'),
+            'settings exposes the usage-display choice');
+        const displayChoice = findActor(indicator.menu.actor, 'usage-display-choice');
+        assert(displayChoice.get_accessible_name() === 'Usage display, Used',
+            'history starts in the canonical Used presentation');
+        displayChoice.emit('clicked', 1);
+        await waitFor(() => extension.getSurfaceSnapshot().preferences.usageDisplay.id ===
+            'left', 'Left preference applies');
+        assert(state.requests === requestsBeforeDisplayChange,
+            'changing display basis does not request provider data');
+        findActor(indicator.menu.actor, 'back-button').emit('clicked', 1);
+        await waitFor(() => findActor(indicator.menu.actor, 'history-chart'),
+            'Left history chart is visible');
+        const rawClaude = extension.getSurfaceSnapshot().providers
+            .find(provider => provider.id === 'claude');
+        assert(rawClaude.metrics[0].percent === 31 &&
+            rawClaude.metrics[1].percent === 37,
+        'the public snapshot remains canonical Used data');
+        const leftLabels = labels(indicator.menu.actor, []).join(' ');
+        const shortProgress = findActor(indicator.menu.actor, 'progress-claude--short');
+        assert(leftLabels.includes('69%') && leftLabels.includes('63%') &&
+            leftLabels.includes('55%'),
+        'current cards show every Left complement');
+        const shortFill = findActor(shortProgress, 'progress-fill-claude--short');
+        assert(shortFill.width === 218,
+            'current progress geometry uses the Left complement');
+        assert(shortProgress.get_accessible_name() ===
+            'Claude 5-hour window at 69 percent left',
+        'current progress accessibility names the Left complement');
+        assert(findActor(indicator.menu.actor, 'history-chart').get_accessible_name() ===
+            'Usage history for 6h, percentage left, from zero to one hundred percent',
+        'the composed chart names its Left data basis');
+        assert(historyText() === historyBeforeDisplayChange,
+            'changing display basis leaves durable canonical history byte-identical');
+        await captureActor(() => indicator.menu.actor, LEFT_CAPTURE);
 
         findActor(indicator.menu.actor, 'range-1h').emit('clicked', 1);
         await waitFor(() => findActor(indicator.menu.actor, 'range-1h')
