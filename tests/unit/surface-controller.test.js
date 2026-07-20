@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    elapsedWindowPercent,
     formatFreshness,
     formatReset,
     nextMinuteDelay,
@@ -101,6 +102,13 @@ test('provider registration validates immutable presentation metadata and paths'
         provider({marks: {...provider().marks, popup: '../icon.svg'}}),
         provider({windows: []}),
         provider({windows: [{id: 'short', label: 'Short', dataRole: 'not-a-role'}]}),
+        ...[null, 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1].map(durationMs =>
+            provider({windows: [{
+                id: 'short',
+                label: 'Short',
+                dataRole: 'dataClaudeShort',
+                durationMs,
+            }]})),
         provider({isEligible: () => 1}),
         provider({subscribeEligibility: () => null}),
     ];
@@ -121,6 +129,32 @@ test('provider registration validates immutable presentation metadata and paths'
     assert.equal(snapshot.providers[0].windows[0].label, '5-hour window');
     assert.throws(() => controller.registerProvider(provider()), /already registered/);
     unregister();
+});
+
+test('optional duration snapshots immutably and derives elapsed window time', async () => {
+    const state = harness();
+    const paced = provider({
+        windows: [{
+            id: 'short',
+            label: '4-minute window',
+            dataRole: 'dataClaudeShort',
+            durationMs: 240_000,
+        }],
+    });
+    state.controller.registerProvider(paced);
+    paced.windows[0].durationMs = 1;
+    await settle();
+    const snapshot = state.controller.getSnapshot();
+    assert.equal(snapshot.providers[0].windows[0].durationMs, 240_000);
+    assert.equal(snapshot.providers[0].metrics[0].elapsedPercent, 50);
+    assert(Object.isFrozen(snapshot.providers[0].windows[0]));
+
+    const unpacedState = harness();
+    unpacedState.controller.registerProvider(provider());
+    await settle();
+    const unpaced = unpacedState.controller.getSnapshot().providers[0];
+    assert(!Object.hasOwn(unpaced.windows[0], 'durationMs'));
+    assert(!Object.hasOwn(unpaced.metrics[0], 'elapsedPercent'));
 });
 
 test('failed provisional registration is inert and releases its provider ID', async () => {
@@ -274,6 +308,26 @@ test('reentrant disposal stops provisional registration at the current external 
         /disposed/);
     assert.equal(detailReads, 0);
     assert.equal(subscriptionReads, 0);
+
+    const duration = harness();
+    const durationProvider = provider();
+    let eligibilityReads = 0;
+    Object.defineProperty(durationProvider.windows[0], 'durationMs', {
+        get() {
+            duration.controller.dispose();
+            return 18_000_000;
+        },
+    });
+    Object.defineProperty(durationProvider, 'isEligible', {
+        get() {
+            eligibilityReads += 1;
+            return () => true;
+        },
+    });
+    assert.throws(() => duration.controller.registerProvider(durationProvider),
+        /disposed/);
+    assert.equal(eligibilityReads, 0,
+        'duration getter disposal stops before lifecycle callback reads');
 
     const eligibility = harness();
     const eligibilityProvider = provider();
@@ -671,5 +725,41 @@ test('minute alignment stays bounded and rejects clocks outside its integer doma
     for (const invalid of [-1, 1.5, NaN, Infinity,
         Number.MAX_SAFE_INTEGER + 1]) {
         assert.throws(() => nextMinuteDelay(invalid));
+    }
+});
+
+test('elapsed window percentage clamps safely and stays monotonic', () => {
+    const fiveHours = 18_000_000;
+    assert.equal(elapsedWindowPercent(fiveHours, fiveHours, 0), 0);
+    assert.equal(elapsedWindowPercent(fiveHours, fiveHours, 9_000_000), 50);
+    assert.equal(elapsedWindowPercent(fiveHours, fiveHours, fiveHours), 100);
+    assert.equal(elapsedWindowPercent(fiveHours, fiveHours, fiveHours + 1), 100);
+    assert.equal(elapsedWindowPercent(fiveHours, fiveHours * 2, 0), 0);
+
+    const week = 604_800_000;
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+    const fractional = elapsedWindowPercent(week, week, threeDays);
+    assert(Math.abs(fractional - 3 / 7 * 100) < Number.EPSILON * 100);
+    const samples = [0, 1, threeDays, week - 1, week]
+        .map(now => elapsedWindowPercent(week, week, now));
+    assert(samples.every((value, index) => index === 0 ||
+        value >= samples[index - 1]));
+    assert(samples.every(value => Number.isFinite(value) &&
+        value >= 0 && value <= 100));
+
+    const maximum = Number.MAX_SAFE_INTEGER;
+    assert.equal(elapsedWindowPercent(maximum, maximum, 0), 0);
+    const middle = elapsedWindowPercent(maximum, maximum,
+        Math.floor(maximum / 2));
+    assert(Number.isFinite(middle) && middle > 49 && middle < 51);
+    assert.equal(elapsedWindowPercent(maximum, maximum, maximum), 100);
+
+    for (const [durationMs, resetAtMs, nowMs] of [
+        [undefined, 1, 1], [null, 1, 1], [0, 1, 1], [-1, 1, 1],
+        [1.5, 1, 1], [Number.MAX_SAFE_INTEGER + 1, 1, 1],
+        [1, -1, 1], [1, 1.5, 1], [1, Infinity, 1],
+        [1, 1, -1], [1, 1, NaN], [1, 1, Number.MAX_SAFE_INTEGER + 1],
+    ]) {
+        assert.throws(() => elapsedWindowPercent(durationMs, resetAtMs, nowMs));
     }
 });

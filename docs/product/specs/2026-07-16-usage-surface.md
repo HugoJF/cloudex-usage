@@ -145,10 +145,10 @@ ProgressBar marker. Shared changes land only in their owning slices.
   5-hour value the existing muted foreground role while preserving explicit window
   accessibility. Small: one hierarchy invariant, at most 8 edited files and 350
   handwritten lines.
-- [ ] `SURF-008` — add fixed provider-window duration, a global default-on Time pace
-  setting, and optional neutral markers that follow Used/Left presentation without
-  changing provider or stored usage. Medium: one duration-to-marker invariant, at
-  most 15 edited files and 800 handwritten lines.
+- [x] `SURF-008` — snapshot optional fixed provider-window duration, require it from
+  built-ins, and derive bounded elapsed percentage. Medium: ≤12 files / 500 lines.
+- [ ] `SURF-009` — add default-on Time pace markers that follow Used/Left and the
+  visible tick without changing usage. Medium: ≤15 files / 800 lines.
 
 ## Non-Scope
 

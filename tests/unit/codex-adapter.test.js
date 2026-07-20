@@ -99,7 +99,9 @@ try {
             cancelRefresh: () => cancelled++};
         const provider = createCodexProvider(source);
         assert(Object.isFrozen(provider) && provider.id === 'codex' &&
-            provider.windows[0].dataRole === 'dataCodexWeekly', 'metadata');
+            provider.windows[0].dataRole === 'dataCodexWeekly' &&
+            provider.windows[0].durationMs === 604_800_000 &&
+            Object.isFrozen(provider.windows[0]), 'metadata');
         let observed;
         provider.subscribeEligibility(value => observed = value);
         listener('invalid');

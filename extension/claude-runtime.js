@@ -34,9 +34,11 @@ export function createClaudeProvider(runtime) {
         windows: Object.freeze([
             Object.freeze({
                 id: 'short', label: '5-hour window', dataRole: 'dataClaudeShort',
+                durationMs: 5 * 60 * 60 * 1000,
             }),
             Object.freeze({
                 id: 'weekly', label: 'Weekly window', dataRole: 'dataClaudeWeekly',
+                durationMs: 7 * 24 * 60 * 60 * 1000,
             }),
         ]),
         isEligible() {

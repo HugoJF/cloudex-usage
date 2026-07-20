@@ -116,7 +116,11 @@ try {
         assert(Object.isFrozen(provider) && provider.id === 'claude' &&
             provider.order === 0 &&
             provider.windows[0].dataRole === 'dataClaudeShort' &&
-            provider.windows[1].dataRole === 'dataClaudeWeekly', 'metadata');
+            provider.windows[0].durationMs === 18_000_000 &&
+            provider.windows[1].dataRole === 'dataClaudeWeekly' &&
+            provider.windows[1].durationMs === 604_800_000 &&
+            Object.isFrozen(provider.windows[0]) &&
+            Object.isFrozen(provider.windows[1]), 'metadata');
         let observed;
         provider.subscribeEligibility(value => observed = value);
         listener('invalid');

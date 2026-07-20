@@ -24,6 +24,18 @@ function requireCallback(value, name) {
     return value;
 }
 
+function requirePositiveSafeInteger(value, name) {
+    if (!Number.isSafeInteger(value) || value <= 0)
+        throw new Error(`${name} must be a positive safe integer`);
+    return value;
+}
+
+function requireNonnegativeSafeInteger(value, name) {
+    if (!Number.isSafeInteger(value) || value < 0)
+        throw new Error(`${name} must be a non-negative safe integer`);
+    return value;
+}
+
 function requirePath(value, name) {
     if (typeof value !== 'string' || !SAFE_PATH.test(value))
         throw new Error(`${name} must be a safe package-relative path`);
@@ -65,13 +77,19 @@ function snapshotPresentation(provider, dataRoles, id, read) {
         ids.add(windowId);
         const windowLabel = read(() => window.label);
         const dataRole = read(() => window.dataRole);
+        const durationMs = read(() => window.durationMs);
         if (!dataRoles.includes(dataRole))
             throw new Error('Provider window dataRole must be token-backed');
-        windowSnapshots.push(frozen({
+        const windowSnapshot = {
             id: windowId,
             label: requireText(windowLabel, 'Provider window label'),
             dataRole,
-        }));
+        };
+        if (durationMs !== undefined) {
+            windowSnapshot.durationMs = requirePositiveSafeInteger(durationMs,
+                'Provider window duration');
+        }
+        windowSnapshots.push(frozen(windowSnapshot));
     }
     return frozen({
         id,
@@ -153,6 +171,20 @@ export function nextMinuteDelay(nowMs) {
         throw new Error('Presentation clock must be a non-negative safe integer');
     const remainder = nowMs % 60000;
     return remainder === 0 ? 60000 : 60000 - remainder;
+}
+
+export function elapsedWindowPercent(durationMs, resetAtMs, nowMs) {
+    requirePositiveSafeInteger(durationMs, 'Window duration');
+    requireNonnegativeSafeInteger(resetAtMs, 'Window reset');
+    requireNonnegativeSafeInteger(nowMs, 'Presentation clock');
+    const startAtMs = resetAtMs - durationMs;
+    if (nowMs <= startAtMs)
+        return 0;
+    if (nowMs >= resetAtMs)
+        return 100;
+    const remainingMs = resetAtMs - nowMs;
+    const elapsedMs = durationMs - remainingMs;
+    return elapsedMs / durationMs * 100;
 }
 
 export class SurfaceController {
@@ -318,7 +350,7 @@ export class SurfaceController {
             const metrics = result?.status === 'available'
                 ? presentation.windows.map(window => {
                     const reading = result.readings.find(item => item.id === window.id);
-                    return frozen({
+                    const metric = {
                         id: `${presentation.id}--${window.id}`,
                         windowId: window.id,
                         label: window.label,
@@ -327,7 +359,12 @@ export class SurfaceController {
                         resetLabel: formatReset(reading.resetAtMs, now),
                         dataRole: window.dataRole,
                         accessibleName: `${presentation.label} ${window.label} at ${reading.percent} percent`,
-                    });
+                    };
+                    if (window.durationMs !== undefined) {
+                        metric.elapsedPercent = elapsedWindowPercent(
+                            window.durationMs, reading.resetAtMs, now);
+                    }
+                    return frozen(metric);
                 })
                 : frozen([]);
             return frozen({

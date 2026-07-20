@@ -32,6 +32,7 @@ export function createCodexProvider(runtime) {
         }),
         windows: Object.freeze([Object.freeze({
             id: 'weekly', label: 'Weekly window', dataRole: 'dataCodexWeekly',
+            durationMs: 7 * 24 * 60 * 60 * 1000,
         })]),
         isEligible() {
             try { return runtime.isPresent() === true; } catch {

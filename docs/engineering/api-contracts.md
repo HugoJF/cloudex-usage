@@ -13,7 +13,7 @@ same slot.
 | `id`, `order` | Globally unique safe ID and non-negative integer. Providers sort by order, then ID. |
 | `label`, `detail` | Required nonempty presentation text. |
 | `marks` | Required package-relative `darkPanel`, `lightPanel`, and `popup` paths plus an accessible name. Absolute or traversal paths fail. |
-| `windows` | Nonempty, uniquely identified usage windows in declared order. Each has label and a token-backed `dataRole`. |
+| `windows` | Nonempty, uniquely identified usage windows in declared order. Each has label, a token-backed `dataRole`, and an optional positive safe-integer `durationMs`. Built-in windows always declare their fixed duration. |
 | `isEligible()` | Returns a strict boolean. |
 | `subscribeEligibility(callback)` | Observes strict boolean eligibility values and returns an unsubscribe callback. Invalid observations fail closed as ineligible. |
 | `refresh()` | Asynchronously returns one availability result. |
@@ -31,6 +31,12 @@ that shared cycle immediately: an idle cadence timer is replaced, while demand d
 an in-flight cycle coalesces into one follow-up. Adapters own presence detection and
 provider access. Provider payloads, credentials, and errors never cross this
 presentation contract.
+
+When a window declares `durationMs`, the surface snapshots it as immutable metadata
+and derives an ephemeral `elapsedPercent` from its reset timestamp and the current
+clock. The result is clamped to 0–100; an omitted duration produces no elapsed value,
+and no duration or elapsed percentage is persisted. Duration is authoritative for
+this calculation and is never inferred from a label or data role.
 
 ## Codex credential and usage boundary
 
