@@ -5,6 +5,7 @@ export const LIMIT_KEYS = Object.freeze([
 ]);
 
 export const RANGES = Object.freeze(['1h', '6h', '1d', '7d', '30d']);
+export const REFINEMENT_VARIANTS = Object.freeze(['a', 'b', 'c']);
 
 export const USAGE = Object.freeze({
     claudeShort: Object.freeze({
@@ -12,6 +13,7 @@ export const USAGE = Object.freeze({
         provider: 'Claude',
         window: '5-hour window',
         percent: 8,
+        pacePercent: 23,
         reset: 'Resets in 3 hr, 50 min',
         dataRole: 'dataClaudeShort',
     }),
@@ -20,6 +22,7 @@ export const USAGE = Object.freeze({
         provider: 'Claude',
         window: 'Weekly window',
         percent: 68,
+        pacePercent: 76,
         reset: 'Resets in 1 day, 17 hr',
         dataRole: 'dataClaudeWeekly',
     }),
@@ -28,6 +31,7 @@ export const USAGE = Object.freeze({
         provider: 'Codex',
         window: 'Weekly window',
         percent: 42,
+        pacePercent: 42,
         reset: 'Resets in 4 days, 2 hr',
         dataRole: 'dataCodexWeekly',
     }),
@@ -58,6 +62,8 @@ export class CatalogState {
         this.showCodexWeekly = true;
         this.presentOnly = true;
         this.localHistory = true;
+        this.timePace = true;
+        this.refinementVariant = null;
     }
 
     setView(view) {
@@ -72,8 +78,23 @@ export class CatalogState {
         this.activeRange = range;
     }
 
+    cycleRange() {
+        const index = RANGES.indexOf(this.activeRange);
+        this.activeRange = RANGES[(index + 1) % RANGES.length];
+        return this.activeRange;
+    }
+
+    setRefinementVariant(variant) {
+        if (!REFINEMENT_VARIANTS.includes(variant))
+            throw new Error(`Unknown refinement variant: ${variant}`);
+        this.refinementVariant = variant;
+        this.view = 'usage';
+        this.activeRange = '6h';
+        this.timePace = true;
+    }
+
     toggle(key) {
-        if (![...LIMIT_KEYS, 'presentOnly', 'localHistory'].includes(key))
+        if (![...LIMIT_KEYS, 'presentOnly', 'localHistory', 'timePace'].includes(key))
             throw new Error(`Unknown catalog toggle: ${key}`);
         this[key] = !this[key];
         return this[key];
@@ -96,6 +117,8 @@ export class CatalogState {
             showCodexWeekly: this.showCodexWeekly,
             presentOnly: this.presentOnly,
             localHistory: this.localHistory,
+            timePace: this.timePace,
+            refinementVariant: this.refinementVariant,
         });
     }
 }

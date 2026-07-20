@@ -20,6 +20,13 @@ const EXPECTED_CAPTURES = [
     'panel-visibility-off.png',
     'panel-light-100.png',
     'panel-dark-200.png',
+    'usage-refinement-a-panel-dark-100.png',
+    'usage-refinement-a-popup-dark-100.png',
+    'usage-refinement-a-settings-dark-100.png',
+    'usage-refinement-b-panel-dark-100.png',
+    'usage-refinement-b-popup-dark-100.png',
+    'usage-refinement-c-panel-dark-100.png',
+    'usage-refinement-c-popup-dark-100.png',
 ];
 
 export const METRICS = {};
@@ -71,21 +78,39 @@ function captureDirectory() {
     return repo.get_child('design').get_child('captures');
 }
 
-async function captureActor(actor, filename, padding = 8) {
-    assert(actor?.is_mapped(), `${filename} actor is not mapped`);
+async function captureActor(actorSource, filename, padding = 8) {
     const directory = captureDirectory();
     if (!directory.query_exists(null))
         directory.make_directory_with_parents(null);
 
-    const [actorX, actorY] = actor.get_transformed_position();
-    const [actorWidth, actorHeight] = actor.get_transformed_size();
+    const getActor = typeof actorSource === 'function'
+        ? actorSource
+        : () => actorSource;
+    let actor = null;
+    let geometry = null;
+    for (let attempt = 0; attempt < 60; attempt++) {
+        const candidate = getActor();
+        if (candidate?.is_mapped()) {
+            const [actorX, actorY] = candidate.get_transformed_position();
+            const [actorWidth, actorHeight] = candidate.get_transformed_size();
+            if (actorWidth > 0 && actorHeight > 0) {
+                actor = candidate;
+                geometry = {actorX, actorY, actorWidth, actorHeight};
+                break;
+            }
+        }
+        await Scripting.sleep(80);
+    }
+    assert(actor?.is_mapped(), `${filename} actor is not mapped`);
+    assert(geometry, `${filename} capture has empty geometry`);
+
+    const {actorX, actorY, actorWidth, actorHeight} = geometry;
     const x = Math.max(0, Math.floor(actorX - padding));
     const y = Math.max(0, Math.floor(actorY - padding));
     const width = Math.min(global.screen_width - x,
         Math.ceil(actorWidth + padding * 2));
     const height = Math.min(global.screen_height - y,
         Math.ceil(actorHeight + padding * 2));
-    assert(width > 0 && height > 0, `${filename} capture has empty geometry`);
 
     const file = directory.get_child(filename);
     const stream = file.replace(null, false,
@@ -121,7 +146,8 @@ export async function run() {
         'panel shows both Claude percentages');
     assert(collectLabelText(actors.panel).join(' ').includes('42%'),
         'panel shows the Codex weekly percentage');
-    await captureActor(actors.panel, EXPECTED_CAPTURES[0], 6);
+    await captureActor(() => catalog.getCatalogActors().panel,
+        EXPECTED_CAPTURES[0], 6);
     await settle();
 
     assert(!actors.indicator.menu.isEmpty(), 'Shell popup contains the catalog');
@@ -192,7 +218,8 @@ export async function run() {
     offToggle.add_style_pseudo_class('hover');
     offToggle.grab_key_focus();
     await captureActor(actors.indicator.menu.actor, EXPECTED_CAPTURES[4]);
-    await captureActor(actors.panel, EXPECTED_CAPTURES[5], 6);
+    await captureActor(() => catalog.getCatalogActors().panel,
+        EXPECTED_CAPTURES[5], 6);
     offToggle.remove_style_pseudo_class('hover');
 
     click(offToggle, 'Claude 5-hour visibility switch restore');
@@ -201,23 +228,82 @@ export async function run() {
     actors.indicator.menu.close();
     await settle();
 
-    const originalScheme = Main.sessionMode.colorScheme;
-    setShellColorScheme('prefer-light');
+    catalog.showRefinementVariant('a');
     await settle();
     actors = catalog.getCatalogActors();
-    await captureActor(actors.panel, EXPECTED_CAPTURES[6], 6);
-    setShellColorScheme(originalScheme);
+    assert(collectLabelText(actors.panel).join(' ').includes('8% · 68%'),
+        'variant A keeps compact percentages');
+    await captureActor(() => catalog.getCatalogActors().panel,
+        EXPECTED_CAPTURES[8], 6);
+    actors.indicator.menu.open();
+    await settle();
+    actors = catalog.getCatalogActors();
+    assert(findActor(actors.popover, 'refinement-refresh-button')
+        .get_accessible_name() === 'Refresh usage',
+    'variant A moves refresh beside settings');
+    assert(findActor(actors.popover, 'refinement-range-select')
+        .accessible_role === Atk.Role.COMBO_BOX,
+    'variant A exposes the compact range as a select');
+    assert(findActor(actors.popover, 'pace-claudeShort'),
+        'variant A shows a Time pace marker');
+    assert(!collectLabelText(findActor(actors.popover, 'refinement-provider-claude'))
+        .includes('Two usage windows'),
+    'variant A removes redundant provider detail');
+    await captureActor(actors.indicator.menu.actor, EXPECTED_CAPTURES[9]);
+    click(findActor(actors.popover, 'settings-button'), 'variant A settings');
+    await settle();
+    actors = catalog.getCatalogActors();
+    const paceToggle = findActor(actors.popover, 'toggle-timePace');
+    assert(paceToggle?.checked &&
+        collectLabelText(actors.popover).includes('Time pace markers'),
+    'variant A settings expose Time pace enabled by default');
+    await captureActor(actors.indicator.menu.actor, EXPECTED_CAPTURES[10]);
+    click(paceToggle, 'Time pace off');
+    await settle();
+    actors = catalog.getCatalogActors();
+    click(findActor(actors.popover, 'back-button'), 'variant A settings back');
+    await settle();
+    actors = catalog.getCatalogActors();
+    assert(!findActor(actors.popover, 'pace-claudeShort'),
+        'Time pace setting removes every marker');
+    actors.indicator.menu.close();
     await settle();
 
-    const themeContext = St.ThemeContext.get_for_stage(global.stage);
-    const originalScale = themeContext.scale_factor;
-    themeContext.set_scale_factor(2);
+    catalog.showRefinementVariant('b');
     await settle();
     actors = catalog.getCatalogActors();
-    assert(actors.panel.height <= Main.panel.height,
-        'panel indicator remains bounded at 200% scaling');
-    await captureActor(actors.panel, EXPECTED_CAPTURES[7], 6);
-    themeContext.set_scale_factor(originalScale);
+    assert(collectLabelText(actors.panel).join(' ').includes('5h 8% · 68%'),
+        'variant B labels the compact 5-hour value');
+    await captureActor(() => catalog.getCatalogActors().panel,
+        EXPECTED_CAPTURES[11], 6);
+    actors.indicator.menu.open();
+    await settle();
+    actors = catalog.getCatalogActors();
+    assert(collectLabelText(actors.popover).includes('Refreshing…') &&
+        collectLabelText(actors.popover).includes('Time pace 23%') &&
+        collectLabelText(actors.popover).includes('Last 6 hours'),
+    'variant B makes refresh, pace, and range explicit');
+    await captureActor(actors.indicator.menu.actor, EXPECTED_CAPTURES[12]);
+    actors.indicator.menu.close();
+    await settle();
+
+    catalog.showRefinementVariant('c');
+    await settle();
+    actors = catalog.getCatalogActors();
+    assert(collectLabelText(actors.panel).join(' ').includes('8% | 68%'),
+        'variant C uses a stronger compact separator');
+    await captureActor(() => catalog.getCatalogActors().panel,
+        EXPECTED_CAPTURES[13], 6);
+    actors.indicator.menu.open();
+    await settle();
+    actors = catalog.getCatalogActors();
+    const variantCText = collectLabelText(actors.popover);
+    assert(findActor(actors.popover, 'refinement-status-refresh') &&
+        variantCText.includes('Pace 23%') &&
+        !findActor(actors.popover, 'refinement-footer'),
+    'variant C composes status and pace into the denser header rail');
+    await captureActor(actors.indicator.menu.actor, EXPECTED_CAPTURES[14]);
+    actors.indicator.menu.close();
     await settle();
 
     catalog.disable();
@@ -228,4 +314,25 @@ export async function run() {
     await settle();
     assert(Main.panel.statusArea[UUID],
         'catalog can be enabled again after complete cleanup');
+
+    const originalScheme = Main.sessionMode.colorScheme;
+    setShellColorScheme('prefer-light');
+    await settle();
+    actors = catalog.getCatalogActors();
+    await captureActor(() => catalog.getCatalogActors().panel,
+        EXPECTED_CAPTURES[6], 6);
+    setShellColorScheme(originalScheme);
+    await settle();
+
+    const themeContext = St.ThemeContext.get_for_stage(global.stage);
+    const originalScale = themeContext.scale_factor;
+    themeContext.set_scale_factor(2);
+    await settle();
+    actors = catalog.getCatalogActors();
+    assert(actors.panel.height <= Main.panel.height,
+        'panel indicator remains bounded at 200% scaling');
+    await captureActor(() => catalog.getCatalogActors().panel,
+        EXPECTED_CAPTURES[7], 6);
+    themeContext.set_scale_factor(originalScale);
+    await settle();
 }

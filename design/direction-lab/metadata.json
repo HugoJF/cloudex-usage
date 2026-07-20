@@ -3,5 +3,5 @@
   "description": "Static Direction D primitive catalog for the Claudex Usage GNOME panel surface.",
   "uuid": "claudex-usage-design@hugo.local",
   "shell-version": ["50"],
-  "version": 2
+  "version": 3
 }

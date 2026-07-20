@@ -28,9 +28,9 @@ global switch, default on.
 
 Review captures:
 
-- `usage-refinement-a-panel-dark-100.png`
-- `usage-refinement-a-popup-dark-100.png`
-- `usage-refinement-a-settings-dark-100.png`
+- [Compact panel](../captures/usage-refinement-a-panel-dark-100.png)
+- [Usage popup](../captures/usage-refinement-a-popup-dark-100.png)
+- [Settings](../captures/usage-refinement-a-settings-dark-100.png)
 
 ## Variant B — Explicit Pace
 
@@ -41,20 +41,20 @@ prefix. This minimizes interpretation cost at the price of width and repeated co
 
 Review captures:
 
-- `usage-refinement-b-panel-dark-100.png`
-- `usage-refinement-b-popup-dark-100.png`
+- [Compact panel](../captures/usage-refinement-b-panel-dark-100.png)
+- [Usage popup](../captures/usage-refinement-b-popup-dark-100.png)
 
 ## Variant C — Status Rail
 
 Refresh and freshness become one compact header control, the history select keeps
-the short `6h` label, and each marker uses a small `PACE` caption above the track.
+the short `6h` label, and each marker uses a small `Pace` caption above the track.
 The footer disappears. This is the densest, most instrument-like option and competes
 most strongly with current usage values.
 
 Review captures:
 
-- `usage-refinement-c-panel-dark-100.png`
-- `usage-refinement-c-popup-dark-100.png`
+- [Compact panel](../captures/usage-refinement-c-panel-dark-100.png)
+- [Usage popup](../captures/usage-refinement-c-popup-dark-100.png)
 
 ## Primitive budget
 

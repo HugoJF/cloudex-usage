@@ -3,7 +3,9 @@
 These images are deterministic actor-level captures from isolated GNOME Shell 50.1
 journeys. J-001 covers the developer-only primitive catalog: its selected Direction D
 panel, usage and settings states, range focus/hover, off visibility switch, light
-Shell chrome, and 200% panel scaling.
+Shell chrome, and 200% panel scaling. Its refinement review adds panel and popup
+captures for Quiet Utility, Explicit Pace, and Status Rail, plus the proposed
+default-on Time pace setting in Quiet Utility.
 
 J-002 covers the provider-free production package after harness-only providers are
 registered through its public contract: dark panel and popup, refresh focus/hover,

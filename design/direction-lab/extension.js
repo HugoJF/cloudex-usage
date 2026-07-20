@@ -1,3 +1,4 @@
+import Atk from 'gi://Atk';
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
@@ -8,7 +9,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {CatalogState, HISTORY, RANGES, USAGE} from './catalog-state.js';
-import {validateTokens} from './shared/token-geometry.js';
+import {progressWidth, validateTokens} from './shared/token-geometry.js';
 import {
     ChoiceRow,
     FooterStatus,
@@ -17,6 +18,7 @@ import {
     Legend,
     PanelIndicator,
     PopoverScaffold,
+    ProgressBar,
     ProviderCard,
     RangeSelector,
     SettingsRow,
@@ -56,6 +58,437 @@ function providerModel(id, labelText, detail, iconPath) {
         iconPath,
         iconAccessibleName: `${labelText} mark`,
     };
+}
+
+function providerIcon({path, accessibleName, tokens}) {
+    const actor = new St.Icon({
+        style_class: 'claudex-provider-icon',
+        gicon: new Gio.FileIcon({file: Gio.File.new_for_path(path)}),
+        icon_size: tokens.size.providerIcon,
+        y_align: Clutter.ActorAlign.CENTER,
+    });
+    actor.set_accessible_name(accessibleName);
+    return actor;
+}
+
+function panelIcon({path, accessibleName, tokens}) {
+    const actor = new St.Icon({
+        style_class: 'claudex-panel-provider-icon',
+        gicon: new Gio.FileIcon({file: Gio.File.new_for_path(path)}),
+        icon_size: tokens.size.panelProviderIcon,
+        y_align: Clutter.ActorAlign.CENTER,
+    });
+    actor.set_accessible_name(accessibleName);
+    return actor;
+}
+
+function updatePanelThemeIcons(actor, extensionPath, lightPanel) {
+    const providers = ['claude', 'codex'];
+    const groups = actor.get_children().filter(child =>
+        child.has_style_class_name?.('claudex-panel-provider'));
+    groups.forEach((group, index) => {
+        const icon = group.get_first_child();
+        const provider = providers[index];
+        const suffix = lightPanel ? '-light' : '';
+        icon.gicon = new Gio.FileIcon({
+            file: Gio.File.new_for_path(
+                `${extensionPath}/icons/${provider}${suffix}.svg`),
+        });
+    });
+}
+
+function compactPanelValue(text, muted, tokens) {
+    return label(text, 'claudex-panel-selected-value', muted
+        ? {style: `color: ${tokens.color.foregroundMuted};`}
+        : {});
+}
+
+function updateRefinementPanel(actor, variant) {
+    actor._claudeShortValue.text = variant === 'b' ? '5h 8%' : '8%';
+    actor._claudeSeparator.text = variant === 'c' ? '|' : '·';
+    actor.queue_relayout();
+}
+
+function buildRefinementPanel({variant, extensionPath, tokens, lightPanel}) {
+    const actor = box('claudex-panel claudex-panel-selected',
+        Clutter.Orientation.HORIZONTAL, {name: 'refinement-panel'});
+    const iconPath = provider =>
+        `${extensionPath}/icons/${provider}${lightPanel ? '-light' : ''}.svg`;
+
+    const claude = box('claudex-panel-provider');
+    claude.add_child(panelIcon({
+        path: iconPath('claude'),
+        accessibleName: 'Claude mark, 5-hour 8 percent used, weekly 68 percent used',
+        tokens,
+    }));
+    actor._claudeShortValue = compactPanelValue('8%', true, tokens);
+    actor._claudeSeparator = compactPanelValue('·', false, tokens);
+    claude.add_child(actor._claudeShortValue);
+    claude.add_child(actor._claudeSeparator);
+    claude.add_child(compactPanelValue('68%', false, tokens));
+    actor.add_child(claude);
+    actor.add_child(new St.Widget({
+        style_class: 'claudex-panel-provider-divider',
+        width: 1,
+        height: 12,
+    }));
+    const codex = box('claudex-panel-provider');
+    codex.add_child(panelIcon({
+        path: iconPath('codex'),
+        accessibleName: 'Codex mark, weekly 42 percent used',
+        tokens,
+    }));
+    codex.add_child(compactPanelValue('42%', false, tokens));
+    actor.add_child(codex);
+    updateRefinementPanel(actor, variant);
+    return actor;
+}
+
+function rangeLabel(range, variant) {
+    if (variant !== 'b')
+        return range;
+    return {
+        '1h': 'Last hour',
+        '6h': 'Last 6 hours',
+        '1d': 'Last day',
+        '7d': 'Last 7 days',
+        '30d': 'Last 30 days',
+    }[range];
+}
+
+function rangeSelectPreview({range, variant, onActivate, tokens}) {
+    const row = box('selected-choice-row', Clutter.Orientation.HORIZONTAL);
+    row.add_child(label(rangeLabel(range, variant), 'selected-choice-value'));
+    row.add_child(new St.Icon({
+        icon_name: 'pan-down-symbolic',
+        icon_size: tokens.size.settingsIcon / 2,
+    }));
+    const actor = new St.Button({
+        name: 'refinement-range-select',
+        style_class: 'selected-choice-button',
+        can_focus: true,
+        reactive: true,
+        track_hover: true,
+        child: row,
+        accessible_role: Atk.Role.COMBO_BOX,
+    });
+    actor.set_accessible_name(`Usage history range, ${rangeLabel(range, variant)}`);
+    actor.connect('clicked', onActivate);
+    return actor;
+}
+
+function statusOnlyFooter(text) {
+    const actor = box('claudex-footer', Clutter.Orientation.HORIZONTAL, {
+        name: 'refinement-footer',
+        x_expand: true,
+    });
+    actor.add_child(label(text, 'claudex-updated', {x_expand: true}));
+    return actor;
+}
+
+function refinementProviderHeader({id, title, iconPath, tokens}) {
+    const actor = box('claudex-provider-header', Clutter.Orientation.HORIZONTAL, {
+        x_expand: true,
+    });
+    actor.add_child(providerIcon({
+        path: iconPath,
+        accessibleName: `${title} mark`,
+        tokens,
+    }));
+    actor.add_child(label(title, 'claudex-provider-name', {x_expand: true}));
+    actor.set_name(`refinement-provider-${id}`);
+    return actor;
+}
+
+function refinementMetric({usage, variant, showTimePace, tokens}) {
+    const actor = column('claudex-metric', {x_expand: true});
+    const top = box('claudex-metric-top', Clutter.Orientation.HORIZONTAL, {
+        x_expand: true,
+    });
+    top.add_child(label(usage.window, 'claudex-window', {x_expand: true}));
+    top.add_child(label(`${usage.percent}%`, 'claudex-percent'));
+    actor.add_child(top);
+    if (variant === 'c' && showTimePace) {
+        const pace = box('claudex-metric-top', Clutter.Orientation.HORIZONTAL, {
+            x_expand: true,
+        });
+        pace.add_child(new St.Widget({x_expand: true}));
+        pace.add_child(label(`Pace ${usage.pacePercent}%`, 'claudex-updated'));
+        actor.add_child(pace);
+    }
+    const progress = ProgressBar({
+        metric: {
+            ...metricModel(usage),
+            accessibleName: `${usage.percent}% of ${usage.window} used` +
+                (showTimePace ? `; Time pace ${usage.pacePercent}% used` : ''),
+        },
+        tokens,
+    });
+    if (showTimePace) {
+        const markerWidth = 2;
+        progress.add_child(new St.Widget({
+            name: `pace-${usage.id}`,
+            style: `background-color: ${tokens.color.foregroundPrimary};`,
+            width: markerWidth,
+            height: tokens.size.progressHeight,
+            x: Math.max(0, Math.min(tokens.size.progressWidth - markerWidth,
+                progressWidth(usage.pacePercent, tokens.size.progressWidth) -
+                    markerWidth / 2)),
+            y: 0,
+        }));
+    }
+    actor.add_child(progress);
+    if (variant === 'b' && showTimePace) {
+        const meta = box('claudex-metric-top', Clutter.Orientation.HORIZONTAL, {
+            x_expand: true,
+        });
+        meta.add_child(label(usage.reset, 'claudex-reset', {x_expand: true}));
+        meta.add_child(label(`Time pace ${usage.pacePercent}%`, 'claudex-reset'));
+        actor.add_child(meta);
+    } else {
+        actor.add_child(label(usage.reset, 'claudex-reset'));
+    }
+    return actor;
+}
+
+function refinementProviderCard({id, title, metrics, variant, showTimePace,
+    extensionPath, tokens}) {
+    const actor = column('selected-provider-card', {name: `refinement-card-${id}`});
+    actor.add_child(refinementProviderHeader({
+        id,
+        title,
+        iconPath: `${extensionPath}/icons/${id}.svg`,
+        tokens,
+    }));
+    for (const usage of metrics) {
+        actor.add_child(refinementMetric({
+            usage,
+            variant,
+            showTimePace,
+            tokens,
+        }));
+    }
+    return actor;
+}
+
+function statusRefreshButton({onActivate, tokens}) {
+    const row = box('selected-choice-row', Clutter.Orientation.HORIZONTAL);
+    row.add_child(new St.Icon({
+        icon_name: 'view-refresh-symbolic',
+        icon_size: tokens.size.settingsIcon,
+    }));
+    row.add_child(label('Updated 3 min', 'selected-choice-value'));
+    const actor = new St.Button({
+        name: 'refinement-status-refresh',
+        style_class: 'selected-choice-button',
+        can_focus: true,
+        reactive: true,
+        track_hover: true,
+        child: row,
+    });
+    actor.set_accessible_name('Refresh usage, updated 3 minutes ago');
+    actor.connect('clicked', onActivate);
+    return actor;
+}
+
+function buildRefinementUsagePopover({state, extensionPath, tokens, actions}) {
+    const variant = state.refinementVariant;
+    const header = box('selected-header', Clutter.Orientation.HORIZONTAL, {
+        x_expand: true,
+    });
+    const copy = column('selected-title-copy', {x_expand: true});
+    copy.add_child(label('USAGE', 'selected-kicker'));
+    copy.add_child(label('Claude + Codex', 'selected-title'));
+    header.add_child(copy);
+    if (variant === 'b')
+        header.add_child(label('Refreshing…', 'claudex-updated'));
+    if (variant === 'c') {
+        header.add_child(statusRefreshButton({
+            onActivate: actions.refresh,
+            tokens,
+        }));
+    } else {
+        header.add_child(IconButton({
+            id: 'refinement-refresh-button',
+            iconName: variant === 'b'
+                ? 'process-working-symbolic'
+                : 'view-refresh-symbolic',
+            accessibleName: variant === 'b' ? 'Refreshing usage' : 'Refresh usage',
+            onActivate: actions.refresh,
+            tokens,
+        }));
+    }
+    header.add_child(IconButton({
+        id: 'settings-button',
+        iconName: 'preferences-system-symbolic',
+        accessibleName: 'Open settings',
+        onActivate: actions.openSettings,
+        tokens,
+    }));
+
+    const history = column('selected-history');
+    const historyHeader = box('selected-history-header',
+        Clutter.Orientation.HORIZONTAL, {x_expand: true});
+    historyHeader.add_child(label('Usage history', 'selected-section-title', {
+        x_expand: true,
+    }));
+    historyHeader.add_child(rangeSelectPreview({
+        range: state.activeRange,
+        variant,
+        onActivate: actions.cycleRange,
+        tokens,
+    }));
+    history.add_child(historyHeader);
+    history.add_child(HistoryChart({
+        id: 'refinement-history-chart',
+        accessibleName: `Usage history for ${state.activeRange}, ` +
+            'from zero to one hundred percent',
+        axisLabels: ['100%', '75%', '50%', '25%', '0%'],
+        series: [
+            {
+                id: 'claudeShort',
+                values: HISTORY.claudeShort,
+                dataRole: USAGE.claudeShort.dataRole,
+                strokeWidth: tokens.stroke.claudeShort,
+            },
+            {
+                id: 'claudeWeekly',
+                values: HISTORY.claudeWeekly,
+                dataRole: USAGE.claudeWeekly.dataRole,
+                strokeWidth: tokens.stroke.weekly,
+            },
+            {
+                id: 'codexWeekly',
+                values: HISTORY.codexWeekly,
+                dataRole: USAGE.codexWeekly.dataRole,
+                strokeWidth: tokens.stroke.weekly,
+            },
+        ],
+        tokens,
+    }));
+    history.add_child(Legend({
+        entries: [
+            {id: 'claudeShort', label: 'Claude 5-hour',
+                dataRole: USAGE.claudeShort.dataRole},
+            {id: 'claudeWeekly', label: 'Claude weekly',
+                dataRole: USAGE.claudeWeekly.dataRole},
+            {id: 'codexWeekly', label: 'Codex weekly',
+                dataRole: USAGE.codexWeekly.dataRole},
+        ],
+        tokens,
+    }));
+
+    const children = [
+        header,
+        refinementProviderCard({
+            id: 'claude',
+            title: 'Claude',
+            metrics: [USAGE.claudeShort, USAGE.claudeWeekly],
+            variant,
+            showTimePace: state.timePace,
+            extensionPath,
+            tokens,
+        }),
+        refinementProviderCard({
+            id: 'codex',
+            title: 'Codex',
+            metrics: [USAGE.codexWeekly],
+            variant,
+            showTimePace: state.timePace,
+            extensionPath,
+            tokens,
+        }),
+        history,
+    ];
+    if (variant !== 'c')
+        children.push(statusOnlyFooter('Updated 3 min ago'));
+    return PopoverScaffold({
+        id: `usage-refinement-${variant}`,
+        view: 'usage',
+        children,
+    });
+}
+
+function buildRefinementSettingsPopover({state, tokens, actions}) {
+    const header = box('selected-settings-header',
+        Clutter.Orientation.HORIZONTAL, {x_expand: true});
+    const back = new St.Button({
+        name: 'back-button',
+        style_class: 'selected-back-button',
+        can_focus: true,
+        reactive: true,
+        track_hover: true,
+        child: label('← Usage', 'claudex-button-label'),
+    });
+    back.set_accessible_name('Back to usage');
+    back.connect('clicked', actions.openUsage);
+    header.add_child(back);
+    header.add_child(label('Settings', 'selected-settings-title', {x_expand: true}));
+
+    const panelSection = column('selected-settings-section');
+    panelSection.add_child(label('PANEL', 'selected-settings-kicker'));
+    for (const [id, title] of [
+        ['showClaudeShort', 'Claude 5-hour'],
+        ['showClaudeWeekly', 'Claude weekly'],
+        ['showCodexWeekly', 'Codex weekly'],
+    ]) {
+        panelSection.add_child(SettingsRow({
+            id,
+            title,
+            description: 'Show this limit in the top panel',
+            accessibleName: title,
+            active: state[id],
+            onToggle: actions.toggle,
+            tokens,
+        }));
+    }
+    panelSection.add_child(ChoiceRow({
+        id: 'usage-display-choice',
+        title: 'Usage display',
+        value: 'Used  ›',
+        accessibleName: 'Usage display, Used',
+        onActivate: () => {},
+    }));
+
+    const displaySection = column('selected-settings-section');
+    displaySection.add_child(label('DISPLAY', 'selected-settings-kicker'));
+    displaySection.add_child(SettingsRow({
+        id: 'timePace',
+        title: 'Time pace markers',
+        description: 'Compare usage with elapsed window time',
+        accessibleName: 'Time pace markers',
+        active: state.timePace,
+        onToggle: actions.toggle,
+        tokens,
+    }));
+
+    const historySection = column('selected-settings-section');
+    historySection.add_child(label('HISTORY', 'selected-settings-kicker'));
+    historySection.add_child(SettingsRow({
+        id: 'localHistory',
+        title: 'Local usage history',
+        description: 'Record and chart usage on this machine',
+        accessibleName: 'Local usage history',
+        active: state.localHistory,
+        onToggle: actions.toggle,
+        tokens,
+    }));
+
+    const updatesSection = column('selected-settings-section');
+    updatesSection.add_child(label('UPDATES', 'selected-settings-kicker'));
+    updatesSection.add_child(ChoiceRow({
+        id: 'refresh-interval-choice',
+        title: 'Refresh while visible',
+        value: `${state.refreshInterval}  ›`,
+        accessibleName: `Refresh while visible, ${state.refreshInterval}`,
+        onActivate: actions.cycleRefreshInterval,
+    }));
+
+    return PopoverScaffold({
+        id: 'usage-refinement-settings',
+        view: 'settings',
+        children: [header, panelSection, displaySection, historySection, updatesSection],
+    });
 }
 
 function buildPanel({state, extensionPath, tokens, lightPanel}) {
@@ -287,6 +720,7 @@ export default class ClaudexUsageCatalogExtension extends Extension {
     enable() {
         this._tokens = loadTokens(this.path);
         this._state = new CatalogState();
+        this._panelSignature = null;
         this._colorSchemeChangedId = St.Settings.get().connect(
             'notify::color-scheme', () => this._render());
 
@@ -320,6 +754,7 @@ export default class ClaudexUsageCatalogExtension extends Extension {
         this._panelHost = null;
         this._popoverHost = null;
         this._menuItem = null;
+        this._panelSignature = null;
         this._state = null;
         this._tokens = null;
     }
@@ -336,6 +771,11 @@ export default class ClaudexUsageCatalogExtension extends Extension {
         };
     }
 
+    showRefinementVariant(variant) {
+        this._state.setRefinementVariant(variant);
+        this._render();
+    }
+
     _replaceChild(host, child) {
         host.get_child()?.destroy();
         host.set_child(child);
@@ -343,12 +783,43 @@ export default class ClaudexUsageCatalogExtension extends Extension {
 
     _render() {
         const snapshot = this._state.snapshot();
-        this._replaceChild(this._panelHost, buildPanel({
-            state: snapshot,
-            extensionPath: this.path,
-            tokens: this._tokens,
-            lightPanel: Main.sessionMode.colorScheme === 'prefer-light',
-        }));
+        const lightPanel = Main.sessionMode.colorScheme === 'prefer-light';
+        const panelSignature = snapshot.refinementVariant
+            ? 'refinement'
+            : [
+                'baseline',
+                snapshot.showClaudeShort,
+                snapshot.showClaudeWeekly,
+                snapshot.showCodexWeekly,
+            ].join(':');
+        if (panelSignature !== this._panelSignature) {
+            const panel = snapshot.refinementVariant
+                ? buildRefinementPanel({
+                    variant: snapshot.refinementVariant,
+                    extensionPath: this.path,
+                    tokens: this._tokens,
+                    lightPanel,
+                })
+                : buildPanel({
+                    state: snapshot,
+                    extensionPath: this.path,
+                    tokens: this._tokens,
+                    lightPanel,
+            });
+            this._replaceChild(this._panelHost, panel);
+            panel.show();
+            this._panelHost.queue_relayout();
+            this._indicator.queue_relayout();
+            Main.panel.queue_relayout();
+            this._panelSignature = panelSignature;
+        }
+        updatePanelThemeIcons(this._panelHost.get_child(), this.path, lightPanel);
+        if (snapshot.refinementVariant) {
+            updateRefinementPanel(
+                this._panelHost.get_child(), snapshot.refinementVariant);
+            this._indicator.queue_relayout();
+            Main.panel.queue_relayout();
+        }
 
         const actions = {
             openSettings: () => {
@@ -363,6 +834,10 @@ export default class ClaudexUsageCatalogExtension extends Extension {
                 this._state.selectRange(range);
                 this._render();
             },
+            cycleRange: () => {
+                this._state.cycleRange();
+                this._render();
+            },
             toggle: key => {
                 this._state.toggle(key);
                 this._render();
@@ -374,14 +849,30 @@ export default class ClaudexUsageCatalogExtension extends Extension {
             refresh: () => this._render(),
         };
 
-        const popover = snapshot.view === 'settings'
-            ? buildSettingsPopover({state: snapshot, tokens: this._tokens, actions})
-            : buildUsagePopover({
-                state: snapshot,
-                extensionPath: this.path,
-                tokens: this._tokens,
-                actions,
-            });
+        let popover;
+        if (snapshot.refinementVariant) {
+            popover = snapshot.view === 'settings'
+                ? buildRefinementSettingsPopover({
+                    state: snapshot,
+                    tokens: this._tokens,
+                    actions,
+                })
+                : buildRefinementUsagePopover({
+                    state: snapshot,
+                    extensionPath: this.path,
+                    tokens: this._tokens,
+                    actions,
+                });
+        } else {
+            popover = snapshot.view === 'settings'
+                ? buildSettingsPopover({state: snapshot, tokens: this._tokens, actions})
+                : buildUsagePopover({
+                    state: snapshot,
+                    extensionPath: this.path,
+                    tokens: this._tokens,
+                    actions,
+                });
+        }
         this._replaceChild(this._popoverHost, popover);
     }
 }

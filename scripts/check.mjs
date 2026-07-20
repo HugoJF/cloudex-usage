@@ -31,6 +31,13 @@ const catalogCaptures = [
     'panel-visibility-off.png',
     'panel-light-100.png',
     'panel-dark-200.png',
+    'usage-refinement-a-panel-dark-100.png',
+    'usage-refinement-a-popup-dark-100.png',
+    'usage-refinement-a-settings-dark-100.png',
+    'usage-refinement-b-panel-dark-100.png',
+    'usage-refinement-b-popup-dark-100.png',
+    'usage-refinement-c-panel-dark-100.png',
+    'usage-refinement-c-popup-dark-100.png',
 ];
 const surfaceCaptures = [
     'surface-panel-dark-100.png',
@@ -284,10 +291,15 @@ function assertCaptures(captureDir, captures, label, compareCanonical) {
         if (pngSignature !== '89504e470d0a1a0a' || bytes.length < 256)
             throw new Error(`${filename} is not a non-empty PNG capture`);
         if (compareCanonical) {
+            // Popup actor bounds include five pixels of global panel chrome whose
+            // active-indicator antialiasing is outside the extension actor tree.
+            const comparableImage = filePath => filename.includes('panel')
+                ? [filePath]
+                : ['(', filePath, '-crop', '99999x99999+0+5', '+repage', ')'];
             const result = spawnSync('compare', [
                 '-metric', 'AE',
-                path.join(root, 'design/captures', filename),
-                path.join(captureDir, filename),
+                ...comparableImage(path.join(root, 'design/captures', filename)),
+                ...comparableImage(path.join(captureDir, filename)),
                 'null:',
             ], {cwd: root, encoding: 'utf8'});
             if (result.error)
