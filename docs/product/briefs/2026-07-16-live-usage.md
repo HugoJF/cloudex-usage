@@ -13,6 +13,7 @@ child_docs:
   - docs/product/specs/2026-07-16-usage-surface.md
   - docs/product/specs/2026-07-17-codex-adapter.md
   - docs/product/specs/2026-07-17-claude-adapter.md
+  - docs/product/specs/2026-07-21-codebase-cleanup.md
 tags: [gnome, claude, codex, usage]
 supersedes: []
 ---
@@ -50,7 +51,7 @@ capability:
 
 | Not this chapter | Why / where instead |
 |---|---|
-| Usage-history chart and its range selector | Local usage history is parked on the [feature horizon](../feature-horizon.md); the chart returns only if that idea is promoted. |
+| Usage-history storage and presentation | Owned by [BRIEF-LOCAL-HISTORY](2026-07-17-local-history.md); this chapter consumes only current provider values. |
 | Persisting any usage values | Same parked decision; this chapter renders current values only. |
 | Threshold notifications | Parked on the feature horizon until live values are trustworthy. |
 | Publishing to extensions.gnome.org | Distribution is a separate release decision after the chapter ships. |

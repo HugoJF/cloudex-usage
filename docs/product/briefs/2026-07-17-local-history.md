@@ -11,6 +11,7 @@ source_docs:
 parent_ids: [PITCH-CLAUDEX-USAGE]
 child_docs:
   - docs/product/specs/2026-07-17-local-history.md
+  - docs/product/specs/2026-07-21-codebase-cleanup.md
 tags: [gnome, usage, history]
 supersedes: []
 ---
@@ -84,7 +85,7 @@ capability:
 | Bundle | Ships (intent) | Likely Spec |
 |---|---|---|
 | Sample store | Durable local recording of per-provider usage samples captured during the existing refresh cycle, with a retention window and range windows | SPEC-LOCAL-HISTORY |
-| Popup chart | Merged multi-provider trajectory, compact range select, and legend wired into the production popup behind the local-history setting | SPEC-LOCAL-HISTORY |
+| Popup chart | Merged multi-provider trajectory, inline range stepper, and legend wired into the production popup behind the local-history setting | SPEC-LOCAL-HISTORY |
 
 ## Red-Team
 
@@ -100,7 +101,7 @@ capability:
 
 Promoted from the feature horizon by the owner on 2026-07-17; the local-only,
 no-new-polling capability shipped on 2026-07-19 with a bounded durable store, merged
-trajectory, persisted compact range select, and off switch.
+trajectory, persisted inline range stepper, and off switch.
 
 ## Next Step
 

@@ -7,12 +7,12 @@ each Spec declares which journeys it creates, extends, or joins.
 
 | ID | Name | Owning specs | Test |
 | --- | --- | --- | --- |
-| J-001 | Review usage interface primitives | SPEC-PRIMITIVE-CATALOG | `tests/journeys/J-001-primitive-catalog.journey.test.js` |
-| J-002 | Glance at live usage | SPEC-USAGE-SURFACE | `tests/journeys/J-002-usage-surface.journey.test.js` |
-| J-003 | Persist display preferences | SPEC-USAGE-SURFACE | `tests/journeys/J-003-panel-preferences.journey.test.js` |
-| J-004 | See Codex usage | SPEC-CODEX-ADAPTER | `tests/journeys/J-004-codex-usage.journey.test.js` |
-| J-005 | See Claude usage | SPEC-CLAUDE-ADAPTER | `tests/journeys/J-005-claude-usage.journey.test.js` |
-| J-006 | See usage history | SPEC-LOCAL-HISTORY | `tests/journeys/J-006-usage-history.journey.test.js` |
+| J-001 | Review usage interface primitives | SPEC-PRIMITIVE-CATALOG, SPEC-CODEBASE-CLEANUP | `tests/journeys/J-001-primitive-catalog.journey.test.js` |
+| J-002 | Glance at live usage | SPEC-USAGE-SURFACE, SPEC-CODEBASE-CLEANUP | `tests/journeys/J-002-usage-surface.journey.test.js` |
+| J-003 | Persist display preferences | SPEC-USAGE-SURFACE, SPEC-CODEBASE-CLEANUP | `tests/journeys/J-003-panel-preferences.journey.test.js` |
+| J-004 | See Codex usage | SPEC-CODEX-ADAPTER, SPEC-CODEBASE-CLEANUP | `tests/journeys/J-004-codex-usage.journey.test.js` |
+| J-005 | See Claude usage | SPEC-CLAUDE-ADAPTER, SPEC-CODEBASE-CLEANUP | `tests/journeys/J-005-claude-usage.journey.test.js` |
+| J-006 | See usage history | SPEC-LOCAL-HISTORY, SPEC-CODEBASE-CLEANUP | `tests/journeys/J-006-usage-history.journey.test.js` |
 
 ## J-001 — Review usage interface primitives
 
@@ -44,7 +44,7 @@ Owning Spec: [SPEC-USAGE-SURFACE](specs/2026-07-16-usage-surface.md)
    elapsed clock time.
 3. The user triggers the refresh action beside settings; its busy state, current
    values, freshness text, reset countdowns, and time markers update in place without
-   the popup closing, moving keyboard focus, collapsing an open range select, or a
+   the popup closing, moving keyboard focus, changing the selected range, or a
    passage-of-time update requesting provider data.
 4. A provider's data becomes unavailable; its card presents the unavailable notice
    with no numeric values while other providers stay live.
@@ -103,10 +103,10 @@ Owning Spec: [SPEC-LOCAL-HISTORY](specs/2026-07-17-local-history.md)
 
 1. While using an agent with local history on, each refresh records a durable sample and
    the popup shows the merged multi-provider trajectory for the selected range.
-2. The user opens the compact history select with the pointer or keyboard, navigates
-   its choices, and selects a range; the chart re-renders over the new window from
-   recorded samples without a network request or history mutation. An uncovered range
-   keeps the select available, and Escape closes the containing Shell popup.
+2. The user steps backward or forward through the ordered history ranges with pointer
+   or keyboard; the chart re-renders from recorded samples without a network request
+   or history mutation. The controls wrap, retain focus, remain available for an
+   uncovered range, and Escape closes the containing Shell popup.
 3. After a GNOME Shell restart, the popup honors the persisted history and range choice;
    no sample was recorded while no provider was eligible.
 4. The user turns local history off; recording stops and the chart disappears while the

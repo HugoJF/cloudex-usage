@@ -68,15 +68,13 @@ Acceptance:
 
 ## Surface Map
 
-- Absent panel — no eligible provider: no item, no polling.
-- Unified panel item — eligible providers' marks and enabled percentages, with the
-  compact Claude 5-hour value visually muted.
+- Absent panel — no eligible provider means no item or polling.
+- Unified panel item — eligible providers' marks and enabled percentages, with the compact Claude 5-hour value visually muted.
 - Usage popup cards — compact provider names, current windows, reset timing, and
   optional Time pace markers; chart composition remains owned by SPEC-LOCAL-HISTORY.
 - Usage chrome — refresh with in-flight feedback beside settings and a status-only
   freshness footer.
-- Current and historical percentages — selected Used or Left presentation without
-  changing provider or history data.
+- Current and historical percentages — selected Used or Left presentation without changing source data.
 - Unavailable card state — dimmed textual notice, no values.
 - Settings view — back action, three limit-visibility rows, refresh-cadence,
   usage-display, and weekly-pace choices, plus the global Time pace switch.
@@ -128,14 +126,9 @@ ProgressBar marker. Shared changes land only in their owning slices.
 
 ## Build Slices
 
-- [x] `SURF-001` — shared-module extraction: pure token/geometry, data-driven
-  primitives, and stylesheet contract reused by the catalog and a temporary
-  second-consumer GNOME package; catalog behavior and J-001 remain unchanged.
-- [x] `SURF-002` — production extension shell, provider contract with harness-only
-  stubs, glance behavior including unavailable and absent states, J-002 journey test,
-  and capture evidence.
-- [x] `SURF-003` — settings view with persisted visibility and cadence, J-003
-  journey test, capture evidence for the new production states.
+- [x] `SURF-001` — extract shared token geometry, primitives, and stylesheet contract for the catalog and proof package.
+- [x] `SURF-002` — ship the production shell, provider contract, glance states, J-002 test, and captures.
+- [x] `SURF-003` — ship persisted visibility and cadence settings with J-003 proof.
 - [x] `SURF-004` — make every new provider-eligibility transition show current values
   immediately through the shared refresh cycle, with atomic registration and ordered
   local-history completion evidence. Medium: one lifecycle/concurrency invariant, at
@@ -148,10 +141,7 @@ ProgressBar marker. Shared changes land only in their owning slices.
   make the footer status-only, and advance freshness and reset copy through one
   visibility-bound presentation tick with no provider request. Medium: one temporal
   presentation invariant, at most 15 edited files and 700 handwritten lines.
-- [x] `SURF-007` — remove redundant provider detail and give the compact Claude
-  5-hour value the existing muted foreground role while preserving explicit window
-  accessibility. Small: one hierarchy invariant, at most 8 edited files and 350
-  handwritten lines.
+- [x] `SURF-007` — remove redundant detail and mute compact Claude 5-hour values while preserving accessibility.
 - [x] `SURF-008` — snapshot optional fixed provider-window duration, require it from
   built-ins, and derive bounded elapsed percentage. Medium: ≤12 files / 500 lines.
 - [x] `SURF-009` — add default-on Time pace markers that follow Used/Left and the
@@ -171,5 +161,4 @@ ProgressBar marker. Shared changes land only in their owning slices.
 - Pace alerts, forecasts, budgets, or ahead/behind judgments.
 
 ## Open Questions
-
 None.

@@ -89,6 +89,10 @@ model-scoped window, dollar, spend, extra-usage, and promotional fields cannot a
 the result. An accepted payload becomes a deeply frozen provider-slot result with two
 readings; every call creates new presentation objects and retains no source reference.
 
+`extension/claude-runtime.js` is the production consumer. It exports the provider
+factory and runtime, detects an exact current-user `claude` process, reads the
+file-backed OAuth credential fresh per refresh, and performs the fixed usage request.
+
 ## Usage history store
 
 `extension/history-store.js` is a synchronous, framework-free boundary that can be
@@ -111,7 +115,7 @@ omitted rather than interpolated backward. Every call returns deeply frozen valu
 retains no source reference. No credential, response, or reset detail enters the store —
 only `{providerId, windowId, percent, atMs}` samples.
 
-An accepted payload becomes a deeply frozen provider-slot result with one `weekly`
+An accepted Codex payload becomes a deeply frozen provider-slot result with one `weekly`
 reading. Every call creates new presentation objects and retains no source reference.
 `extension/codex-runtime.js` is the first production consumer. It exports the provider
 factory and runtime, detects an exact current-user `codex` process, reads file-backed

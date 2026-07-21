@@ -22,6 +22,7 @@
 | [SPEC-CODEX-ADAPTER](specs/2026-07-17-codex-adapter.md) | Reads current Codex usage from the existing CLI login without starting it. |
 | [SPEC-CLAUDE-ADAPTER](specs/2026-07-17-claude-adapter.md) | Reads live Claude Code usage from the existing OAuth login without starting it. |
 | [SPEC-LOCAL-HISTORY](specs/2026-07-17-local-history.md) | Records local usage samples during refresh and ships the merged trajectory chart. |
+| [SPEC-CODEBASE-CLEANUP](specs/2026-07-21-codebase-cleanup.md) | Makes every first-party JavaScript and CSS surface smaller, explicit, and fail-closed without changing valid-user behavior. |
 
 ## Supporting documents
 

@@ -1,10 +1,10 @@
 ---
 id: SPEC-LOCAL-HISTORY
 type: spec
-status: draft
+status: done
 owner: hugo
 created: 2026-07-17
-updated: 2026-07-20
+updated: 2026-07-21
 source_docs:
   - docs/product/briefs/2026-07-17-local-history.md
   - docs/product/pitch.md
@@ -33,7 +33,7 @@ Acceptance:
 - **J-006.1** While local history is enabled and a provider is eligible, each refresh
   records a durable local sample and the popup shows the merged trajectory for the
   selected range.
-- **J-006.2** Choosing a range from one compact select re-renders the chart over the
+- **J-006.2** Stepping to a range with the inline previous/next controls re-renders the chart over the
   new window from recorded samples, without a network request or discarded history.
 - **J-006.3** History and the selected range survive a GNOME Shell restart; no sample is
   recorded while no provider is eligible.
@@ -47,7 +47,7 @@ Acceptance:
 - Settings — the local-history toggle and range choice persist across sessions.
 - Absent-history state — with local history off or no samples yet, the popup shows
   current values with no chart.
-- Uncovered range — a selected range with no coverage keeps the range selector and shows
+- Uncovered range — a selected range with no coverage keeps the range stepper and shows
   an empty state instead of hiding, so the range is never a dead end.
 
 ## Cross-Journey Acceptance
@@ -111,7 +111,7 @@ read boundary; the surface continues to own polling, rendering, and provider lif
   no-request rerender behavior. Medium: one range-selection invariant, at most 12
   hand-edited files and 700 handwritten lines, plus generated styles, captures, and
   conformance metadata.
-- [ ] `HIST-004` — replace the range menu with an inline previous/value/next stepper,
+- [x] `HIST-004` — replace the range menu with an inline previous/value/next stepper,
   deleting all popup and overlay behavior while preserving ordered selection, focus,
   empty-range escape, and no-request behavior. Small: one range-control invariant, at
   most 8 hand-edited files and 400 handwritten lines, plus generated styles and capture

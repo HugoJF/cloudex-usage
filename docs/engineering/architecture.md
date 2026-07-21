@@ -40,7 +40,7 @@ The installed extension registers built-in Codex and Claude providers through th
 in-process API used by external adapters. J-002 and J-003 use disposable packages whose
 built-in providers are ineligible under reserved IDs, so their Claude and Codex stubs
 remain isolated; no fixture is present in the canonical ZIP.
-One five-minute timer exists only while at least one provider is eligible. A refresh
+One timer at the selected persisted cadence exists only while at least one provider is eligible. A refresh
 starts immediately whenever a provider newly becomes eligible: it replaces an idle
 cadence timer or coalesces into one follow-up after an in-flight cycle. Each completion
 is emitted before a queued successor begins, scheduling starts after the final
@@ -49,7 +49,7 @@ completion, and failure or ineligibility clears retained readings before renderi
 The Shell composer owns a separate minute-aligned presentation source only while the
 usage popup is open. It reads a fresh immutable controller snapshot and updates the
 named footer, reset labels, Time pace marker geometry, and progress accessibility in
-place, preserving the focused actor tree and any open history select. Popup close,
+place, preserving the focused actor tree and selected history range. Popup close,
 Settings, last-provider removal, indicator destruction, and extension teardown remove
 the source. This presentation path never calls a provider; the existing cadence timer
 remains the sole scheduled refresh path.
