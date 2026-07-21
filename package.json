@@ -3,11 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node scripts/check.mjs",
+    "test": "npm run lint && node scripts/verify-eslint-config.mjs && node scripts/check.mjs",
     "check": "node scripts/check.mjs",
+    "lint": "eslint .",
     "capture": "node scripts/check.mjs --update-captures",
     "styles": "node scripts/render-catalog-styles.mjs",
     "validate:live": "bash scripts/live-check.sh",
     "validate:play": "bash scripts/live-play.sh"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.0",
+    "eslint": "10.0.0"
   }
 }

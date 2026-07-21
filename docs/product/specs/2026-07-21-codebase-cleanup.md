@@ -85,7 +85,7 @@ tokens and production geometry. Rejected executable variants and selectors are r
 ## Build Slices
 
 - [x] `CLEAN-001` — reconcile history authority, register this Spec, and remove stale contract text.
-- [ ] `CLEAN-002` — install pinned ESLint 10 flat-config guardrails.
+- [x] `CLEAN-002` — install pinned ESLint 10 flat-config guardrails.
 - [ ] `CLEAN-003` — extract the production history stepper with focus and pixel proof.
 - [ ] `CLEAN-004` — make Quiet Utility the sole split catalog and canonical evidence.
 - [ ] `CLEAN-005` — commit proof fixtures and remove `RangeSelector`.
