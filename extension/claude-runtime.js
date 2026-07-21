@@ -23,7 +23,7 @@ export function createClaudeProvider(runtime) {
     for (const name of ['isPresent', 'subscribePresence', 'refreshUsage',
         'cancelRefresh']) {
         if (typeof runtime?.[name] !== 'function')
-            throw new Error(`Claude runtime ${name} must be a function`);
+            {throw new Error(`Claude runtime ${name} must be a function`);}
     }
     return Object.freeze({
         id: 'claude', order: 0,
@@ -52,7 +52,7 @@ export function createClaudeProvider(runtime) {
             try {
                 const unsubscribe = runtime.subscribePresence(value => {
                     const eligible = value === true;
-                    if (!eligible) runtime.cancelRefresh();
+                    if (!eligible) {runtime.cancelRefresh();}
                     callback(eligible);
                 });
                 return () => {
@@ -71,33 +71,33 @@ export function createClaudeProvider(runtime) {
 }
 function requireRecord(value) {
     if (value === undefined)
-        return {};
+        {return {};}
     if (value === null || typeof value !== 'object' || Array.isArray(value))
-        throw new Error('Claude runtime options must be an object');
+        {throw new Error('Claude runtime options must be an object');}
     if (Object.keys(value).some(key => !OPTION_KEYS.has(key)))
-        throw new Error('Unknown Claude runtime option');
+        {throw new Error('Unknown Claude runtime option');}
     return value;
 }
 function absolutePath(value, name) {
     if (typeof value !== 'string' || !GLib.path_is_absolute(value))
-        throw new Error(`${name} must be an absolute path`);
+        {throw new Error(`${name} must be an absolute path`);}
     return value;
 }
 function nonempty(value, name) {
-    if (typeof value !== 'string' || !value) throw new Error(`${name} must be nonempty text`);
+    if (typeof value !== 'string' || !value) {throw new Error(`${name} must be nonempty text`);}
     return value;
 }
 function positiveInteger(value, fallback, name) {
     const candidate = value ?? fallback;
     if (!Number.isSafeInteger(candidate) || candidate <= 0)
-        throw new Error(`${name} must be a positive safe integer`);
+        {throw new Error(`${name} must be a positive safe integer`);}
     return candidate;
 }
 function absoluteHttpUri(value) {
     try {
         const uri = GLib.Uri.parse(value, GLib.UriFlags.NONE);
         if (!['http', 'https'].includes(uri.get_scheme()) || !uri.get_host())
-            throw new Error();
+            {throw new Error();}
         return value;
     } catch { throw new Error('Claude endpoint must be an absolute HTTP(S) URI'); }
 }
@@ -118,11 +118,11 @@ export class ClaudeRuntime {
             'currentUser');
         const inheritedHome = GLib.getenv('CLAUDE_CONFIG_DIR');
         if (options.configHome !== undefined)
-            this._configHome = absolutePath(options.configHome, 'configHome');
+            {this._configHome = absolutePath(options.configHome, 'configHome');}
         else if (inheritedHome === null)
-            this._configHome = GLib.build_filenamev([GLib.get_home_dir(), '.claude']);
+            {this._configHome = GLib.build_filenamev([GLib.get_home_dir(), '.claude']);}
         else
-            this._configHome = GLib.path_is_absolute(inheritedHome) ? inheritedHome : null;
+            {this._configHome = GLib.path_is_absolute(inheritedHome) ? inheritedHome : null;}
         this._endpoint = absoluteHttpUri(options.endpoint ?? ENDPOINT);
         this._presenceIntervalMs = positiveInteger(
             options.presenceIntervalMs, 2000, 'presenceIntervalMs');
@@ -132,7 +132,7 @@ export class ClaudeRuntime {
         if ((options.schedule === undefined) !== (options.cancel === undefined) ||
             options.schedule !== undefined && (typeof options.schedule !== 'function' ||
             typeof options.cancel !== 'function'))
-            throw new Error('schedule and cancel must be supplied together');
+            {throw new Error('schedule and cancel must be supplied together');}
         this._schedule = options.schedule ?? ((callback, delay) =>
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
                 callback();
@@ -142,7 +142,7 @@ export class ClaudeRuntime {
         this._session = options.session ?? new SoupTransport();
         if (typeof this._session.send !== 'function' ||
             typeof this._session.abort !== 'function')
-            throw new Error('session must expose send and abort functions');
+            {throw new Error('session must expose send and abort functions');}
         this._listener = null; this._presenceTimer = null;
         this._attempt = null; this._disposed = false;
         this._present = this._scanPresence();
@@ -150,11 +150,11 @@ export class ClaudeRuntime {
     isPresent() { return this._present; }
     subscribePresence(callback) {
         if (typeof callback !== 'function')
-            throw new Error('Presence subscriber must be a function');
+            {throw new Error('Presence subscriber must be a function');}
         if (this._listener)
-            throw new Error('Claude runtime supports one presence subscriber');
+            {throw new Error('Claude runtime supports one presence subscriber');}
         if (this._disposed)
-            return () => {};
+            {return () => {};}
         this._listener = callback;
         this._pollPresence();
         this._presenceTimer = this._schedule(() => this._pollPresence(),
@@ -162,15 +162,15 @@ export class ClaudeRuntime {
         let subscribed = true;
         return () => {
             if (!subscribed)
-                return;
+                {return;}
             subscribed = false;
             if (this._presenceTimer !== null)
-                this._cancel(this._presenceTimer);
+                {this._cancel(this._presenceTimer);}
             this._presenceTimer = null; this._listener = null;
         };
     }
     async refreshUsage() {
-        if (this._disposed || !this._present) return UNAVAILABLE;
+        if (this._disposed || !this._present) {return UNAVAILABLE;}
         this.cancelRefresh();
         const attempt = {
             cancellable: new Gio.Cancellable(), message: null, stream: null,
@@ -179,10 +179,10 @@ export class ClaudeRuntime {
         try {
             const token = await this._readToken(attempt.cancellable);
             if (!token || this._attempt !== attempt)
-                return UNAVAILABLE;
+                {return UNAVAILABLE;}
             const message = Soup.Message.new('GET', this._endpoint);
             if (!message)
-                return UNAVAILABLE;
+                {return UNAVAILABLE;}
             attempt.message = message;
             message.set_flags(message.get_flags() | Soup.MessageFlags.NO_REDIRECT);
             message.request_headers.append('Authorization', `Bearer ${token}`);
@@ -192,7 +192,7 @@ export class ClaudeRuntime {
             attempt.stream = response?.stream ?? null;
             if (this._attempt !== attempt || response?.statusCode !== 200 ||
                 !attempt.stream)
-                return UNAVAILABLE;
+                {return UNAVAILABLE;}
             const bytes = await readBounded(attempt.stream,
                 this._responseMaxBytes, attempt.cancellable);
             return mapClaudeUsage(JSON.parse(decodeUtf8(bytes)));
@@ -201,7 +201,7 @@ export class ClaudeRuntime {
         } finally {
             cleanupRequest(attempt);
             if (this._attempt === attempt)
-                this._attempt = null;
+                {this._attempt = null;}
         }
     }
     cancelRefresh() {
@@ -211,33 +211,33 @@ export class ClaudeRuntime {
     }
     dispose() {
         if (this._disposed)
-            return;
+            {return;}
         this._disposed = true;
         if (this._presenceTimer !== null)
-            this._cancel(this._presenceTimer);
+            {this._cancel(this._presenceTimer);}
         this._presenceTimer = null; this._listener = null;
         this.cancelRefresh();
         this._session.abort();
     }
     _pollPresence() {
-        if (this._disposed) return;
+        if (this._disposed) {return;}
         const present = this._scanPresence();
         if (present === this._present)
-            return;
+            {return;}
         this._present = present;
-        if (!present) this.cancelRefresh();
+        if (!present) {this.cancelRefresh();}
         this._listener?.(present);
     }
     _scanPresence() {
         return hasExactProcess(this._procRoot, this._currentUser, 'claude');
     }
     async _readToken(cancellable) {
-        if (this._configHome === null) return null;
+        if (this._configHome === null) {return null;}
         const file = Gio.File.new_for_path(GLib.build_filenamev(
             [this._configHome, '.credentials.json']));
         const info = file.query_info('standard::type',
             Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, cancellable);
-        if (info.get_file_type() !== Gio.FileType.REGULAR) return null;
+        if (info.get_file_type() !== Gio.FileType.REGULAR) {return null;}
         const stream = await file.read_async(GLib.PRIORITY_DEFAULT, cancellable);
         try {
             const bytes = await readBounded(stream, this._authMaxBytes, cancellable);

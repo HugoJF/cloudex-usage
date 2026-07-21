@@ -26,11 +26,11 @@ function settings({booleans = {}, interval = 0, range = 0, display = 0,
         get_boolean: key => Object.hasOwn(booleans, key) ? booleans[key] : true,
         get_enum: key => {
             if (key === 'history-range')
-                return range;
+                {return range;}
             if (key === 'usage-display')
-                return display;
+                {return display;}
             if (key === WEEKLY_PACE_KEY)
-                return pace;
+                {return pace;}
             assert.equal(key, 'refresh-interval');
             return interval;
         },
@@ -124,13 +124,13 @@ test('usage display is strict, frozen, cyclic, and included in preference reads'
     assert.equal(nextUsageDisplay(1).id, 'used');
     assert(isPreferenceKey('usage-display'));
     for (const value of [-1, 2, 0.5, '0'])
-        assert.throws(() => usageDisplay(value));
+        {assert.throws(() => usageDisplay(value));}
     assert.throws(() => readPanelPreferences(settings({display: 2})));
 });
 
 test('display percentages preserve Used and complement Left within numeric limits', () => {
     for (const value of [0, 37.5, 100, Number.MIN_VALUE, Number.EPSILON])
-        assert.equal(displayPercent(value, 'used'), value);
+        {assert.equal(displayPercent(value, 'used'), value);}
     assert.deepEqual([0, 37.5, 100].map(value => displayPercent(value, 'left')),
         [100, 62.5, 0]);
     assert.equal(displayPercent(Number.MIN_VALUE, 'left'), 100);
@@ -143,9 +143,9 @@ test('display percentages preserve Used and complement Left within numeric limit
         assert.equal(displayPercent(displayed, 'left'), value);
     }
     for (const value of [-1, 101, NaN, Infinity, -Infinity])
-        assert.throws(() => displayPercent(value, 'used'));
+        {assert.throws(() => displayPercent(value, 'used'));}
     for (const display of ['', 'remaining', null, 0])
-        assert.throws(() => displayPercent(50, display));
+        {assert.throws(() => displayPercent(50, display));}
 });
 
 test('refresh intervals cycle, reject unknown enums, and expose only known keys', () => {

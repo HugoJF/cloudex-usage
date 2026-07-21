@@ -9,7 +9,6 @@ source_docs:
   - docs/product/pitch.md
   - design/direction-lab/DIRECTION-BRIEF.md
 parent_ids: [BRIEF-LIVE-USAGE]
-child_docs: []
 tags: [gnome, design-system, ui]
 supersedes: []
 ---

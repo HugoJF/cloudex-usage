@@ -50,7 +50,7 @@ function loadTokens(extensionPath) {
     const file = Gio.File.new_for_path(`${extensionPath}/tokens.json`);
     const [loaded, contents] = file.load_contents(null);
     if (!loaded)
-        throw new Error('Unable to load packaged design tokens');
+        {throw new Error('Unable to load packaged design tokens');}
     return validateTokens(JSON.parse(new TextDecoder().decode(contents)));
 }
 
@@ -74,13 +74,13 @@ function label(text, styleClass, properties = {}) {
 
 function findActor(root, name) {
     if (!root)
-        return null;
+        {return null;}
     if (root.get_name?.() === name)
-        return root;
+        {return root;}
     for (const child of root.get_children?.() ?? []) {
         const found = findActor(child, name);
         if (found)
-            return found;
+            {return found;}
     }
     return null;
 }
@@ -105,11 +105,11 @@ export default class ClaudexUsageExtension extends Extension {
         this._historyRangeFocusId = null;
         this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
             if (!isPreferenceKey(key))
-                return;
+                {return;}
             const previous = this._preferences.refreshInterval.ms;
             this._preferences = readPanelPreferences(this._settings);
             if (previous !== this._preferences.refreshInterval.ms)
-                this._controller?.setRefreshIntervalMs(this._preferences.refreshInterval.ms);
+                {this._controller?.setRefreshIntervalMs(this._preferences.refreshInterval.ms);}
             this._render();
         });
         this._colorSchemeChangedId = St.Settings.get().connect(
@@ -202,21 +202,21 @@ export default class ClaudexUsageExtension extends Extension {
         this._wasRefreshing = snapshot.refreshing;
         if (!justCompleted || !snapshot.clockValid ||
             !this._preferences.localHistory || !this._history)
-            return;
+            {return;}
         const samples = [];
         for (const provider of snapshot.providers) {
             if (provider.availability !== 'available')
-                continue;
+                {continue;}
             for (const metric of provider.metrics)
-                samples.push({providerId: provider.id, windowId: metric.windowId,
-                    percent: metric.percent});
+                {samples.push({providerId: provider.id, windowId: metric.windowId,
+                    percent: metric.percent});}
         }
         this._history.record(samples);
     }
 
     _render() {
         if (!this._controller || !this._tokens)
-            return;
+            {return;}
         const snapshot = this._controller.getSnapshot();
         this._recordHistory(snapshot);
         if (!snapshot.visible) {
@@ -282,7 +282,7 @@ export default class ClaudexUsageExtension extends Extension {
             this._providerCard(provider))];
         const history = this._historySection();
         if (history)
-            children.push(history);
+            {children.push(history);}
         children.push(FooterStatus({
             status: snapshot.footer,
         }));
@@ -292,7 +292,7 @@ export default class ClaudexUsageExtension extends Extension {
     _historySection() {
         if (!this._preferences.localHistory || !this._history ||
             !this._history.hasSamples())
-            return null;
+            {return null;}
         const range = this._preferences.historyRange;
         const series = this._history.series(range.id).filter(item =>
             HISTORY_SERIES_META[`${item.providerId}:${item.windowId}`]);
@@ -495,7 +495,7 @@ export default class ClaudexUsageExtension extends Extension {
 
     _ensureIndicator() {
         if (this._indicator)
-            return;
+            {return;}
         this._indicator = new PanelMenu.Button(0.0, this.metadata.name, false);
         this._indicator.add_style_class_name('claudex-indicator');
         this._indicator.set_accessible_name('Claudex Usage');
@@ -512,10 +512,10 @@ export default class ClaudexUsageExtension extends Extension {
         this._menuOpenChangedId = this._indicator.menu.connect(
             'open-state-changed', (_menu, open) => {
                 if (!this._controller)
-                    return;
+                    {return;}
                 const snapshot = this._controller.getSnapshot();
                 if (open && this._view === 'usage')
-                    this._updateTemporalPresentation(snapshot);
+                    {this._updateTemporalPresentation(snapshot);}
                 this._syncPresentationTimer(snapshot);
             });
         Main.panel.addToStatusArea(this.uuid, this._indicator, 0, 'right');
@@ -549,7 +549,7 @@ export default class ClaudexUsageExtension extends Extension {
             return;
         }
         if (this._presentationSourceId !== null)
-            return;
+            {return;}
         this._presentationSourceId = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT,
             nextMinuteDelay(this._now()),
@@ -559,7 +559,7 @@ export default class ClaudexUsageExtension extends Extension {
     _runPresentationTick() {
         this._presentationSourceId = null;
         if (!this._controller || !this._usagePopupVisible())
-            return GLib.SOURCE_REMOVE;
+            {return GLib.SOURCE_REMOVE;}
         const snapshot = this._controller.getSnapshot();
         this._updateTemporalPresentation(snapshot);
         this._syncPresentationTimer(snapshot);
@@ -569,15 +569,15 @@ export default class ClaudexUsageExtension extends Extension {
     _updateTemporalPresentation(snapshot) {
         const root = this._popoverHost?.get_child();
         if (!root)
-            return;
+            {return;}
         const footer = findActor(root, 'footer-status');
         if (footer)
-            footer.text = snapshot.footer;
+            {footer.text = snapshot.footer;}
         for (const provider of snapshot.providers) {
             for (const metric of provider.metrics) {
                 const reset = findActor(root, `reset-label-${metric.id}`);
                 if (reset)
-                    reset.text = metric.resetLabel;
+                    {reset.text = metric.resetLabel;}
                 const presentation = this._displayMetric(provider, metric);
                 const progress = findActor(root, `progress-${metric.id}`);
                 if (progress && presentation.pacePercent !== undefined) {
@@ -590,7 +590,7 @@ export default class ClaudexUsageExtension extends Extension {
 
     _clearPresentationTimer() {
         if (this._presentationSourceId === null)
-            return;
+            {return;}
         GLib.Source.remove(this._presentationSourceId);
         this._presentationSourceId = null;
     }

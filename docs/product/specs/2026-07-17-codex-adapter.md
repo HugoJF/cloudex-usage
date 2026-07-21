@@ -9,7 +9,6 @@ source_docs:
   - docs/product/briefs/2026-07-16-live-usage.md
   - docs/product/pitch.md
 parent_ids: [BRIEF-LIVE-USAGE]
-child_docs: []
 tags: [gnome, codex, adapter]
 supersedes: []
 ---

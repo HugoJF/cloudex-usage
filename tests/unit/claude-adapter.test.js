@@ -9,7 +9,7 @@ const SHORT_MS = Date.UTC(2026, 6, 17, 22, 30, 0);
 const WEEKLY_MS = Date.UTC(2026, 6, 23, 23, 0, 0);
 
 function assert(value, message) {
-    if (!value) throw new Error(message);
+    if (!value) {throw new Error(message);}
 }
 function equal(actual, expected, message) {
     assert(JSON.stringify(actual) === JSON.stringify(expected), message);
@@ -26,14 +26,14 @@ function write(path, value) {
 function removeTree(path) {
     const file = Gio.File.new_for_path(path);
     if (!file.query_exists(null))
-        return;
+        {return;}
     if (file.query_file_type(Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null) ===
         Gio.FileType.DIRECTORY) {
         const entries = file.enumerate_children('standard::name',
             Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
         let info;
         while ((info = entries.next_file(null)))
-            removeTree(GLib.build_filenamev([path, info.get_name()]));
+            {removeTree(GLib.build_filenamev([path, info.get_name()]));}
         entries.close(null);
     }
     file.delete(null);
@@ -67,8 +67,8 @@ class Session {
             beta: message.request_headers.get_one('anthropic-beta')});
         const response = this.responses.shift() ?? {};
         if (response.pending)
-            return await new Promise((_resolve, reject) =>
-                cancellable.connect(() => reject(new Error('cancelled'))));
+            {return await new Promise((_resolve, reject) =>
+                cancellable.connect(() => reject(new Error('cancelled'))));}
         return {statusCode: response.status ?? 200,
             stream: input(response.body ?? usage())};
     }
@@ -95,10 +95,10 @@ function runtime(session = new Session(), extra = {}) {
 }
 async function idleUntil(callback) {
     while (!callback())
-        await new Promise(resolve => GLib.idle_add(0, () => {
+        {await new Promise(resolve => GLib.idle_add(0, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
-        }));
+        }));}
 }
 let passed = 0;
 async function test(name, callback) {
@@ -132,7 +132,7 @@ try {
             {presenceIntervalMs: 0}, {authMaxBytes: 1.5},
             {responseMaxBytes: '8'}, {schedule: () => 1},
             {session: {send() {}}}])
-            throws(() => new ClaudeRuntime(options));
+            {throws(() => new ClaudeRuntime(options));}
     });
 
     await test('presence is exact, current-user, change-only, and disposable', () => {

@@ -53,7 +53,7 @@ export const HISTORY = Object.freeze({
 export class CatalogState {
     constructor(historyRanges) {
         if (!Array.isArray(historyRanges) || historyRanges.length === 0)
-            throw new Error('Catalog history ranges must be nonempty');
+            {throw new Error('Catalog history ranges must be nonempty');}
         this.historyRanges = historyRanges;
         this.view = 'usage';
         this.activeRange = historyRanges[1].id;
@@ -69,13 +69,13 @@ export class CatalogState {
 
     setView(view) {
         if (!['usage', 'settings'].includes(view))
-            throw new Error(`Unknown catalog view: ${view}`);
+            {throw new Error(`Unknown catalog view: ${view}`);}
         this.view = view;
     }
 
     selectRange(range) {
         if (!this.historyRanges.some(choice => choice.id === range))
-            throw new Error(`Unknown history range: ${range}`);
+            {throw new Error(`Unknown history range: ${range}`);}
         this.activeRange = range;
     }
 
@@ -87,7 +87,7 @@ export class CatalogState {
 
     toggle(key) {
         if (![...LIMIT_KEYS, 'presentOnly', 'localHistory', 'timePace'].includes(key))
-            throw new Error(`Unknown catalog toggle: ${key}`);
+            {throw new Error(`Unknown catalog toggle: ${key}`);}
         this[key] = !this[key];
         return this[key];
     }

@@ -82,7 +82,9 @@ directory. When local history is enabled, each completed refresh records one bou
 sample per available provider window, and the popup derives the merged trajectory for the
 selected range from the store — reusing the shipped `HistoryChart` and
 `Legend`. The inline range stepper persists the existing enum and restores focus to the
-activated arrow after selection rerenders.
+activated arrow after selection rerenders. J-006 runs a second fresh Shell session
+against the first session's history file and proves the persisted chart renders without
+an in-process store.
 Recording rides the existing refresh, so nothing samples or writes while no
 provider is present, and nothing recorded leaves the machine. Distinct refreshes that
 complete in the same clock millisecond receive adjacent safe millisecond timestamps so

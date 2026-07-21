@@ -28,13 +28,13 @@ function unavailable() {
 export function extractClaudeAccessToken(authPayload) {
     try {
         if (!isRecord(authPayload) || !isRecord(authPayload.claudeAiOauth))
-            return null;
+            {return null;}
         const value = authPayload.claudeAiOauth.accessToken;
         if (typeof value !== 'string')
-            return null;
+            {return null;}
         const token = value.trim().replace(/^Bearer(?:\s+|$)/i, '').trim();
         if (token.length === 0 || /\s/.test(token))
-            return null;
+            {return null;}
         return token;
     } catch {
         return null;
@@ -43,10 +43,10 @@ export function extractClaudeAccessToken(authPayload) {
 
 function resetAtMs(value) {
     if (typeof value !== 'string')
-        return null;
+        {return null;}
     const match = ISO_8601.exec(value);
     if (match === null)
-        return null;
+        {return null;}
     const [, yearText, monthText, dayText, hourText, minuteText, secondText,
         fraction, zone] = match;
     const year = Number(yearText);
@@ -58,13 +58,13 @@ function resetAtMs(value) {
     if (year < MIN_YEAR || year > MAX_YEAR ||
         month < 1 || month > MAX_MONTH || day < 1 || day > MAX_DAY ||
         hour > MAX_HOUR || minute > MAX_MINUTE || second > MAX_SECOND)
-        return null;
+        {return null;}
     const base = Date.UTC(year, month - 1, day, hour, minute, second);
     const back = new Date(base);
     if (back.getUTCFullYear() !== year || back.getUTCMonth() !== month - 1 ||
         back.getUTCDate() !== day || back.getUTCHours() !== hour ||
         back.getUTCMinutes() !== minute || back.getUTCSeconds() !== second)
-        return null;
+        {return null;}
     const fractionMs = fraction === undefined ? 0
         : Number(fraction.slice(0, MILLISECONDS_DIGITS)
             .padEnd(MILLISECONDS_DIGITS, '0'));
@@ -75,31 +75,31 @@ function resetAtMs(value) {
         const offsetMinute = Number(zone.slice(4, 6));
         if (offsetHour > MAX_OFFSET_HOUR || offsetMinute > MAX_MINUTE ||
             (offsetHour === MAX_OFFSET_HOUR && offsetMinute !== 0))
-            return null;
+            {return null;}
         const offsetMinutes = offsetHour * MINUTES_PER_HOUR + offsetMinute;
         ms -= sign * offsetMinutes * MILLISECONDS_PER_MINUTE;
     }
     if (!Number.isSafeInteger(ms) || ms < 0)
-        return null;
+        {return null;}
     return ms;
 }
 
 export function mapClaudeUsage(payload) {
     try {
         if (!isRecord(payload))
-            return unavailable();
+            {return unavailable();}
         const readings = [];
         for (const [field, id] of WINDOWS) {
             const window = payload[field];
             if (!isRecord(window))
-                return unavailable();
+                {return unavailable();}
             const percent = window.utilization;
             if (typeof percent !== 'number' || !Number.isFinite(percent) ||
                 percent < 0 || percent > 100)
-                return unavailable();
+                {return unavailable();}
             const ms = resetAtMs(window.resets_at);
             if (ms === null)
-                return unavailable();
+                {return unavailable();}
             readings.push(Object.freeze({id, percent, resetAtMs: ms}));
         }
         return Object.freeze({

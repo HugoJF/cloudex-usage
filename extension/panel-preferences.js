@@ -65,7 +65,7 @@ export function isPreferenceKey(key) {
 
 export function refreshInterval(index) {
     if (!Number.isInteger(index) || !REFRESH_INTERVALS[index])
-        throw new Error('Refresh interval enum must be a known integer');
+        {throw new Error('Refresh interval enum must be a known integer');}
     return REFRESH_INTERVALS[index];
 }
 
@@ -75,20 +75,20 @@ export function nextRefreshInterval(index) {
 
 export function historyRange(index) {
     if (!Number.isInteger(index) || !HISTORY_RANGES[index])
-        throw new Error('History range enum must be a known integer');
+        {throw new Error('History range enum must be a known integer');}
     return HISTORY_RANGES[index];
 }
 
 export function historyRangeIndex(id) {
     const range = HISTORY_RANGE_BY_ID.get(id);
     if (!range)
-        throw new Error(`Unknown history range: ${id}`);
+        {throw new Error(`Unknown history range: ${id}`);}
     return range.index;
 }
 
 export function usageDisplay(index) {
     if (!Number.isInteger(index) || !USAGE_DISPLAYS[index])
-        throw new Error('Usage display enum must be a known integer');
+        {throw new Error('Usage display enum must be a known integer');}
     return USAGE_DISPLAYS[index];
 }
 
@@ -109,9 +109,9 @@ export function nextWeeklyPace(index) {
 
 export function displayPercent(usedPercent, displayId) {
     if (!Number.isFinite(usedPercent) || usedPercent < 0 || usedPercent > 100)
-        throw new Error('Usage percentage must be finite from 0 to 100');
+        {throw new Error('Usage percentage must be finite from 0 to 100');}
     if (!USAGE_DISPLAY_BY_ID.has(displayId))
-        throw new Error(`Unknown usage display: ${displayId}`);
+        {throw new Error(`Unknown usage display: ${displayId}`);}
     const normalized = Object.is(usedPercent, -0) ? 0 : usedPercent;
     return displayId === 'left' ? 100 - normalized : normalized;
 }
@@ -119,21 +119,21 @@ export function displayPercent(usedPercent, displayId) {
 export function readPanelPreferences(settings) {
     if (!settings || typeof settings.get_boolean !== 'function' ||
         typeof settings.get_enum !== 'function')
-        throw new Error('Panel preferences require GSettings accessors');
+        {throw new Error('Panel preferences require GSettings accessors');}
     const visibility = {};
     for (const limit of PANEL_LIMITS) {
         const value = settings.get_boolean(limit.key);
         if (typeof value !== 'boolean')
-            throw new Error(`Panel preference ${limit.key} must be boolean`);
+            {throw new Error(`Panel preference ${limit.key} must be boolean`);}
         visibility[limit.dataRole] = value;
     }
     const interval = refreshInterval(settings.get_enum(REFRESH_INTERVAL_KEY));
     const localHistory = settings.get_boolean(LOCAL_HISTORY_KEY);
     if (typeof localHistory !== 'boolean')
-        throw new Error(`Panel preference ${LOCAL_HISTORY_KEY} must be boolean`);
+        {throw new Error(`Panel preference ${LOCAL_HISTORY_KEY} must be boolean`);}
     const timePace = settings.get_boolean(TIME_PACE_KEY);
     if (typeof timePace !== 'boolean')
-        throw new Error(`Panel preference ${TIME_PACE_KEY} must be boolean`);
+        {throw new Error(`Panel preference ${TIME_PACE_KEY} must be boolean`);}
     return frozen({
         visibility: frozen(visibility),
         refreshInterval: interval,

@@ -56,7 +56,7 @@ status, or decorative surfaces.
 | `ProviderCard` | safe `id`, provider model, metric models; raised-surface variant only |
 | `UsageMetric` | safe `id`, label, finite 0–100 percent, reset label with stable `reset-label-{id}` actor name, semantic `dataRole`, accessible name |
 | `ProgressBar` | presentation-ready metric model; always zero-origin; optional finite 0–100 `pacePercent` renders a neutral 2 px `pace-{id}` marker |
-| `HistoryChart` | safe ID, accessible name, axis labels, equal-length 0–100 series with semantic data roles and explicit stroke widths |
+| `HistoryChart` | safe ID, accessible name, fixed percentage axis, equal-length 0–100 series with semantic data roles and explicit stroke widths |
 | `Legend` | safe, unique entry IDs, full labels, semantic data roles |
 | `HistoryRangeStepper` | canonical ordered choices, selected object identity, stable previous/value/next IDs, accessible controls, wraparound callback |
 | `IconButton` | safe ID, symbolic icon, accessible name, activation callback, strict optional busy state; transparent / hover / focus states |

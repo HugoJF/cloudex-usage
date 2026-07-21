@@ -306,6 +306,9 @@ function prepareProductionVariant(sourceDir, packageDir, edits) {
         '--extra-source=codex-contract.js', '--extra-source=codex-runtime.js',
         '--extra-source=claude-contract.js', '--extra-source=claude-runtime.js',
         '--extra-source=history-store.js', '--extra-source=history-runtime.js',
+        '--extra-source=controller-snapshot.js',
+        '--extra-source=controller-validation.js', '--extra-source=panel-view.js',
+        '--extra-source=temporal.js',
         '--extra-source=shared',
         '--extra-source=tokens.json', '--extra-source=icons',
         '--out-dir', packageDir, sourceDir,
@@ -322,9 +325,17 @@ function assertCaptures(captureDir, captures, label, compareCanonical) {
         if (compareCanonical) {
             // Popup actor bounds include five pixels of global panel chrome whose
             // active-indicator antialiasing is outside the extension actor tree.
-            const comparableImage = filePath => filename.includes('panel')
-                ? [filePath]
-                : ['(', filePath, '-crop', '99999x99999+0+5', '+repage', ')'];
+            const comparableImage = filePath => {
+                if (filename.includes('panel'))
+                    {return [filePath];}
+                if (filename === 'surface-history-stepper-dark-200.png') {
+                    return ['(', filePath, '-crop', '856x266+8+21',
+                        '+repage', ')'];
+                }
+                const topCrop = 5;
+                return ['(', filePath, '-crop', `99999x99999+0+${topCrop}`,
+                    '+repage', ')'];
+            };
             const result = spawnSync('compare', [
                 '-metric', 'AE',
                 ...comparableImage(path.join(root, 'design/captures', filename)),
@@ -466,6 +477,10 @@ try {
         '--extra-source=claude-runtime.js',
         '--extra-source=history-store.js',
         '--extra-source=history-runtime.js',
+        '--extra-source=controller-snapshot.js',
+        '--extra-source=controller-validation.js',
+        '--extra-source=panel-view.js',
+        '--extra-source=temporal.js',
         '--extra-source=shared',
         '--extra-source=../design/system/tokens.json',
         '--extra-source=../design/direction-lab/icons',

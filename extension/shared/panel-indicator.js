@@ -16,7 +16,8 @@ export function PanelIndicator({id, groups, emptyGroups = [], tokens}) {
     requireId(id, 'Panel indicator');
     requireUniqueIds(groups, 'Panel group');
     requireUniqueIds(emptyGroups, 'Empty panel group');
-    const actor = box('claudex-panel', Clutter.Orientation.HORIZONTAL, {name: id});
+    const actor = box('claudex-panel',
+        Clutter.Orientation.HORIZONTAL, {name: id});
     const rendered = groups.length > 0 ? groups : emptyGroups;
     rendered.forEach((group, index) => {
         requireText(group.accessibleName, 'Panel group accessible name');

@@ -20,7 +20,7 @@ export function emptyStore() {
 export function hasSamples(store) {
     for (const samples of Object.values(windowsOf(store))) {
         if (Array.isArray(samples) && samples.length > 0)
-            return true;
+            {return true;}
     }
     return false;
 }
@@ -45,11 +45,11 @@ function splitKey(key) {
 
 function validKey(key) {
     if (typeof key !== 'string')
-        return false;
+        {return false;}
     const separator = key.indexOf(':');
     if (separator <= 0 || separator !== key.lastIndexOf(':') ||
         separator === key.length - 1)
-        return false;
+        {return false;}
     const [providerId, windowId] = splitKey(key);
     return SAFE_ID.test(providerId) && SAFE_ID.test(windowId);
 }
@@ -121,7 +121,7 @@ export function serializeStore(store) {
         const serialized = {};
         for (const [key, samples] of Object.entries(windowsOf(store))) {
             if (!validKey(key) || !Array.isArray(samples) || samples.length === 0)
-                continue;
+                {continue;}
             serialized[key] = Object.freeze(samples.map(point =>
                 Object.freeze([point.atMs, point.percent])));
         }
@@ -140,7 +140,7 @@ export function deserializeStore(data) {
         for (const [key, rows] of Object.entries(data.windows)) {
             if (!validKey(key) || !Array.isArray(rows) || rows.length === 0 ||
                 rows.length > MAX_SAMPLES)
-                return emptyStore();
+                {return emptyStore();}
             const samples = [];
             let previousAtMs = -1;
             let valid = true;
@@ -159,7 +159,7 @@ export function deserializeStore(data) {
                 samples.push(Object.freeze({atMs, percent}));
             }
             if (!valid)
-                return emptyStore();
+                {return emptyStore();}
             windows[key] = Object.freeze(samples);
         }
         return frozenStore(windows);

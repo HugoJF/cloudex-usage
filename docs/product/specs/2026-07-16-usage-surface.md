@@ -9,7 +9,6 @@ source_docs:
   - docs/product/briefs/2026-07-16-live-usage.md
   - design/direction-lab/DIRECTION-BRIEF.md
 parent_ids: [BRIEF-LIVE-USAGE]
-child_docs: []
 tags: [gnome, ui, surface]
 supersedes: []
 ---

@@ -9,9 +9,6 @@ source_docs:
   - docs/product/pitch.md
   - docs/product/feature-horizon.md
 parent_ids: [PITCH-CLAUDEX-USAGE]
-child_docs:
-  - docs/product/specs/2026-07-17-local-history.md
-  - docs/product/specs/2026-07-21-codebase-cleanup.md
 tags: [gnome, usage, history]
 supersedes: []
 ---

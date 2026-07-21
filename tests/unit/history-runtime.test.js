@@ -4,7 +4,7 @@ import GLib from 'gi://GLib';
 import {HISTORY_FILE_MAX_BYTES, HistoryRuntime} from '../../extension/history-runtime.js';
 
 function assert(value, message) {
-    if (!value) throw new Error(message);
+    if (!value) {throw new Error(message);}
 }
 function equal(actual, expected, message) {
     assert(JSON.stringify(actual) === JSON.stringify(expected), message);
@@ -16,14 +16,14 @@ function throws(callback) {
 function removeTree(path) {
     const file = Gio.File.new_for_path(path);
     if (!file.query_exists(null))
-        return;
+        {return;}
     if (file.query_file_type(Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null) ===
         Gio.FileType.DIRECTORY) {
         const entries = file.enumerate_children('standard::name',
             Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
         let info;
         while ((info = entries.next_file(null)))
-            removeTree(GLib.build_filenamev([path, info.get_name()]));
+            {removeTree(GLib.build_filenamev([path, info.get_name()]));}
         entries.close(null);
     }
     file.delete(null);

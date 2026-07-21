@@ -12,6 +12,12 @@ const RANGE_CAPTURES = {
     light: 'surface-history-stepper-light-100.png',
     scaled: 'surface-history-stepper-dark-200.png',
 };
+const SCALED_POPUP_BOUNDS = {
+    width: 856,
+    height: 306,
+    leftOffset: 4,
+    topOffset: 24,
+};
 Gio._promisify(Shell.Screenshot.prototype, 'screenshot_area',
     'screenshot_area_finish');
 export const METRICS = {};
@@ -47,7 +53,8 @@ function captureDirectory() {
     return Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent()
         .get_child('design').get_child('captures');
 }
-async function captureActor(target, filename, padding = 8) {
+async function captureActor(target, filename, padding = 8,
+    fixedTopRight = null) {
     let actor = null;
     let width = 0;
     let height = 0;
@@ -64,7 +71,16 @@ async function captureActor(target, filename, padding = 8) {
     const directory = captureDirectory();
     if (!directory.query_exists(null))
         {directory.make_directory_with_parents(null);}
-    const [actorX, actorY] = actor.get_transformed_position();
+    const [transformedX, transformedY] = actor.get_transformed_position();
+    const actorX = fixedTopRight
+        ? global.screen_width - fixedTopRight.width - padding -
+            fixedTopRight.leftOffset
+        : transformedX;
+    const actorY = fixedTopRight
+        ? padding + fixedTopRight.topOffset
+        : transformedY;
+    if (fixedTopRight)
+        {[width, height] = [fixedTopRight.width, fixedTopRight.height];}
     const x = Math.max(0, Math.floor(actorX - padding));
     const y = Math.max(0, Math.floor(actorY - padding));
     const captureWidth = Math.min(global.screen_width - x,
@@ -334,7 +350,8 @@ export async function run() {
         await waitFor(() => !indicator.menu.isOpen,
             'usage popup closes before the scaled-state allocation');
         await reopenUsagePopup();
-        await captureActor(() => indicator.menu.actor, RANGE_CAPTURES.scaled);
+        await captureActor(() => indicator.menu.actor, RANGE_CAPTURES.scaled, 8,
+            SCALED_POPUP_BOUNDS);
         themeContext.set_scale_factor(originalScale);
         for (const actor of isolatedForScale)
             {actor.show();}

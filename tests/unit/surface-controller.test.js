@@ -609,13 +609,13 @@ test('eligibility churn and teardown before the adapter microtask prevent access
         }});
         const unregister = state.controller.registerProvider(item);
         if (transition === 'false')
-            item.setEligible(false);
+            {item.setEligible(false);}
         else if (transition === 'invalid')
-            item.emit('invalid');
+            {item.emit('invalid');}
         else if (transition === 'unregister')
-            unregister();
+            {unregister();}
         else
-            state.controller.dispose();
+            {state.controller.dispose();}
         await settle();
         assert.equal(calls, 0, `${transition} blocks deferred provider access`);
         assert.equal(state.timers.size, 0);
@@ -657,9 +657,9 @@ test('manual refresh coalesces, resets scheduling, and independent failures clea
     const claude = provider({refresh: () => {
         calls += 1;
         if (calls === 1)
-            return first.promise;
+            {return first.promise;}
         if (calls === 2)
-            return second.promise;
+            {return second.promise;}
         return Promise.resolve({status: 'available', readings: [
             {id: 'short', percent: 30, resetAtMs: 1_120_000},
         ]});

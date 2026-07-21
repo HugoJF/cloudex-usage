@@ -8,6 +8,7 @@ const commonRules = {
     'max-lines': ['error', {max: 300, skipBlankLines: true, skipComments: true}],
     'max-lines-per-function': ['error', {max: 80, skipBlankLines: true, skipComments: true}],
     'max-params': ['error', 4],
+    'max-classes-per-file': ['error', 1],
     'no-duplicate-imports': 'error',
     'no-else-return': 'error',
     'no-magic-numbers': ['error', {ignore: [-1, 0, 1, 2, 100]}],
@@ -25,14 +26,18 @@ const nodeGlobals = {
     Buffer: 'readonly',
     console: 'readonly',
     process: 'readonly',
+    setImmediate: 'readonly',
+    URL: 'readonly',
 };
 
 const gjsGlobals = {
     ARGV: 'readonly',
     TextDecoder: 'readonly',
+    TextEncoder: 'readonly',
     console: 'readonly',
     global: 'readonly',
     log: 'readonly',
+    print: 'readonly',
 };
 
 export default [
@@ -41,26 +46,28 @@ export default [
             'node_modules/**',
             'extension/stylesheet.css',
             'design/direction-lab/stylesheet.css',
-            // Removed slice-by-slice as the first-party modules are decomposed.
-            'design/direction-lab/{catalog-state,extension}.js',
-            'extension/shared/token-geometry.js',
-            'scripts/**',
-            'tests/unit/**',
-            'tests/journeys/**',
             'tests/lint/invalid.js',
         ],
     },
     {
-        files: ['eslint.config.js'],
-        ...js.configs.recommended,
+        files: ['**/*.js'],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
-            globals: nodeGlobals,
         },
         linterOptions: {
             noInlineConfig: true,
             reportUnusedDisableDirectives: 'error',
+        },
+        rules: {
+            ...commonRules,
+            complexity: 'off',
+            'max-classes-per-file': 'off',
+            'max-lines': 'off',
+            'max-lines-per-function': 'off',
+            'max-depth': 'off',
+            'max-params': 'off',
+            'no-magic-numbers': 'off',
         },
     },
     {
@@ -77,27 +84,32 @@ export default [
         rules: commonRules,
     },
     {
-        files: [
-            'extension/shared/*.js',
-            'extension/{controller-snapshot,controller-validation,panel-view,temporal}.js',
-        ],
+        files: ['eslint.config.js', 'scripts/**/*.js', 'tests/unit/**/*.js',
+            'tests/lint/valid.js'],
         languageOptions: {
-            ecmaVersion: 'latest',
-            sourceType: 'module',
-            globals: gjsGlobals,
+            globals: nodeGlobals,
         },
-        linterOptions: {
-            noInlineConfig: true,
-            reportUnusedDisableDirectives: 'error',
-        },
+    },
+    {
+        files: ['extension/**/*.js', 'design/direction-lab/**/*.js',
+            'tests/journeys/**/*.js', 'tests/gjs/**/*.js',
+            'tests/fixtures/**/*.js'],
+        languageOptions: {globals: gjsGlobals},
+    },
+    {
+        files: ['extension/shared/*.js',
+            'extension/{controller-snapshot,controller-validation,panel-view,temporal}.js'],
         rules: commonRules,
     },
     {
-        files: ['tests/journeys/**/*.js', 'tests/gjs/**/*.js'],
-        languageOptions: {globals: gjsGlobals},
+        files: ['extension/shared/token-geometry.js'],
         rules: {
-            'max-lines': ['error', {max: 400, skipBlankLines: true, skipComments: true}],
-            'max-lines-per-function': ['error', {max: 120, skipBlankLines: true, skipComments: true}],
+            complexity: 'off',
+            'no-magic-numbers': 'off',
         },
+    },
+    {
+        files: ['scripts/*.journey.js', 'tests/unit/{claude-adapter,codex-adapter,history-runtime}.test.js'],
+        languageOptions: {globals: gjsGlobals},
     },
 ];

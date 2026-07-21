@@ -12,16 +12,12 @@ import {CatalogState, HISTORY, USAGE} from './catalog-state.js';
 import {HISTORY_RANGES} from './shared/history-ranges.js';
 import {progressWidth, validateTokens} from './shared/token-geometry.js';
 import {ChoiceRow} from './shared/choice-row.js';
-import {FooterStatus} from './shared/footer-status.js';
 import {HistoryChart} from './shared/history-chart.js';
 import {IconButton} from './shared/icon-button.js';
 import {Legend} from './shared/legend.js';
-import {PanelIndicator} from './shared/panel-indicator.js';
 import {PopoverScaffold} from './shared/popover-scaffold.js';
 import {ProgressBar} from './shared/progress-bar.js';
-import {ProviderCard} from './shared/provider-card.js';
 import {SettingsRow} from './shared/settings-row.js';
-import {HistoryRangeStepper} from './shared/history-range-stepper.js';
 
 function box(styleClass, orientation = Clutter.Orientation.HORIZONTAL, properties = {}) {
     return new St.BoxLayout({style_class: styleClass, orientation, ...properties});
@@ -48,16 +44,6 @@ function metricModel(usage) {
         resetLabel: usage.reset,
         dataRole: usage.dataRole,
         accessibleName: `${usage.percent}% of ${usage.window} used`,
-    };
-}
-
-function providerModel(id, labelText, detail, iconPath) {
-    return {
-        id,
-        label: labelText,
-        detail,
-        iconPath,
-        iconAccessibleName: `${labelText} mark`,
     };
 }
 
@@ -147,7 +133,7 @@ function buildRefinementPanel({variant, extensionPath, tokens, lightPanel}) {
 
 function rangeLabel(range, variant) {
     if (variant !== 'b')
-        return range;
+        {return range;}
     return {
         '1h': 'Last hour',
         '6h': 'Last 6 hours',
@@ -292,8 +278,7 @@ function statusRefreshButton({onActivate, tokens}) {
     return actor;
 }
 
-function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
-    showPreviewControls}) {
+function buildRefinementUsagePopover({state, extensionPath, tokens, actions}) {
     const variant = 'a';
     const header = box('claudex-header', Clutter.Orientation.HORIZONTAL, {
         x_expand: true,
@@ -303,7 +288,7 @@ function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
     copy.add_child(label('Claude + Codex', 'claudex-title'));
     header.add_child(copy);
     if (variant === 'b')
-        header.add_child(label('Refreshing…', 'claudex-updated'));
+        {header.add_child(label('Refreshing…', 'claudex-updated'));}
     if (variant === 'c') {
         header.add_child(statusRefreshButton({
             onActivate: actions.refresh,
@@ -403,7 +388,7 @@ function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
         history,
     );
     if (variant !== 'c')
-        children.push(statusOnlyFooter('Updated 3 min ago'));
+        {children.push(statusOnlyFooter('Updated 3 min ago'));}
     return PopoverScaffold({
         id: `usage-refinement-${variant}`,
         view: 'usage',
@@ -411,8 +396,7 @@ function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
     });
 }
 
-function buildRefinementSettingsPopover({state, tokens, actions,
-    showPreviewControls}) {
+function buildRefinementSettingsPopover({state, tokens, actions}) {
     const header = box('claudex-settings-header',
         Clutter.Orientation.HORIZONTAL, {x_expand: true});
     const back = new St.Button({
@@ -504,224 +488,17 @@ function buildRefinementSettingsPopover({state, tokens, actions,
     });
 }
 
-function buildPanel({state, extensionPath, tokens, lightPanel}) {
-    const iconPath = provider =>
-        `${extensionPath}/icons/${provider}${lightPanel ? '-light' : ''}.svg`;
-    const groups = [
-        {
-            id: 'claude',
-            iconPath: iconPath('claude'),
-            accessibleName: 'Claude',
-            values: [
-                state.showClaudeShort && {
-                    id: 'claudeShort',
-                    percent: USAGE.claudeShort.percent,
-                },
-                state.showClaudeWeekly && {
-                    id: 'claudeWeekly',
-                    percent: USAGE.claudeWeekly.percent,
-                },
-            ].filter(Boolean),
-        },
-        {
-            id: 'codex',
-            iconPath: iconPath('codex'),
-            accessibleName: 'Codex',
-            values: state.showCodexWeekly
-                ? [{
-                    id: 'codexWeekly',
-                    percent: USAGE.codexWeekly.percent,
-                }]
-                : [],
-        },
-    ];
-    return PanelIndicator({
-        id: 'claudex-panel-indicator',
-        groups,
-        emptyGroups: groups.map(group => ({
-            ...group,
-            accessibleName: `${group.accessibleName} hidden`,
-        })),
-        tokens,
-    });
-}
-
-function buildUsagePopover({state, extensionPath, tokens, actions}) {
-    const header = box('claudex-header', Clutter.Orientation.HORIZONTAL, {
-        x_expand: true,
-    });
-    const copy = column('claudex-title-copy', {x_expand: true});
-    copy.add_child(label('USAGE', 'claudex-kicker'));
-    copy.add_child(label('Claude + Codex', 'claudex-title'));
-    header.add_child(copy);
-    header.add_child(IconButton({
-        id: 'settings-button',
-        iconName: 'preferences-system-symbolic',
-        accessibleName: 'Open settings',
-        onActivate: actions.openSettings,
-        tokens,
-    }));
-
-    const history = column('claudex-history');
-    const historyHeader = box('claudex-history-header',
-        Clutter.Orientation.HORIZONTAL, {x_expand: true});
-    historyHeader.add_child(label('Usage history', 'claudex-section-title', {
-        x_expand: true,
-    }));
-    historyHeader.add_child(HistoryRangeStepper({
-        choices: HISTORY_RANGES,
-        selected: HISTORY_RANGES.find(range => range.id === state.activeRange),
-        onSelect: range => actions.selectRange(range.id),
-    }));
-    history.add_child(historyHeader);
-    history.add_child(HistoryChart({
-        id: 'history-chart',
-        accessibleName: `Usage history for ${state.activeRange}, ` +
-            'from zero to one hundred percent',
-        series: [
-            {
-                id: 'claudeShort',
-                values: HISTORY.claudeShort,
-                dataRole: USAGE.claudeShort.dataRole,
-                strokeWidth: tokens.stroke.claudeShort,
-            },
-            {
-                id: 'claudeWeekly',
-                values: HISTORY.claudeWeekly,
-                dataRole: USAGE.claudeWeekly.dataRole,
-                strokeWidth: tokens.stroke.weekly,
-            },
-            {
-                id: 'codexWeekly',
-                values: HISTORY.codexWeekly,
-                dataRole: USAGE.codexWeekly.dataRole,
-                strokeWidth: tokens.stroke.weekly,
-            },
-        ],
-        tokens,
-    }));
-    history.add_child(Legend({
-        entries: [
-            {id: 'claudeShort', label: 'Claude 5-hour',
-                dataRole: USAGE.claudeShort.dataRole},
-            {id: 'claudeWeekly', label: 'Claude weekly',
-                dataRole: USAGE.claudeWeekly.dataRole},
-            {id: 'codexWeekly', label: 'Codex weekly',
-                dataRole: USAGE.codexWeekly.dataRole},
-        ],
-        tokens,
-    }));
-
-    return PopoverScaffold({
-        id: 'claudex-usage-popover',
-        view: 'usage',
-        children: [
-            header,
-            ProviderCard({
-                id: 'provider-claude',
-                provider: providerModel('claude', 'Claude', 'Two usage windows',
-                    `${extensionPath}/icons/claude.svg`),
-                metrics: [
-                    metricModel(USAGE.claudeShort),
-                    metricModel(USAGE.claudeWeekly),
-                ],
-                tokens,
-            }),
-            ProviderCard({
-                id: 'provider-codex',
-                provider: providerModel('codex', 'Codex', 'Weekly usage window',
-                    `${extensionPath}/icons/codex.svg`),
-                metrics: [metricModel(USAGE.codexWeekly)],
-                tokens,
-            }),
-            history,
-            FooterStatus({
-                status: 'Updated just now',
-                action: {
-                    id: 'refresh-button',
-                    label: 'Refresh',
-                    accessibleName: 'Refresh static usage sample',
-                    onActivate: actions.refresh,
-                },
-            }),
-        ],
-    });
-}
-
-function buildSettingsPopover({state, tokens, actions}) {
-    const header = box('claudex-settings-header',
-        Clutter.Orientation.HORIZONTAL, {x_expand: true});
-    const back = new St.Button({
-        name: 'back-button',
-        style_class: 'claudex-back-button',
-        can_focus: true,
-        reactive: true,
-        track_hover: true,
-        child: label('← Usage', 'claudex-button-label'),
-    });
-    back.set_accessible_name('Back to usage');
-    back.connect('clicked', actions.openUsage);
-    header.add_child(back);
-    header.add_child(label('Settings', 'claudex-settings-title', {x_expand: true}));
-
-    const panelSection = column('claudex-settings-section');
-    panelSection.add_child(label('PANEL', 'claudex-settings-kicker'));
-    for (const [id, title, description] of [
-        ['showClaudeShort', 'Claude 5-hour', 'Show this limit in the top panel'],
-        ['showClaudeWeekly', 'Claude weekly', 'Show this limit in the top panel'],
-        ['showCodexWeekly', 'Codex weekly', 'Show this limit in the top panel'],
-        ['presentOnly', 'Only while providers are present',
-            'Hide each provider when its application is not running'],
-    ]) {
-        panelSection.add_child(SettingsRow({
-            id,
-            title,
-            description,
-            accessibleName: title,
-            active: state[id],
-            onToggle: actions.toggle,
-            tokens,
-        }));
-    }
-
-    const updatesSection = column('claudex-settings-section');
-    updatesSection.add_child(label('UPDATES & HISTORY', 'claudex-settings-kicker'));
-    updatesSection.add_child(ChoiceRow({
-        id: 'refresh-interval-choice',
-        title: 'Refresh while visible',
-        value: `${state.refreshInterval}  ›`,
-        accessibleName: `Refresh while visible, ${state.refreshInterval}`,
-        onActivate: actions.cycleRefreshInterval,
-    }));
-    updatesSection.add_child(SettingsRow({
-        id: 'localHistory',
-        title: 'Keep local usage history',
-        description: 'Store derived percentages for the merged chart',
-        accessibleName: 'Keep local usage history',
-        active: state.localHistory,
-        onToggle: actions.toggle,
-        tokens,
-    }));
-    return PopoverScaffold({
-        id: 'claudex-settings-popover',
-        view: 'settings',
-        children: [header, panelSection, updatesSection],
-    });
-}
-
 function loadTokens(extensionPath) {
     const file = Gio.File.new_for_path(`${extensionPath}/tokens.json`);
     const [loaded, contents] = file.load_contents(null);
-    if (!loaded)
+    if (!loaded) {
         throw new Error('Unable to load packaged design tokens');
-
-    let tokens;
+    }
     try {
-        tokens = JSON.parse(new TextDecoder().decode(contents));
+        return validateTokens(JSON.parse(new TextDecoder().decode(contents)));
     } catch (error) {
         throw new Error(`Unable to parse packaged design tokens: ${error.message}`);
     }
-    return validateTokens(tokens);
 }
 
 export default class ClaudexUsageCatalogExtension extends Extension {

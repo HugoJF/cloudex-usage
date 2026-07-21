@@ -74,13 +74,13 @@ function valueAtPath(root, path) {
 export function tokenValue(tokens, path) {
     const value = valueAtPath(tokens, path);
     if (value === undefined)
-        throw new Error(`Missing design token: ${path}`);
+        {throw new Error(`Missing design token: ${path}`);}
     return value;
 }
 
 export function colorToRgba(color) {
     if (typeof color !== 'string')
-        throw new Error(`Unsupported color: ${color}`);
+        {throw new Error(`Unsupported color: ${color}`);}
     if (/^#[0-9a-f]{6}$/i.test(color)) {
         return [
             Number.parseInt(color.slice(1, 3), 16) / 255,
@@ -93,26 +93,26 @@ export function colorToRgba(color) {
     const match = color.match(FUNCTION_COLOR);
     if (!match || (match[1].toLowerCase() === 'rgb' && match[5] !== undefined) ||
         (match[1].toLowerCase() === 'rgba' && match[5] === undefined))
-        throw new Error(`Unsupported color: ${color}`);
+        {throw new Error(`Unsupported color: ${color}`);}
 
     const channels = match.slice(2, 5).map(Number);
     const alpha = match[5] === undefined ? 1 : Number(match[5]);
     if (channels.some(value => !Number.isFinite(value) || value < 0 || value > 255) ||
         !Number.isFinite(alpha) || alpha < 0 || alpha > 1)
-        throw new Error(`Color channels are out of range: ${color}`);
+        {throw new Error(`Color channels are out of range: ${color}`);}
     return [...channels.map(value => value / 255), alpha];
 }
 
 export function validateTokens(tokens) {
     if (!tokens || typeof tokens !== 'object' || Array.isArray(tokens))
-        throw new Error('Design token manifest must be an object');
+        {throw new Error('Design token manifest must be an object');}
 
     for (const [path, expectedType] of Object.entries(REQUIRED_TOKENS)) {
         const value = tokenValue(tokens, path);
         if (typeof value !== expectedType)
-            throw new Error(`Design token ${path} must be a ${expectedType}`);
+            {throw new Error(`Design token ${path} must be a ${expectedType}`);}
         if (expectedType === 'number' && (!Number.isFinite(value) || value < 0))
-            throw new Error(`Design token ${path} must be a non-negative finite number`);
+            {throw new Error(`Design token ${path} must be a non-negative finite number`);}
     }
     for (const [name, value] of Object.entries(tokens.color)) {
         try {
@@ -125,13 +125,13 @@ export function validateTokens(tokens) {
     const expectedThumbTravel = tokens.size.switchTrackWidth -
         tokens.size.switchThumb - tokens.size.switchInset;
     if (expectedThumbTravel <= tokens.size.switchInset)
-        throw new Error('Switch geometry leaves no room for thumb travel');
+        {throw new Error('Switch geometry leaves no room for thumb travel');}
     return tokens;
 }
 
 export function progressWidth(percent, trackWidth) {
     if (!Number.isFinite(percent) || !Number.isFinite(trackWidth) || trackWidth < 0)
-        throw new TypeError('Progress geometry requires finite, non-negative inputs');
+        {throw new TypeError('Progress geometry requires finite, non-negative inputs');}
     const clamped = Math.min(100, Math.max(0, percent));
     return Math.round(trackWidth * clamped / 100);
 }

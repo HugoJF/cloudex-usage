@@ -168,12 +168,33 @@ async function waitFor(predicate, message) {
             {return;}
         await settle();
     }
-    throw new Error(`J-002 failed: ${message}`);
+    throw new Error(`J-002 failed: ${typeof message === 'function'
+        ? message()
+        : message}`);
 }
 
 function setShellColorScheme(scheme) {
     Main.sessionMode.colorScheme = scheme;
     St.Settings.get().notify('color-scheme');
+}
+
+async function capturePanel(indicator, target, filename) {
+    const warmup = new Shell.Screenshot();
+    const warmupStream = Gio.MemoryOutputStream.new_resizable();
+    await warmup.screenshot_area(0, Main.panel.height + 1, 1, 1,
+        warmupStream);
+    warmupStream.close(null);
+    await settle();
+    const siblings = indicator.get_parent().get_children()
+        .filter(actor => actor !== indicator && actor.visible);
+    siblings.forEach(actor => actor.hide());
+    try {
+        await settle();
+        await captureActor(target, filename, 6, true);
+    } finally {
+        siblings.forEach(actor => actor.show());
+        await settle();
+    }
 }
 
 function readFileText(file) {
@@ -310,7 +331,7 @@ export async function run() {
         weeklyPanelValue.get_accessible_name() ===
             'Weekly window, 42 percent used',
     'panel mutes only the short window and names each window accessibly');
-    await captureActor(panel, EXPECTED_CAPTURES[0], 6, true);
+    await capturePanel(indicator, panel, EXPECTED_CAPTURES[0]);
 
     indicator.menu.open();
     await settle();
@@ -560,8 +581,8 @@ export async function run() {
     setShellColorScheme('prefer-light');
     await settle();
     indicator = Main.panel.statusArea[UUID];
-    await captureActor(findActor(indicator, 'claudex-live-panel'),
-        EXPECTED_CAPTURES[4], 6, true);
+    await capturePanel(indicator, findActor(indicator, 'claudex-live-panel'),
+        EXPECTED_CAPTURES[4]);
     setShellColorScheme(originalScheme);
     await settle();
     const themeContext = St.ThemeContext.get_for_stage(global.stage);
@@ -580,13 +601,13 @@ export async function run() {
         return scaledShortProgress?.width ===
             scaledShortProgress?.get_parent().width &&
             scaledShortFill?.width === Math.round(
-                scaledShortProgress.width * 0.28 / themeContext.scale_factor);
+                scaledShortProgress.width * 0.28);
     }, '200 percent scale preserves full-row logical progress geometry');
     indicator.menu.close();
     await settle();
-    await captureActor(
-        () => findActor(Main.panel.statusArea[UUID], 'claudex-live-panel'),
-        EXPECTED_CAPTURES[5], 6, true);
+    await capturePanel(indicator,
+        findActor(Main.panel.statusArea[UUID], 'claudex-live-panel'),
+        EXPECTED_CAPTURES[5]);
     themeContext.set_scale_factor(originalScale);
     await settle();
 

@@ -21,7 +21,7 @@ export class SurfaceController {
         this._cancel = requireCallback(cancel, 'Scheduler cancel');
         this._onChange = requireCallback(onChange, 'Change callback');
         if (!Number.isSafeInteger(refreshIntervalMs) || refreshIntervalMs <= 0)
-            throw new Error('Refresh interval must be a positive safe integer');
+            {throw new Error('Refresh interval must be a positive safe integer');}
         this._refreshIntervalMs = refreshIntervalMs;
         this._dataRoles = [...dataRoles];
         this._providers = new Map();
@@ -35,14 +35,14 @@ export class SurfaceController {
 
     registerProvider(provider) {
         if (this._disposed)
-            throw new Error('Surface controller is disposed');
+            {throw new Error('Surface controller is disposed');}
         if (!provider || typeof provider !== 'object')
-            throw new Error('Provider must be an object');
+            {throw new Error('Provider must be an object');}
         const id = requireId(provider.id, 'Provider ID');
         if (this._disposed)
-            throw new Error('Surface controller is disposed');
+            {throw new Error('Surface controller is disposed');}
         if (this._providers.has(id) || this._providerReservations.has(id))
-            throw new Error(`Provider ID is already registered: ${id}`);
+            {throw new Error(`Provider ID is already registered: ${id}`);}
         this._providerReservations.add(id);
 
         let state = null;
@@ -50,9 +50,9 @@ export class SurfaceController {
         let committed = false;
         const assertProvisionalActive = () => {
             if (this._disposed)
-                throw new Error('Surface controller is disposed');
+                {throw new Error('Surface controller is disposed');}
             if (!this._providerReservations.has(id))
-                throw new Error(`Provider registration was interrupted: ${id}`);
+                {throw new Error(`Provider registration was interrupted: ${id}`);}
         };
         const read = callback => {
             assertProvisionalActive();
@@ -67,7 +67,7 @@ export class SurfaceController {
                 'Provider isEligible');
             const initial = read(() => isEligible());
             if (typeof initial !== 'boolean')
-                throw new Error('Provider isEligible must return a strict boolean');
+                {throw new Error('Provider isEligible must return a strict boolean');}
             const subscribeEligibility = requireCallback(
                 read(() => provider.subscribeEligibility),
                 'Provider subscribeEligibility');
@@ -84,7 +84,7 @@ export class SurfaceController {
             };
             const receiveEligibility = eligible => {
                 if (state.removed)
-                    return;
+                    {return;}
                 let becameEligible = false;
                 if (typeof eligible !== 'boolean') {
                     state.eligible = false;
@@ -99,51 +99,53 @@ export class SurfaceController {
                     return;
                 }
                 if (!state.registered)
-                    return;
+                    {return;}
                 this._changed();
                 if (becameEligible)
-                    this._requestEligibilityRefresh();
+                    {this._requestEligibilityRefresh();}
                 else
-                    this._syncLifecycle();
+                    {this._syncLifecycle();}
             };
             assertProvisionalActive();
             const unsubscribe = subscribeEligibility(receiveEligibility);
             if (typeof unsubscribe === 'function')
-                acquiredUnsubscribe = unsubscribe;
+                {acquiredUnsubscribe = unsubscribe;}
             assertProvisionalActive();
             if (typeof unsubscribe !== 'function') {
                 throw new Error(
                     'Provider subscribeEligibility must return an unsubscribe callback');
             }
             if (this._providers.has(id))
-                throw new Error(`Provider ID is already registered: ${id}`);
+                {throw new Error(`Provider ID is already registered: ${id}`);}
             state.unsubscribe = unsubscribe;
             state.registered = true;
             this._providers.set(id, state);
             committed = true;
         } catch (error) {
             if (state)
-                state.removed = true;
+                {state.removed = true;}
             if (acquiredUnsubscribe) {
                 try {
                     acquiredUnsubscribe();
-                } catch {}
+                } catch (_) {
+                    // Preserve the primary registration failure.
+                }
             }
             throw error;
         } finally {
             this._providerReservations.delete(id);
         }
         if (!committed)
-            throw new Error(`Provider registration failed: ${id}`);
+            {throw new Error(`Provider registration failed: ${id}`);}
         this._changed();
         if (state.eligible)
-            this._requestEligibilityRefresh();
+            {this._requestEligibilityRefresh();}
         else
-            this._syncLifecycle();
+            {this._syncLifecycle();}
         let unregistered = false;
         return () => {
             if (unregistered)
-                return;
+                {return;}
             unregistered = true;
             this._removeProvider(id, state);
         };
@@ -151,21 +153,21 @@ export class SurfaceController {
 
     refresh() {
         if (this._disposed || !this._hasEligible())
-            return;
+            {return;}
         this._clearTimer();
         if (this._refreshing)
-            return;
+            {return;}
         this._startRefresh();
     }
 
     setRefreshIntervalMs(refreshIntervalMs) {
         if (!Number.isSafeInteger(refreshIntervalMs) || refreshIntervalMs <= 0)
-            throw new Error('Refresh interval must be a positive safe integer');
+            {throw new Error('Refresh interval must be a positive safe integer');}
         if (this._refreshIntervalMs === refreshIntervalMs)
-            return;
+            {return;}
         this._refreshIntervalMs = refreshIntervalMs;
         if (this._disposed || !this._hasEligible() || this._refreshing)
-            return;
+            {return;}
         this._clearTimer();
         this._scheduleNext();
     }
@@ -177,26 +179,26 @@ export class SurfaceController {
 
     dispose() {
         if (this._disposed)
-            return;
+            {return;}
         this._disposed = true;
         this._clearTimer();
         this._refreshRequested = false;
         for (const [id, state] of [...this._providers])
-            this._removeProvider(id, state, false);
+            {this._removeProvider(id, state, false);}
         this._providers.clear();
         this._changed();
     }
 
     _removeProvider(id, state, notify = true) {
         if (state.removed)
-            return;
+            {return;}
         state.removed = true;
         state.generation = Symbol('provider-generation');
         this._providers.delete(id);
         state.unsubscribe?.();
         state.unsubscribe = null;
         if (notify)
-            this._changed();
+            {this._changed();}
         this._syncLifecycle();
     }
 
@@ -220,12 +222,12 @@ export class SurfaceController {
         }
         if (!this._refreshing && this._timer === null &&
             this._lastCompletedAtMs === null)
-            this._startRefresh();
+            {this._startRefresh();}
     }
 
     _requestEligibilityRefresh() {
         if (this._disposed || !this._hasEligible())
-            return;
+            {return;}
         if (this._refreshing) {
             this._refreshRequested = true;
             return;
@@ -236,7 +238,7 @@ export class SurfaceController {
 
     _startRefresh() {
         if (this._refreshing || this._disposed || !this._hasEligible())
-            return;
+            {return;}
         this._refreshing = true;
         this._changed();
         const attempts = this._orderedEligible().map(state => {
@@ -263,7 +265,7 @@ export class SurfaceController {
         });
         Promise.all(attempts).then(results => {
             if (this._disposed)
-                return;
+                {return;}
             for (const {state, generation, result, skipped} of results) {
                 if (!skipped && !state.removed && state.eligible &&
                     state.generation === generation) {
@@ -292,7 +294,7 @@ export class SurfaceController {
 
     _clearTimer() {
         if (this._timer === null)
-            return;
+            {return;}
         this._cancel(this._timer);
         this._timer = null;
     }

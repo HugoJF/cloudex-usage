@@ -15,7 +15,7 @@ function historyCounts() {
         [GLib.get_user_data_dir(), 'claudex-usage', 'history.json']);
     const [ok, bytes] = GLib.file_get_contents(path);
     if (!ok)
-        return 'none yet';
+        {return 'none yet';}
     const windows = JSON.parse(new TextDecoder('utf-8').decode(bytes)).windows ?? {};
     return Object.entries(windows)
         .map(([key, rows]) => `${key}=${rows.length}`).join(' ') || 'empty';
@@ -26,7 +26,7 @@ async function waitSettled(extension) {
         const snapshot = extension.getSurfaceSnapshot();
         if (snapshot.providers.length > 0 && !snapshot.refreshing &&
             snapshot.providers.every(provider => provider.availability !== 'pending'))
-            return snapshot;
+            {return snapshot;}
         await Scripting.sleep(100);
     }
     return extension.getSurfaceSnapshot();
@@ -36,10 +36,10 @@ function report(label, snapshot) {
     print(`LIVE: --- ${label} (footer="${snapshot.footer}") ---`);
     for (const provider of snapshot.providers) {
         for (const metric of provider.metrics)
-            print(`LIVE:   ${provider.label} ${metric.label}: ${metric.percent}% ` +
-                `(${metric.resetLabel})`);
+            {print(`LIVE:   ${provider.label} ${metric.label}: ${metric.percent}% ` +
+                `(${metric.resetLabel})`);}
         if (provider.availability !== 'available')
-            print(`LIVE:   ${provider.label}: ${provider.availability}`);
+            {print(`LIVE:   ${provider.label}: ${provider.availability}`);}
     }
     print(`LIVE:   history samples: ${historyCounts()}`);
 }
@@ -50,7 +50,7 @@ export async function run() {
     for (let attempt = 0; attempt < 100 && !extension; attempt++) {
         extension = Main.extensionManager.lookup(UUID)?.stateObj;
         if (!extension)
-            await Scripting.sleep(100);
+            {await Scripting.sleep(100);}
     }
     if (!extension) {
         print('LIVE: extension never enabled');

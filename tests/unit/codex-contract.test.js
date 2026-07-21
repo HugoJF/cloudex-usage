@@ -35,10 +35,10 @@ function payload(window, slot = 'primary_window') {
 
 function assertDeepFrozen(value) {
     if (value === null || typeof value !== 'object')
-        return;
+        {return;}
     assert(Object.isFrozen(value));
     for (const child of Object.values(value))
-        assertDeepFrozen(child);
+        {assertDeepFrozen(child);}
 }
 
 function assertUnavailable(value) {
@@ -81,7 +81,7 @@ test('access-token extraction rejects malformed shapes, values, and embedded whi
         {tokens: {access_token: 42}},
     ];
     for (const value of invalid)
-        assert.equal(extractCodexAccessToken(value), null);
+        {assert.equal(extractCodexAccessToken(value), null);}
 });
 
 test('access-token extraction fails closed when parsed-object accessors throw', () => {
@@ -180,7 +180,7 @@ test('usage mapping requires exactly one structurally valid seven-day candidate'
         payload([weekly()]),
     ];
     for (const value of invalid)
-        assertUnavailable(mapCodexUsage(value));
+        {assertUnavailable(mapCodexUsage(value));}
 });
 
 test('usage mapping enforces percentage and authoritative reset boundaries', () => {
@@ -189,7 +189,7 @@ test('usage mapping enforces percentage and authoritative reset boundaries', () 
         assert.equal(result.readings[0].percent, percent);
     }
     for (const percent of [-1, 100.0001, NaN, Infinity, -Infinity, '37', null])
-        assertUnavailable(mapCodexUsage(payload(weekly({used_percent: percent}))));
+        {assertUnavailable(mapCodexUsage(payload(weekly({used_percent: percent}))));}
 
     for (const reset_at of [0, 1783296000, MAX_SAFE_RESET_SECONDS]) {
         const result = mapCodexUsage(payload(weekly({reset_at})));
@@ -267,13 +267,13 @@ test('fixtures contain no credential or user-identity fields', () => {
     const forbidden = new Set(['access_token', 'account_id', 'user_id', 'email']);
     function inspect(value) {
         if (value === null || typeof value !== 'object')
-            return;
+            {return;}
         if (!Array.isArray(value)) {
             for (const key of Object.keys(value))
-                assert(!forbidden.has(key.toLowerCase()), `fixture contains ${key}`);
+                {assert(!forbidden.has(key.toLowerCase()), `fixture contains ${key}`);}
         }
         for (const child of Object.values(value))
-            inspect(child);
+            {inspect(child);}
     }
     inspect(fixture('codex-usage-current.json'));
     inspect(fixture('codex-usage-secondary.json'));

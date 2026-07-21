@@ -20,14 +20,13 @@ function windows(overrides = {}) {
 }
 
 const SHORT_MS = Date.UTC(2026, 6, 17, 22, 30, 0);
-const WEEKLY_MS = Date.UTC(2026, 6, 23, 23, 0, 0);
 
 function assertDeepFrozen(value) {
     if (value === null || typeof value !== 'object')
-        return;
+        {return;}
     assert(Object.isFrozen(value));
     for (const child of Object.values(value))
-        assertDeepFrozen(child);
+        {assertDeepFrozen(child);}
 }
 
 function assertUnavailable(value) {
@@ -63,7 +62,7 @@ test('access-token extraction rejects malformed shapes and ignores sibling crede
         {claudeAiOauth: ['sk-abc123']},
     ];
     for (const value of malformed)
-        assert.equal(extractClaudeAccessToken(value), null);
+        {assert.equal(extractClaudeAccessToken(value), null);}
 
     // Sibling credential fields must never be read.
     assert.equal(extractClaudeAccessToken({
@@ -156,7 +155,7 @@ test('usage mapping requires both account windows to be structurally valid', () 
         windows({seven_day: {resets_at: '2026-07-23T23:00:00Z'}}),
     ];
     for (const value of invalid)
-        assertUnavailable(mapClaudeUsage(value));
+        {assertUnavailable(mapClaudeUsage(value));}
 });
 
 test('usage mapping enforces utilization boundaries', () => {
@@ -266,13 +265,13 @@ test('fixtures contain no credential or user-identity fields', () => {
     ]);
     function inspect(value) {
         if (value === null || typeof value !== 'object')
-            return;
+            {return;}
         if (!Array.isArray(value)) {
             for (const key of Object.keys(value))
-                assert(!forbidden.has(key.toLowerCase()), `fixture contains ${key}`);
+                {assert(!forbidden.has(key.toLowerCase()), `fixture contains ${key}`);}
         }
         for (const child of Object.values(value))
-            inspect(child);
+            {inspect(child);}
     }
     inspect(fixture('claude-usage-current.json'));
     inspect(fixture('claude-usage-secondary.json'));

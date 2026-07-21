@@ -11,13 +11,13 @@ function unavailable() {
 export function extractCodexAccessToken(authPayload) {
     try {
         if (!isRecord(authPayload) || !isRecord(authPayload.tokens))
-            return null;
+            {return null;}
         const value = authPayload.tokens.access_token;
         if (typeof value !== 'string')
-            return null;
+            {return null;}
         const token = value.trim().replace(/^Bearer(?:\s+|$)/i, '').trim();
         if (token.length === 0 || /\s/.test(token))
-            return null;
+            {return null;}
         return token;
     } catch {
         return null;
@@ -27,7 +27,7 @@ export function extractCodexAccessToken(authPayload) {
 export function mapCodexUsage(payload) {
     try {
         if (!isRecord(payload) || !isRecord(payload.rate_limit))
-            return unavailable();
+            {return unavailable();}
         const windows = [
             payload.rate_limit.primary_window,
             payload.rate_limit.secondary_window,
@@ -35,7 +35,7 @@ export function mapCodexUsage(payload) {
         const weekly = windows.filter(window =>
             isRecord(window) && window.limit_window_seconds === WEEK_SECONDS);
         if (weekly.length !== 1)
-            return unavailable();
+            {return unavailable();}
 
         const [{used_percent: percent, reset_at: resetAtSeconds}] = weekly;
         if (typeof percent !== 'number' || !Number.isFinite(percent) ||
@@ -45,7 +45,7 @@ export function mapCodexUsage(payload) {
         }
         const resetAtMs = resetAtSeconds * 1000;
         if (!Number.isSafeInteger(resetAtMs))
-            return unavailable();
+            {return unavailable();}
 
         const reading = Object.freeze({id: 'weekly', percent, resetAtMs});
         return Object.freeze({

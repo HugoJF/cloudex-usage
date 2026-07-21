@@ -19,7 +19,11 @@ function decode(bytes) {
 }
 
 function close(stream) {
-    try { stream?.close(null); } catch {}
+    try {
+        stream?.close(null);
+    } catch (_) {
+        // Cleanup is best effort after the owning operation.
+    }
 }
 
 function readHistoryFile(path) {
@@ -27,7 +31,7 @@ function readHistoryFile(path) {
     const info = file.query_info('standard::type',
         Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
     if (info.get_file_type() !== Gio.FileType.REGULAR)
-        throw new Error('History input must be a regular file');
+        {throw new Error('History input must be a regular file');}
     const stream = file.read(null);
     try {
         const chunks = [];
@@ -36,10 +40,10 @@ function readHistoryFile(path) {
             const bytes = stream.read_bytes(HISTORY_FILE_MAX_BYTES - total + 1, null);
             const size = bytes.get_size();
             if (size === 0)
-                break;
+                {break;}
             total += size;
             if (total > HISTORY_FILE_MAX_BYTES)
-                throw new Error('History input exceeds its byte limit');
+                {throw new Error('History input exceeds its byte limit');}
             chunks.push(bytes.get_data());
         }
         const result = new Uint8Array(total);
@@ -56,11 +60,11 @@ function readHistoryFile(path) {
 
 function requireRecord(value) {
     if (value === undefined)
-        return {};
+        {return {};}
     if (value === null || typeof value !== 'object' || Array.isArray(value))
-        throw new Error('History runtime options must be an object');
+        {throw new Error('History runtime options must be an object');}
     if (Object.keys(value).some(key => !OPTION_KEYS.has(key)))
-        throw new Error('Unknown History runtime option');
+        {throw new Error('Unknown History runtime option');}
     return value;
 }
 
@@ -70,7 +74,7 @@ export class HistoryRuntime {
         const inheritedDir = GLib.getenv('CLAUDEX_HISTORY_DIR');
         if (options.dir !== undefined) {
             if (typeof options.dir !== 'string' || !GLib.path_is_absolute(options.dir))
-                throw new Error('History runtime dir must be an absolute path');
+                {throw new Error('History runtime dir must be an absolute path');}
             this._dir = options.dir;
         } else if (inheritedDir !== null && GLib.path_is_absolute(inheritedDir)) {
             this._dir = inheritedDir;
@@ -78,7 +82,7 @@ export class HistoryRuntime {
             this._dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'claudex-usage']);
         }
         if (options.now !== undefined && typeof options.now !== 'function')
-            throw new Error('History runtime now must be a function');
+            {throw new Error('History runtime now must be a function');}
         this._now = options.now ?? (() => Date.now());
         this._path = GLib.build_filenamev([this._dir, FILE_NAME]);
         this._store = this._load();
@@ -87,19 +91,19 @@ export class HistoryRuntime {
 
     record(samples) {
         if (!Array.isArray(samples) || samples.length === 0)
-            return;
+            {return;}
         let atMs = this._now();
         if (!Number.isSafeInteger(atMs) || atMs < 0)
-            return;
+            {return;}
         if (atMs === this._lastRecordAtMs) {
             if (atMs === Number.MAX_SAFE_INTEGER)
-                return;
+                {return;}
             atMs += 1;
         }
         let changed = false;
         for (const sample of samples) {
             if (!sample || typeof sample !== 'object')
-                continue;
+                {continue;}
             const next = recordSample(this._store, {
                 providerId: sample.providerId,
                 windowId: sample.windowId,
@@ -139,6 +143,8 @@ export class HistoryRuntime {
             GLib.mkdir_with_parents(this._dir, 0o700);
             GLib.file_set_contents(this._path,
                 JSON.stringify(serializeStore(this._store)));
-        } catch {}
+        } catch (_) {
+            // Persistence failure must not disrupt the live surface.
+        }
     }
 }

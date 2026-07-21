@@ -9,7 +9,6 @@ source_docs:
   - docs/product/briefs/2026-07-17-local-history.md
   - docs/product/pitch.md
 parent_ids: [BRIEF-LOCAL-HISTORY]
-child_docs: []
 tags: [gnome, history, chart]
 supersedes: []
 ---

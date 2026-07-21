@@ -9,11 +9,6 @@ source_docs:
   - docs/product/pitch.md
   - docs/product/feature-horizon.md
 parent_ids: [PITCH-CLAUDEX-USAGE]
-child_docs:
-  - docs/product/specs/2026-07-16-usage-surface.md
-  - docs/product/specs/2026-07-17-codex-adapter.md
-  - docs/product/specs/2026-07-17-claude-adapter.md
-  - docs/product/specs/2026-07-21-codebase-cleanup.md
 tags: [gnome, claude, codex, usage]
 supersedes: []
 ---
