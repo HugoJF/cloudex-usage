@@ -13,7 +13,6 @@ import {FooterStatus} from './shared/footer-status.js';
 import {HistoryChart} from './shared/history-chart.js';
 import {IconButton} from './shared/icon-button.js';
 import {Legend} from './shared/legend.js';
-import {PanelIndicator} from './shared/panel-indicator.js';
 import {PopoverScaffold} from './shared/popover-scaffold.js';
 import {setProgressBarPace} from './shared/progress-bar.js';
 import {ProviderCard} from './shared/provider-card.js';
@@ -45,6 +44,7 @@ const HISTORY_SERIES_META = Object.freeze({
 import {validateTokens} from './shared/token-geometry.js';
 import {SurfaceController} from './surface-controller.js';
 import {nextMinuteDelay} from './temporal.js';
+import {buildPanelView} from './panel-view.js';
 
 function loadTokens(extensionPath) {
     const file = Gio.File.new_for_path(`${extensionPath}/tokens.json`);
@@ -86,6 +86,13 @@ function findActor(root, name) {
 }
 
 export default class ClaudexUsageExtension extends Extension {
+    _requireController() {
+        if (!this._controller) {
+            throw new Error('extension is not enabled');
+        }
+        return this._controller;
+    }
+
     enable() {
         this._tokens = loadTokens(this.path);
         this._settings = this.getSettings();
@@ -146,16 +153,16 @@ export default class ClaudexUsageExtension extends Extension {
     }
 
     registerProvider(provider) {
-        return this._controller.registerProvider(provider);
+        return this._requireController().registerProvider(provider);
     }
 
     refresh() {
-        this._controller.refresh();
+        this._requireController().refresh();
     }
 
     getSurfaceSnapshot() {
         return {
-            ...this._controller.getSnapshot(),
+            ...this._requireController().getSnapshot(),
             view: this._view,
             preferences: this._preferences,
         };
@@ -217,37 +224,12 @@ export default class ClaudexUsageExtension extends Extension {
             return;
         }
         this._ensureIndicator();
-        const lightPanel = Main.sessionMode.colorScheme === 'prefer-light';
-        const groups = snapshot.providers.map(provider => {
-            const values = provider.metrics
-                .filter(metric => this._preferences.visibility[metric.dataRole])
-                .map(metric => {
-                    const percent = this._displayPercent(metric.percent);
-                    return {
-                        id: metric.windowId,
-                        percent,
-                        accessibleName: `${metric.label}, ${percent} percent ` +
-                            this._preferences.usageDisplay.id,
-                        tone: metric.dataRole === 'dataClaudeShort'
-                            ? 'muted'
-                            : 'normal',
-                    };
-                });
-            const valueDescription = values.length === 0
-                ? 'no panel percentages'
-                : values.map(value => `${value.percent} percent ` +
-                    this._preferences.usageDisplay.id).join(', ');
-            return {
-                id: provider.id,
-                accessibleName: `${provider.marks.accessibleName}, ${valueDescription}`,
-                iconPath: `${this.path}/${lightPanel
-                    ? provider.marks.lightPanel : provider.marks.darkPanel}`,
-                values,
-            };
-        });
-        this._replaceChild(this._panelHost, PanelIndicator({
-            id: 'claudex-live-panel',
-            groups,
+        this._replaceChild(this._panelHost, buildPanelView({
+            snapshot,
+            preferences: this._preferences,
+            extensionPath: this.path,
+            light: Main.sessionMode.colorScheme === 'prefer-light',
+            displayPercent: percent => this._displayPercent(percent),
             tokens: this._tokens,
         }));
         const children = this._view === 'settings'

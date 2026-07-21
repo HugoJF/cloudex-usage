@@ -79,7 +79,7 @@ export default [
     {
         files: [
             'extension/shared/*.js',
-            'extension/{controller-snapshot,controller-validation,temporal}.js',
+            'extension/{controller-snapshot,controller-validation,panel-view,temporal}.js',
         ],
         languageOptions: {
             ecmaVersion: 'latest',
