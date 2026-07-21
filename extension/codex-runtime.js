@@ -6,8 +6,10 @@ import {
     extractCodexAccessToken,
     mapCodexUsage,
 } from './codex-contract.js';
+import {decodeUtf8, readBounded} from './shared/bounded-io.js';
+import {cancelRequest, cleanupRequest} from './shared/cancellable-request.js';
+import {hasExactProcess} from './shared/process-presence.js';
 Gio._promisify(Gio.File.prototype, 'read_async', 'read_finish');
-Gio._promisify(Gio.InputStream.prototype, 'read_bytes_async', 'read_bytes_finish');
 Gio._promisify(Soup.Session.prototype, 'send_async', 'send_finish');
 const ENDPOINT = 'https://chatgpt.com/backend-api/wham/usage';
 const OPTION_KEYS = new Set([
@@ -16,8 +18,6 @@ const OPTION_KEYS = new Set([
     'schedule', 'cancel', 'session',
 ]);
 const UNAVAILABLE = Object.freeze({status: 'unavailable'});
-const COMM_MAX_BYTES = 64;
-const CODEX_COMM = 'codex\n';
 export function createCodexProvider(runtime) {
     for (const name of ['isPresent', 'subscribePresence', 'refreshUsage',
         'cancelRefresh']) {
@@ -93,60 +93,6 @@ function absoluteHttpUri(value) {
             throw new Error();
         return value;
     } catch { throw new Error('Codex endpoint must be an absolute HTTP(S) URI'); }
-}
-function decode(bytes) {
-    return new TextDecoder('utf-8', {fatal: true}).decode(bytes);
-}
-function close(stream) { try { stream?.close(null); } catch {} }
-async function readBounded(stream, limit, cancellable) {
-    const chunks = [];
-    let total = 0;
-    while (true) {
-        const bytes = await stream.read_bytes_async(
-            Math.min(8192, limit - total + 1),
-            GLib.PRIORITY_DEFAULT, cancellable);
-        const size = bytes.get_size();
-        if (!size) break;
-        total += size;
-        if (total > limit) throw new Error('Input exceeds its byte limit');
-        chunks.push(bytes.get_data());
-    }
-    const joined = new Uint8Array(total);
-    let offset = 0;
-    for (const chunk of chunks) {
-        joined.set(chunk, offset); offset += chunk.length;
-    }
-    return joined;
-}
-function readBoundedFile(file, limit) {
-    const info = file.query_info('standard::type',
-        Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
-    if (info.get_file_type() !== Gio.FileType.REGULAR)
-        throw new Error('Input must be a regular file');
-    const stream = file.read(null);
-    try {
-        const chunks = [];
-        let total = 0;
-        while (true) {
-            const bytes = stream.read_bytes(limit - total + 1, null);
-            const size = bytes.get_size();
-            if (size === 0)
-                break;
-            total += size;
-            if (total > limit)
-                throw new Error('Input exceeds its byte limit');
-            chunks.push(bytes.get_data());
-        }
-        const result = new Uint8Array(total);
-        let offset = 0;
-        for (const chunk of chunks) {
-            result.set(chunk, offset);
-            offset += chunk.length;
-        }
-        return result;
-    } finally {
-        close(stream);
-    }
 }
 class SoupTransport {
     constructor() { this._session = new Soup.Session({timeout: 15}); }
@@ -241,13 +187,11 @@ export class CodexRuntime {
                 return UNAVAILABLE;
             const bytes = await readBounded(attempt.stream,
                 this._responseMaxBytes, attempt.cancellable);
-            return mapCodexUsage(JSON.parse(decode(bytes)));
+            return mapCodexUsage(JSON.parse(decodeUtf8(bytes)));
         } catch {
             return UNAVAILABLE;
         } finally {
-            attempt.message?.request_headers.remove('Authorization');
-            close(attempt.stream);
-            attempt.message = null; attempt.stream = null;
+            cleanupRequest(attempt);
             if (this._attempt === attempt)
                 this._attempt = null;
         }
@@ -255,8 +199,7 @@ export class CodexRuntime {
     cancelRefresh() {
         const attempt = this._attempt;
         this._attempt = null;
-        attempt?.message?.request_headers.remove('Authorization');
-        attempt?.cancellable.cancel();
+        cancelRequest(attempt);
     }
     dispose() {
         if (this._disposed)
@@ -278,29 +221,7 @@ export class CodexRuntime {
         this._listener?.(present);
     }
     _scanPresence() {
-        let enumerator = null;
-        try {
-            enumerator = Gio.File.new_for_path(this._procRoot).enumerate_children(
-                'standard::name,owner::user', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
-                null);
-            let info;
-            while ((info = enumerator.next_file(null)) !== null) {
-                const name = info.get_name();
-                if (!/^[0-9]+$/.test(name) ||
-                    info.get_attribute_string('owner::user') !== this._currentUser)
-                    continue;
-                const comm = Gio.File.new_for_path(GLib.build_filenamev(
-                    [this._procRoot, name, 'comm']));
-                try {
-                    const bytes = readBoundedFile(comm, COMM_MAX_BYTES);
-                    if (decode(bytes) === CODEX_COMM)
-                        return true;
-                } catch {}
-            }
-        } catch { return false; } finally {
-            try { enumerator?.close(null); } catch {}
-        }
-        return false;
+        return hasExactProcess(this._procRoot, this._currentUser, 'codex');
     }
     async _readToken(cancellable) {
         if (this._codexHome === null) return null;
@@ -312,9 +233,9 @@ export class CodexRuntime {
         const stream = await file.read_async(GLib.PRIORITY_DEFAULT, cancellable);
         try {
             const bytes = await readBounded(stream, this._authMaxBytes, cancellable);
-            return extractCodexAccessToken(JSON.parse(decode(bytes)));
+            return extractCodexAccessToken(JSON.parse(decodeUtf8(bytes)));
         } finally {
-            close(stream);
+            stream.close(null);
         }
     }
 }
