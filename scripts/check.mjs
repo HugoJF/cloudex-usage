@@ -317,6 +317,9 @@ function assertCaptures(captureDir, captures, label, compareCanonical) {
 }
 
 function writeSharedConsumer(sourceDir, journeyPath) {
+    cpSync(path.join(root, 'tests/fixtures/shared-proof'), sourceDir, {
+        recursive: true,
+    });
     mkdirSync(path.join(sourceDir, 'shared'), {recursive: true});
     cpSync(path.join(root, 'extension/shared'), path.join(sourceDir, 'shared'), {
         recursive: true,
@@ -325,6 +328,8 @@ function writeSharedConsumer(sourceDir, journeyPath) {
         path.join(sourceDir, 'tokens.json'));
     copyFileSync(path.join(root, 'design/direction-lab/stylesheet.css'),
         path.join(sourceDir, 'stylesheet.css'));
+    copyFileSync(path.join(root, 'tests/gjs/shared-proof.journey.js'), journeyPath);
+    return;
     writeFileSync(path.join(sourceDir, 'metadata.json'), JSON.stringify({
         uuid: 'claudex-shared-proof@hugo.local',
         name: 'Claudex Shared Presentation Proof',

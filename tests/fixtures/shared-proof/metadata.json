@@ -1,0 +1,7 @@
+{
+  "uuid": "claudex-shared-proof@hugo.local",
+  "name": "Claudex Shared Presentation Proof",
+  "description": "Committed second-consumer fixture",
+  "version": 1,
+  "shell-version": ["50"]
+}

@@ -64,7 +64,7 @@ Canonical reference: [Direction D — Selected Blend](../../../design/direction-
 
 Primitives composed: `PopoverScaffold`, `PanelIndicator`, `ProviderGroup`,
 `ProviderCard`, `UsageMetric`, `ProgressBar`, `HistoryChart`, `Legend`,
-`RangeSelector`, `IconButton`, `SettingsRow`, `Switch`, `ChoiceRow`, and
+`HistoryRangeStepper`, `IconButton`, `SettingsRow`, `Switch`, `ChoiceRow`, and
 `FooterStatus`.
 
 New primitives introduced: the inventory above is the initial primitive budget. Any

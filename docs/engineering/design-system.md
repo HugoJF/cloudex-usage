@@ -58,7 +58,7 @@ status, or decorative surfaces.
 | `ProgressBar` | presentation-ready metric model; always zero-origin; optional finite 0–100 `pacePercent` renders a neutral 2 px `pace-{id}` marker |
 | `HistoryChart` | safe ID, accessible name, axis labels, equal-length 0–100 series with semantic data roles and explicit stroke widths |
 | `Legend` | safe, unique entry IDs, full labels, semantic data roles |
-| `RangeSelector` | nonempty unique choices, valid selected ID, accessible names, selection callback receiving the stable ID |
+| `HistoryRangeStepper` | canonical ordered choices, selected object identity, stable previous/value/next IDs, accessible controls, wraparound callback |
 | `IconButton` | safe ID, symbolic icon, accessible name, activation callback, strict optional busy state; transparent / hover / focus states |
 | `SettingsRow` | safe ID, title, description, accessible name, boolean state, callback receiving the stable ID |
 | `Switch` | on / off; fixed 32 × 18 track and 14 px thumb |

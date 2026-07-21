@@ -20,9 +20,9 @@ import {
     PopoverScaffold,
     ProgressBar,
     ProviderCard,
-    RangeSelector,
     SettingsRow,
 } from './shared/primitives.js';
+import {HistoryRangeStepper} from './shared/history-range-stepper.js';
 
 function box(styleClass, orientation = Clutter.Orientation.HORIZONTAL, properties = {}) {
     return new St.BoxLayout({style_class: styleClass, orientation, ...properties});
@@ -176,27 +176,6 @@ function rangeSelectPreview({range, variant, onActivate, tokens}) {
     });
     actor.set_accessible_name(`Usage history range, ${rangeLabel(range, variant)}`);
     actor.connect('clicked', onActivate);
-    return actor;
-}
-
-function refinementVariantSelector({selected, onSelect}) {
-    const actor = box('selected-history-header',
-        Clutter.Orientation.HORIZONTAL, {
-            name: 'refinement-variant-selector',
-            x_expand: true,
-        });
-    actor.add_child(label('Preview', 'selected-section-title', {
-        x_expand: true,
-    }));
-    actor.add_child(RangeSelector({
-        choices: ['a', 'b', 'c'].map(id => ({
-            id,
-            label: id.toUpperCase(),
-            accessibleName: `Preview variant ${id.toUpperCase()}`,
-        })),
-        selected,
-        onSelect,
-    }));
     return actor;
 }
 
@@ -404,12 +383,6 @@ function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
     }));
 
     const children = [header];
-    if (showPreviewControls) {
-        children.push(refinementVariantSelector({
-            selected: variant,
-            onSelect: actions.selectRefinementVariant,
-        }));
-    }
     children.push(
         refinementProviderCard({
             id: 'claude',
@@ -524,12 +497,6 @@ function buildRefinementSettingsPopover({state, tokens, actions,
     }));
 
     const children = [header];
-    if (showPreviewControls) {
-        children.push(refinementVariantSelector({
-            selected: state.refinementVariant,
-            onSelect: actions.selectRefinementVariant,
-        }));
-    }
     children.push(panelSection, displaySection, historySection, updatesSection);
 
     return PopoverScaffold({
@@ -603,14 +570,11 @@ function buildUsagePopover({state, extensionPath, tokens, actions}) {
     historyHeader.add_child(label('Usage history', 'selected-section-title', {
         x_expand: true,
     }));
-    historyHeader.add_child(RangeSelector({
-        choices: RANGES.map(id => ({
-            id,
-            label: id,
-            accessibleName: `${id} history range`,
-        })),
-        selected: state.activeRange,
-        onSelect: actions.selectRange,
+    const ranges = RANGES.map((id, index) => ({id, index, label: id}));
+    historyHeader.add_child(HistoryRangeStepper({
+        choices: ranges,
+        selected: ranges.find(range => range.id === state.activeRange),
+        onSelect: range => actions.selectRange(range.id),
     }));
     history.add_child(historyHeader);
     history.add_child(HistoryChart({

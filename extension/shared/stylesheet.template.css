@@ -84,7 +84,6 @@
 
 .selected-settings-button:focus,
 .selected-back-button:focus,
-.claudex-range-button:focus,
 .claudex-history-range-step:focus,
 .claudex-text-button:focus,
 .selected-setting-button:focus,
@@ -189,28 +188,6 @@
   width: {{size.chartAxisWidth}}px;
   font-size: {{type.kicker.size}}pt;
   color: {{color.foregroundMuted}};
-}
-
-.claudex-range-selector {
-  spacing: {{space.micro}}px;
-}
-
-.claudex-range-button {
-  padding: {{space.micro}}px {{space.compact}}px;
-  border-radius: {{radius.control}}px;
-  color: {{color.foregroundMuted}};
-  background-color: {{color.surfaceControl}};
-}
-
-.claudex-range-button:hover,
-.claudex-range-button:focus {
-  color: {{color.foregroundPrimary}};
-  background-color: {{color.surfaceHover}};
-}
-
-.claudex-range-button.active {
-  color: {{color.surfaceRoot}};
-  background-color: {{color.focus}};
 }
 
 .claudex-history-range-stepper {

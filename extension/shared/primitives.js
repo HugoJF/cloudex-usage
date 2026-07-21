@@ -420,30 +420,6 @@ export function Legend({entries, tokens}) {
     return actor;
 }
 
-export function RangeSelector({choices, selected, onSelect}) {
-    validatePresentationModels({
-        rangeChoices: choices,
-        selectedRange: selected,
-        callbacks: [onSelect],
-    });
-    const actor = box('claudex-range-selector');
-    for (const choice of choices) {
-        const active = choice.id === selected;
-        const rangeButton = button({
-            id: `range-${choice.id}`,
-            text: choice.label,
-            styleClass: `claudex-range-button${active ? ' active' : ''}`,
-            accessibleName: choice.accessibleName,
-            toggleMode: true,
-            checked: active,
-            onActivate: () => onSelect(choice.id),
-        });
-        rangeButton.accessible_role = Atk.Role.RADIO_BUTTON;
-        actor.add_child(rangeButton);
-    }
-    return actor;
-}
-
 export function IconButton({id, iconName, accessibleName, onActivate, tokens,
     busy = false}) {
     requireId(id, 'Icon button');

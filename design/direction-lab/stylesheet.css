@@ -85,7 +85,6 @@
 
 .selected-settings-button:focus,
 .selected-back-button:focus,
-.claudex-range-button:focus,
 .claudex-history-range-step:focus,
 .claudex-text-button:focus,
 .selected-setting-button:focus,
@@ -190,28 +189,6 @@
   width: 31px;
   font-size: 7pt;
   color: #898c84;
-}
-
-.claudex-range-selector {
-  spacing: 2px;
-}
-
-.claudex-range-button {
-  padding: 2px 7px;
-  border-radius: 8px;
-  color: #898c84;
-  background-color: #292a27;
-}
-
-.claudex-range-button:hover,
-.claudex-range-button:focus {
-  color: #f0efe9;
-  background-color: #363733;
-}
-
-.claudex-range-button.active {
-  color: #1b1c1a;
-  background-color: #b7baaf;
 }
 
 .claudex-history-range-stepper {
