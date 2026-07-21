@@ -31,6 +31,11 @@ function assert(condition, message) {
         throw new Error(`J-002 failed: ${message}`);
 }
 
+function markerX(percent, width) {
+    return Math.max(0, Math.min(width - 2,
+        Math.round(width * percent / 100) - 1));
+}
+
 function deferred() {
     let resolve;
     let reject;
@@ -311,13 +316,15 @@ export async function run() {
         !text.includes('Weekly usage window'),
     'provider cards omit redundant provider detail');
     const fill = findActor(popover, 'progress-fill-claude--short');
-    assert(fill.width === 25, 'percentage uses the canonical zero-origin bar geometry');
+    const initialShortProgress = findActor(popover, 'progress-claude--short');
+    assert(initialShortProgress.width === initialShortProgress.get_parent().width,
+        'progress track spans the full metric row');
+    assert(fill.width === 28, 'percentage uses the canonical zero-origin bar geometry');
     assert(fill.get_parent().accessible_role === Atk.Role.PROGRESS_BAR,
         'usage bar has a progress accessibility role');
-    const initialShortProgress = findActor(popover, 'progress-claude--short');
     const initialShortPace = findActor(popover, 'pace-claude--short');
     const initialCodexPace = findActor(popover, 'pace-codex--weekly');
-    assert(initialShortPace.x === 73 && initialCodexPace.x === 134 &&
+    assert(initialShortPace.x === 82 && initialCodexPace.x === 152 &&
         initialShortProgress.get_accessible_name() ===
             'Claude 5-hour window at 8 percent used; Time pace 23 percent used',
     'every duration-bearing bar shows its neutral elapsed-time marker');
@@ -381,7 +388,7 @@ export async function run() {
     'refresh completion restores the idle icon state');
     const refreshedShortProgress = findActor(popover, 'progress-claude--short');
     const refreshedShortPace = findActor(popover, 'pace-claude--short');
-    assert(refreshedShortPace.x === 256 &&
+    assert(refreshedShortPace.x === 289 &&
         refreshedShortProgress.get_accessible_name() ===
             'Claude 5-hour window at 28 percent used; Time pace 81 percent used',
     'fresh reset timing updates Time pace geometry and accessibility');
@@ -407,7 +414,7 @@ export async function run() {
         findActor(popover, 'reset-label-claude--short').text === 'Resets in 55 mins',
     'one realigned tick advances freshness and reset copy');
     assert(findActor(popover, 'pace-claude--short') === refreshedShortPace &&
-        refreshedShortPace.x === 257 &&
+        refreshedShortPace.x === 290 &&
         refreshedShortProgress.get_accessible_name() ===
             'Claude 5-hour window at 28 percent used; Time pace 82 percent used',
     'presentation tick moves the same Time pace actor and advances its accessibility');
@@ -431,7 +438,7 @@ export async function run() {
     const weeklyPace = findActor(weeklyProgress, 'pace-codex--weekly');
     const rawWeeklyBefore = extension.getSurfaceSnapshot().providers
         .find(provider => provider.id === 'codex').metrics[0].weekdayElapsedPercent;
-    assert(weeklyPace.x === 38 &&
+    assert(weeklyPace.x === 43 &&
         weeklyProgress.get_accessible_name() ===
             'Codex Weekly window at 42 percent used; Time pace 12 percent used',
     'weekday pace starts below both presentation rounding thresholds');
@@ -447,7 +454,7 @@ export async function run() {
     const rawWeeklyAfter = extension.getSurfaceSnapshot().providers
         .find(provider => provider.id === 'codex').metrics[0].weekdayElapsedPercent;
     assert(findActor(popover, 'pace-codex--weekly') === weeklyPace &&
-        weeklyPace.x === 39 && rawWeeklyAfter > rawWeeklyBefore &&
+        weeklyPace.x === 44 && rawWeeklyAfter > rawWeeklyBefore &&
         weeklyProgress.get_accessible_name() ===
             'Codex Weekly window at 42 percent used; Time pace 13 percent used',
     'weekday tick advances the same marker across pixel and accessibility thresholds');
@@ -455,6 +462,53 @@ export async function run() {
         JSON.stringify(weeklyCallsBeforeTick) &&
         readFileText(historyFile) === historyBeforeWeeklyTick,
     'weekday tick requests no provider data and does not rewrite history');
+
+    const callsBeforeLeftEdge = [claudeCalls, codexCalls];
+    extension._settings.set_enum('usage-display', 1);
+    await settle();
+    assert(JSON.stringify([claudeCalls, codexCalls]) ===
+        JSON.stringify(callsBeforeLeftEdge),
+    'changing to Left for the fresh-window edge requests no provider data');
+    claudePercent = 2;
+    claudeReset = nowMs + 5 * 60 * 60 * 1000 - 60_000;
+    codexPercent = 0;
+    codexReset = nowMs + 6 * 86400000 + 23 * 60 * 60 * 1000;
+    extension.refresh();
+    await settle();
+    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    const leftSnapshot = extension.getSurfaceSnapshot();
+    const leftClaudeMetric = leftSnapshot.providers
+        .find(provider => provider.id === 'claude').metrics[0];
+    const leftCodexMetric = leftSnapshot.providers
+        .find(provider => provider.id === 'codex').metrics[0];
+    const leftShortProgress = findActor(popover, 'progress-claude--short');
+    const leftShortFill = findActor(leftShortProgress,
+        'progress-fill-claude--short');
+    const leftShortPace = findActor(leftShortProgress, 'pace-claude--short');
+    const leftWeeklyProgress = findActor(popover, 'progress-codex--weekly');
+    const leftWeeklyFill = findActor(leftWeeklyProgress,
+        'progress-fill-codex--weekly');
+    const leftWeeklyPace = findActor(leftWeeklyProgress, 'pace-codex--weekly');
+    assert(leftClaudeMetric.percent === 2 && leftCodexMetric.percent === 0,
+        'fresh-window edge retains canonical Used provider values');
+    assert(collectLabelText(popover).includes('98%') &&
+        collectLabelText(popover).includes('100%'),
+    'fresh-window edge presents the expected Left percentages');
+    assert(leftShortProgress.width === leftShortProgress.get_parent().width &&
+        leftWeeklyProgress.width === leftWeeklyProgress.get_parent().width &&
+        leftShortFill.width === Math.round(leftShortProgress.width * 0.98) &&
+        leftWeeklyFill.width === leftWeeklyProgress.width,
+    'near-full Left bars span their complete metric rows');
+    assert(leftShortPace.x === markerX(100 - leftClaudeMetric.elapsedPercent,
+        leftShortProgress.width) &&
+        leftWeeklyPace.x === markerX(100 - leftCodexMetric.weekdayElapsedPercent,
+            leftWeeklyProgress.width),
+    'fresh rolling and weekday markers use their near-full Left geometry');
+    extension._settings.set_enum('usage-display', 0);
+    claudePercent = 28;
+    claudeReset = nowMs + 55 * 60 * 1000;
+    codexPercent = 42;
+    await settle();
 
     extension._settings.set_enum('weekly-pace', 0);
     codexReset = Number.MAX_SAFE_INTEGER;
@@ -503,6 +557,19 @@ export async function run() {
     const themeContext = St.ThemeContext.get_for_stage(global.stage);
     const originalScale = themeContext.scale_factor;
     themeContext.set_scale_factor(2);
+    await settle();
+    indicator.menu.open();
+    await settle();
+    const scaledPopover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    const scaledShortProgress = findActor(scaledPopover,
+        'progress-claude--short');
+    const scaledShortFill = findActor(scaledShortProgress,
+        'progress-fill-claude--short');
+    assert(scaledShortProgress.width === scaledShortProgress.get_parent().width &&
+        scaledShortFill.width === Math.round(
+            scaledShortProgress.width * 0.28 / themeContext.scale_factor),
+    '200 percent scale preserves full-row logical progress geometry');
+    indicator.menu.close();
     await settle();
     await captureActor(
         () => findActor(Main.panel.statusArea[UUID], 'claudex-live-panel'),

@@ -195,8 +195,11 @@ export async function run() {
         'usage popup includes the merged chart');
     const shortFill = findActor(actors.popover, 'progress-fill-claudeShort');
     const weeklyFill = findActor(actors.popover, 'progress-fill-claudeWeekly');
-    assert(shortFill.width === 25, 'Claude 5-hour bar uses exact 8% geometry');
-    assert(weeklyFill.width === 215, 'Claude weekly bar uses exact 68% geometry');
+    const shortProgress = shortFill.get_parent();
+    assert(shortProgress.width === shortProgress.get_parent().width,
+        'progress track spans the full metric row');
+    assert(shortFill.width === 28, 'Claude 5-hour bar uses exact 8% geometry');
+    assert(weeklyFill.width === 242, 'Claude weekly bar uses exact 68% geometry');
     const settingsButton = findActor(actors.popover, 'settings-button');
     assert(settingsButton.get_accessible_name() === 'Open settings',
         'settings action has an accessible name');

@@ -79,6 +79,7 @@ screen must list composed primitives and explicitly justify additions.
 
 - Group limits by provider before grouping them by window duration.
 - Show utilization as a zero-origin bar and an explicit percentage.
+- Let each progress track span the provider card's full metric-content width.
 - When enabled, place a neutral Time pace marker over the bar at the elapsed-window
   percentage in the selected Used/Left basis; keep it distinct from provider data color.
 - Keep reset timing adjacent to its own limit.

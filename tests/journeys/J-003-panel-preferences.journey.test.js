@@ -293,15 +293,17 @@ async function writePhase(extension, indicator, refreshCounts) {
         usageText.includes('92%') && usageText.includes('32%') &&
         usageText.includes('58%'),
     'back shows every complemented popup value');
-    assert(shortFill.width === 291,
+    assert(shortProgress.width === shortProgress.get_parent().width,
+        'progress track spans the full metric row');
+    assert(shortFill.width === 328,
         'back shows complemented popup progress geometry');
-    assert(shortPace?.x === 189 &&
+    assert(shortPace?.x === 213 &&
         shortProgress.get_accessible_name() ===
             'Claude 5-hour window at 92 percent left; Time pace 60 percent left',
     'back complements Time pace geometry and accessibility with the display basis');
     const weeklyProgress = findActor(indicator.menu.actor,
         'progress-claude--weekly');
-    assert(findActor(weeklyProgress, 'pace-claude--weekly')?.x === 180 &&
+    assert(findActor(weeklyProgress, 'pace-claude--weekly')?.x === 202 &&
         weeklyProgress.get_accessible_name() ===
             'Claude Weekly window at 32 percent left; Time pace 57 percent left',
     'Every day remains the default weekly pace basis');
@@ -329,11 +331,11 @@ async function writePhase(extension, indicator, refreshCounts) {
         'progress-claude--short');
     const weekdayWeeklyProgress = findActor(indicator.menu.actor,
         'progress-claude--weekly');
-    assert(findActor(weekdayShortProgress, 'pace-claude--short')?.x === 189 &&
+    assert(findActor(weekdayShortProgress, 'pace-claude--short')?.x === 213 &&
         weekdayShortProgress.get_accessible_name() ===
             'Claude 5-hour window at 92 percent left; Time pace 60 percent left',
     'Weekdays leaves the rolling 5-hour pace unchanged');
-    assert(findActor(weekdayWeeklyProgress, 'pace-claude--weekly')?.x === 220 &&
+    assert(findActor(weekdayWeeklyProgress, 'pace-claude--weekly')?.x === 248 &&
         weekdayWeeklyProgress.get_accessible_name() ===
             'Claude Weekly window at 32 percent left; Time pace 70 percent left',
     'Weekdays compresses the weekly provider window onto local weekdays');

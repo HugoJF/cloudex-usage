@@ -754,12 +754,12 @@ export async function run() {
         'Burst load at 37.5 percent', 'progress accessible name is model-driven');
     const paceMarker = findActor(proof.progress, 'pace-burstLoad');
     const progressChildren = proof.progress.get_children();
-    assert(paceMarker?.x === 118 &&
+    assert(paceMarker?.x === Math.round(proof.progress.width * 0.375) - 1 &&
         progressChildren[progressChildren.length - 1] === paceMarker &&
         !findActor(proof.plainProgress, 'pace-plainLoad'),
     'optional Time pace marker uses canonical geometry and stacks above the fill');
     extension.setProofPace(proof.progress, 100);
-    assert(paceMarker.x === 314 &&
+    assert(paceMarker.x === proof.progress.width - 2 &&
         rejects(() => extension.setProofPace(proof.plainProgress, 50)) &&
         rejects(() => extension.setProofPace(proof.progress, -1)),
     'Time pace setter clamps endpoints and rejects plain or invalid bars');

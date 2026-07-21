@@ -261,9 +261,11 @@ export async function run() {
         'current cards show every Left complement');
         const shortFill = findActor(shortProgress, 'progress-fill-claude--short');
         const shortPace = findActor(shortProgress, 'pace-claude--short');
-        assert(shortFill.width === 218,
+        assert(shortProgress.width === shortProgress.get_parent().width,
+            'current progress track spans the full metric row');
+        assert(shortFill.width === 246,
             'current progress geometry uses the Left complement');
-        assert(shortPace?.x === 314 &&
+        assert(shortPace?.x === 354 &&
             shortProgress.get_accessible_name() ===
                 'Claude 5-hour window at 69 percent left; Time pace 100 percent left',
         'current progress accessibility and Time pace name the Left complement');

@@ -1,7 +1,7 @@
 ---
 id: SPEC-USAGE-SURFACE
 type: spec
-status: draft
+status: done
 owner: hugo
 created: 2026-07-16
 updated: 2026-07-21
@@ -156,7 +156,7 @@ ProgressBar marker. Shared changes land only in their owning slices.
   built-ins, and derive bounded elapsed percentage. Medium: ≤12 files / 500 lines.
 - [x] `SURF-009` — add default-on Time pace markers that follow Used/Left and the
   visible tick without changing usage. Medium: ≤15 files / 800 lines.
-- [ ] `SURF-010` — persist an Every day or Weekdays weekly-pace schedule and apply it
+- [x] `SURF-010` — persist an Every day or Weekdays weekly-pace schedule and apply it
   immediately to weekly markers using the local calendar while shorter rolling
   windows retain elapsed-clock pace. Medium: one temporal presentation invariant,
   at most 15 edited files and 700 handwritten lines. Depends on `SURF-009`.
