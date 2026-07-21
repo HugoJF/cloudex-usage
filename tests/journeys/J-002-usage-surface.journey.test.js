@@ -282,7 +282,7 @@ export async function run() {
         GLib.get_user_data_dir(), 'claudex-usage',
     ]);
     assert(historyRoot && historyRoot !== defaultHistoryRoot &&
-        findActor(popover, 'select-history-range') &&
+        findActor(popover, 'history-range-stepper') &&
         !findActor(popover, 'history-chart'),
     'surface fixture records uncovered history only inside its isolated store');
     const historyFile = Gio.File.new_for_path(historyRoot).get_child('history.json');
@@ -331,12 +331,12 @@ export async function run() {
             'Claude 5-hour window at 28 percent used; Time pace 81 percent used',
     'fresh reset timing updates Time pace geometry and accessibility');
 
-    const rangeTrigger = findActor(popover, 'select-history-range');
-    rangeTrigger.emit('clicked', 1);
-    const rangeOptions = findActor(popover, 'select-history-range-options');
-    const selectedOption = findActor(popover, 'select-history-range-option-6h');
-    assert(rangeOptions.visible && global.stage.get_key_focus() === selectedOption,
-        'history select is open with its selected option focused before the tick');
+    const rangeStepper = findActor(popover, 'history-range-stepper');
+    const previousRange = findActor(popover, 'history-range-previous');
+    previousRange.grab_key_focus();
+    assert(findActor(popover, 'history-range-value').text === '6h' &&
+        global.stage.get_key_focus() === previousRange,
+    'history range stepper is focused before the tick');
     historyBeforeTick = readFileText(historyFile);
     const callsBeforeTick = [claudeCalls, codexCalls];
     const sourceBeforeTick = extension._presentationSourceId;
@@ -356,11 +356,10 @@ export async function run() {
         refreshedShortProgress.get_accessible_name() ===
             'Claude 5-hour window at 28 percent used; Time pace 82 percent used',
     'presentation tick moves the same Time pace actor and advances its accessibility');
-    assert(findActor(popover, 'select-history-range') === rangeTrigger &&
-        findActor(popover, 'select-history-range-options') === rangeOptions &&
-        findActor(popover, 'select-history-range-option-6h') === selectedOption &&
-        rangeOptions.visible && global.stage.get_key_focus() === selectedOption,
-    'presentation tick preserves the open select actor tree and focused option');
+    assert(findActor(popover, 'history-range-stepper') === rangeStepper &&
+        findActor(popover, 'history-range-previous') === previousRange &&
+        global.stage.get_key_focus() === previousRange,
+    'presentation tick preserves the range stepper and focused arrow');
     assert(JSON.stringify([claudeCalls, codexCalls]) === JSON.stringify(callsBeforeTick) &&
         readFileText(historyFile) === historyBeforeTick,
     'presentation tick requests no provider data and does not rewrite history');

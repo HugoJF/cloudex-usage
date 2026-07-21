@@ -1,10 +1,10 @@
 ---
 id: SPEC-LOCAL-HISTORY
 type: spec
-status: done
+status: draft
 owner: hugo
 created: 2026-07-17
-updated: 2026-07-19
+updated: 2026-07-20
 source_docs:
   - docs/product/briefs/2026-07-17-local-history.md
   - docs/product/pitch.md
@@ -42,7 +42,7 @@ Acceptance:
 
 ## Surface Map
 
-- Usage popup chart — merged multi-provider trajectory, compact range select, and legend,
+- Usage popup chart — merged multi-provider trajectory, compact range stepper, and legend,
   drawn from recorded samples while local history is on.
 - Settings — the local-history toggle and range choice persist across sessions.
 - Absent-history state — with local history off or no samples yet, the popup shows
@@ -63,11 +63,10 @@ Acceptance:
 
 Canonical reference: [Usage refinement, variant A — Quiet Utility](../../../design/direction-lab/USAGE-REFINEMENT-EXPLORATION.md#variant-a--quiet-utility),
 within [Direction D — Selected Blend](../../../design/direction-lab/DIRECTION-BRIEF.md#d--selected-blend).
-The popup composes `HistoryChart`, `Legend`, and the shipped `CompactSelect`
-primitive. Claude 5-hour keeps its 1 px line and both weekly series their 2.5 px
-lines. The persisted range and chart geometry stay unchanged. Arrow keys, Home,
-End, Enter, and Space operate the select; Escape follows the native Shell contract
-and closes the containing popup, with the inline option list reset on unmap.
+The popup composes `HistoryChart` and `Legend` with an inline `< 6h >` range stepper.
+Claude 5-hour keeps its 1 px line and both weekly series their 2.5 px lines. The
+persisted range and chart geometry stay unchanged. Each arrow is a native focusable
+button, wraps across the ordered range set, and preserves focus after selection.
 
 ## Contracts
 
@@ -107,11 +106,16 @@ read boundary; the surface continues to own polling, rendering, and provider lif
   and range settings into the production popup behind the store, and prove J-006 through
   the production surface. Medium: one recording-to-presentation invariant, at most 15
   files and 800 handwritten lines.
-- [x] `HIST-003` — replace the five always-visible range buttons with one compact,
-  keyboard-accessible select menu while preserving the range enum, empty-range escape,
-  and no-request rerender behavior. Medium: one range-selection invariant, at most 12
+- [x] `HIST-003` — replace the five always-visible range buttons with one compact
+  history-range control while preserving the range enum, empty-range escape, and
+  no-request rerender behavior. Medium: one range-selection invariant, at most 12
   hand-edited files and 700 handwritten lines, plus generated styles, captures, and
   conformance metadata.
+- [ ] `HIST-004` — replace the range menu with an inline previous/value/next stepper,
+  deleting all popup and overlay behavior while preserving ordered selection, focus,
+  empty-range escape, and no-request behavior. Small: one range-control invariant, at
+  most 8 hand-edited files and 400 handwritten lines, plus generated styles and capture
+  evidence.
 
 ## Non-Scope
 

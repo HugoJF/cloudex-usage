@@ -86,7 +86,7 @@
 .selected-settings-button:focus,
 .selected-back-button:focus,
 .claudex-range-button:focus,
-.claudex-select-option:focus,
+.claudex-history-range-step:focus,
 .claudex-text-button:focus,
 .selected-setting-button:focus,
 .selected-choice-button:focus {
@@ -214,36 +214,22 @@
   background-color: #b7baaf;
 }
 
-.claudex-compact-select {
+.claudex-history-range-stepper {
   spacing: 2px;
 }
 
-.claudex-select-options {
-  min-width: 68px;
-  padding: 2px;
-  spacing: 2px;
-  border-radius: 8px;
-  color: #b7bab1;
-  background-color: #252623;
-  border: 1px solid #353632;
-}
-
-.claudex-select-option {
-  padding: 2px 7px;
+.claudex-history-range-step {
+  min-width: 18px;
+  padding: 0 2px;
   border-radius: 8px;
   color: #b7bab1;
   background-color: transparent;
 }
 
-.claudex-select-option:hover,
-.claudex-select-option:focus {
+.claudex-history-range-step:hover,
+.claudex-history-range-step:focus {
   color: #f0efe9;
   background-color: #363733;
-}
-
-.claudex-select-option.active {
-  color: #f0efe9;
-  background-color: #292a27;
 }
 
 .claudex-legend {

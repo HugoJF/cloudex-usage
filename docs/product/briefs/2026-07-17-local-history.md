@@ -43,7 +43,7 @@ capability:
 - The trajectory is built from samples captured during the existing opportunistic
   refresh cycle, so it adds no background monitoring when no agent is present.
 - History is local-only and durable across Shell restarts; nothing leaves the machine.
-- It reuses the shipped `HistoryChart`, `CompactSelect`, and `Legend` primitives and
+- It reuses the shipped `HistoryChart` and `Legend` primitives and
   the existing local-history and range preferences; live trajectory introduces no
   provider-specific visual language.
 

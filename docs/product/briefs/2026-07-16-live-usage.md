@@ -98,7 +98,7 @@ capability:
 | Concrete app IDs, window classes, and process-vs-window detection are unknown | Resolved — both providers gate on an exact current-user process (`codex`, `claude`); CLAUDE-001 freezes the Claude credential and response boundary before integration. |
 | The working Codex usage endpoint is internal and may change | Resolved — accepted as the bundle's sole internal-endpoint exception; CODEX-001 freezes a fail-closed fixture contract before CODEX-002 integrates it. |
 | Refresh cadence balancing usefulness and provider load | Resolved — a user-facing cadence choice ships in the surface settings (owner decision 2026-07-16); the value set and default stay decision-log territory. |
-| Five inline history ranges compete with the popup header and new actions | Resolved — retain inline access through one compact select menu; selection still performs no provider request. |
+| Five inline history ranges compete with the popup header and new actions | Resolved — retain inline access through a compact previous/value/next stepper; selection still performs no provider request. |
 | A pace guide could imply a provider-prescribed or optimal usage target | Resolved — name it Time pace, derive it only from elapsed window time, make it globally disableable, and show no ahead/behind judgment. |
 | Relative freshness, reset copy, and a moving time marker could add provider work | Resolved — one presentation-only minute tick updates visible copy and geometry without starting a provider refresh. |
 | Refresh feedback could require a second completion-state timer | Resolved — show a busy refresh icon only for the controller's existing in-flight state; the footer timestamp is completion feedback. |

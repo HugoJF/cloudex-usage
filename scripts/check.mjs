@@ -51,9 +51,9 @@ const surfaceCaptures = [
     'surface-settings-cadence-focus-hover.png',
     'surface-settings-light-100.png',
     'surface-left-popup-dark-100.png',
-    'surface-history-range-open-dark-100.png',
-    'surface-history-range-open-light-100.png',
-    'surface-history-range-open-dark-200.png',
+    'surface-history-stepper-dark-100.png',
+    'surface-history-stepper-light-100.png',
+    'surface-history-stepper-dark-200.png',
 ];
 
 function run(command, args, options = {}) {
@@ -346,7 +346,6 @@ import Gio from 'gi://Gio';
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {
-    CompactSelect,
     FooterStatus,
     HistoryChart,
     IconButton,
@@ -377,21 +376,6 @@ export default class SharedProofExtension extends Extension {
         const tokens = loadTokens(this.path);
         this.tokens = tokens;
         this.events = [];
-        const selectChoices = [
-            {id: 'burst', label: 'Burst', accessibleName: 'Burst option'},
-            {id: 'season', label: 'Season', accessibleName: 'Season option'},
-        ];
-        this.select = CompactSelect({
-            id: 'proof-window',
-            choices: selectChoices,
-            selected: 'season',
-            accessibleName: 'Proof window, Season',
-            onSelect: id => this.events.push(['select', id]),
-            tokens,
-        });
-        selectChoices[0].id = 'mutated';
-        selectChoices[0].label = 'Mutated';
-        selectChoices[0].accessibleName = 'Mutated option';
         this.panel = PanelIndicator({
             id: 'proof-panel',
             groups: [{
@@ -517,7 +501,7 @@ export default class SharedProofExtension extends Extension {
             id: 'proof-popover',
             view: 'proof',
             children: [this.panel, this.compactProvider, this.detailedProvider,
-                this.progress, this.plainProgress, this.range, this.select, this.setting,
+                this.progress, this.plainProgress, this.range, this.setting,
                 this.refreshIdle, this.refreshBusy, this.footer,
                 this.actionFooter, this.metric, this.chart],
         });
@@ -534,7 +518,6 @@ export default class SharedProofExtension extends Extension {
             compactProvider: this.compactProvider,
             detailedProvider: this.detailedProvider,
             range: this.range,
-            select: this.select,
             setting: this.setting,
             refreshIdle: this.refreshIdle,
             refreshBusy: this.refreshBusy,
@@ -555,17 +538,6 @@ export default class SharedProofExtension extends Extension {
     validationFailures() {
         const baseSeries = {id: 'line', values: [0, 100],
             dataRole: 'dataClaudeShort', strokeWidth: 1};
-        const compact = {
-            id: 'proof',
-            choices: [
-                {id: 'one', label: 'One', accessibleName: 'One option'},
-                {id: 'two', label: 'Two', accessibleName: 'Two option'},
-            ],
-            selected: 'one',
-            accessibleName: 'Proof select, One',
-            onSelect: () => {},
-            tokens: this.tokens,
-        };
         const probes = [
             ['unsafe id', () => validatePresentationModels({ids: ['unsafe id']})],
             ['duplicate id', () => validatePresentationModels({ids: ['same', 'same']})],
@@ -685,37 +657,6 @@ export default class SharedProofExtension extends Extension {
                 action: {id: 'bad-action', label: 'Act',
                     accessibleName: 'Bad action'},
             })],
-            ['compact duplicate ids', () => CompactSelect({
-                ...compact,
-                choices: compact.choices.map(choice => ({...choice, id: 'same'})),
-            })],
-            ['compact unknown selection', () => CompactSelect({
-                ...compact, selected: 'missing',
-            })],
-            ['compact empty label', () => CompactSelect({
-                ...compact,
-                choices: [{...compact.choices[0], label: ''}, compact.choices[1]],
-            })],
-            ['compact empty option name', () => CompactSelect({
-                ...compact,
-                choices: [{...compact.choices[0], accessibleName: ''},
-                    compact.choices[1]],
-            })],
-            ['compact empty name', () => CompactSelect({
-                ...compact, accessibleName: '',
-            })],
-            ['compact null callback', () => CompactSelect({
-                ...compact, onSelect: null,
-            })],
-            ['compact missing tokens', () => CompactSelect({
-                ...compact, tokens: {},
-            })],
-            ['compact zero icon', () => CompactSelect({
-                ...compact, tokens: {size: {settingsIcon: 0}},
-            })],
-            ['compact fractional icon', () => CompactSelect({
-                ...compact, tokens: {size: {settingsIcon: 1.5}},
-            })],
         ];
         return Object.fromEntries(probes.map(([name, probe]) => {
             try {
@@ -735,7 +676,6 @@ export default class SharedProofExtension extends Extension {
     disable() {
         this.destroyProof();
         this.range = null;
-        this.select = null;
         this.panel = null;
         this.compactProvider = null;
         this.detailedProvider = null;
@@ -782,11 +722,6 @@ function findActor(root, name) {
             return found;
     }
     return null;
-}
-function hasRelation(source, type, target) {
-    const relation = source.get_accessible().ref_relation_set()
-        .get_relation_by_type(type);
-    return relation?.get_target().includes(target.get_accessible()) ?? false;
 }
 function hasState(actor, state) {
     return actor.get_accessible().ref_state_set().contains_state(state);
@@ -844,33 +779,10 @@ export async function run() {
     const reset = findActor(proof.metric, 'reset-label-proof--burst');
     assert(reset?.text === 'Resets in 1 hr',
         'usage metric exposes its stable reset-label actor contract');
-    const selectTrigger = findActor(proof.select, 'select-proof-window');
-    const selectOptions = findActor(proof.select, 'select-proof-window-options');
-    const burstOption = findActor(proof.select,
-        'select-proof-window-option-burst');
-    assert(selectTrigger.accessible_role === Atk.Role.COMBO_BOX &&
-        hasState(selectTrigger, Atk.StateType.EXPANDABLE),
-    'compact select trigger exposes its expandable combo role');
-    assert(selectOptions.accessible_role === Atk.Role.LIST_BOX &&
-        hasRelation(selectTrigger, Atk.RelationType.CONTROLLER_FOR,
-            selectOptions) &&
-        hasRelation(selectOptions, Atk.RelationType.CONTROLLED_BY,
-            selectTrigger),
-    'compact select relates its trigger and list');
-    assert(!selectOptions.visible && !burstOption.can_focus,
-        'closed compact select removes options from focus');
-    selectTrigger.emit('clicked', 1);
-    assert(selectOptions.visible && burstOption.can_focus,
-        'open compact select exposes focusable options');
-    burstOption.emit('clicked', 1);
-    assert(!selectOptions.visible && !burstOption.can_focus &&
-        burstOption.get_accessible_name() === 'Burst option',
-    'compact select snapshots option records and closes after selection');
     choices[0].emit('clicked', 1);
     proof.setting.emit('clicked', 1);
     assert(JSON.stringify(proof.events) ===
-        JSON.stringify([['select', 'burst'], ['range', 'burst'],
-            ['toggle', 'ambientMode']]),
+        JSON.stringify([['range', 'burst'], ['toggle', 'ambientMode']]),
         'callbacks receive stable model ids');
     for (const [name, rejected] of Object.entries(extension.validationFailures()))
         assert(rejected, \`invalid presentation model fails closed: \${name}\`);

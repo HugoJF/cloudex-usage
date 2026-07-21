@@ -9,7 +9,6 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {
-    CompactSelect,
     FooterStatus,
     HistoryChart,
     IconButton,
@@ -25,7 +24,6 @@ import {
 import {
     displayPercent,
     HISTORY_RANGES,
-    historyRangeIndex,
     isPreferenceKey,
     nextRefreshInterval,
     nextUsageDisplay,
@@ -95,8 +93,7 @@ export default class ClaudexUsageExtension extends Extension {
         this._menuOpenChangedId = null;
         this._view = 'usage';
         this._wasRefreshing = false;
-        this._focusHistoryRangeAfterRender = false;
-        this._historyRangeSelect = null;
+        this._historyRangeFocusId = null;
         this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
             if (!isPreferenceKey(key))
                 return;
@@ -188,8 +185,7 @@ export default class ClaudexUsageExtension extends Extension {
         this._preferences = null;
         this._view = null;
         this._now = null;
-        this._focusHistoryRangeAfterRender = false;
-        this._historyRangeSelect = null;
+        this._historyRangeFocusId = null;
     }
 
     _recordHistory(snapshot) {
@@ -251,7 +247,6 @@ export default class ClaudexUsageExtension extends Extension {
             groups,
             tokens: this._tokens,
         }));
-        this._historyRangeSelect = null;
         const children = this._view === 'settings'
             ? this._settingsPopover()
             : this._usagePopover(snapshot);
@@ -260,9 +255,9 @@ export default class ClaudexUsageExtension extends Extension {
             view: this._view,
             children,
         }));
-        if (this._focusHistoryRangeAfterRender && this._historyRangeSelect) {
-            this._focusHistoryRangeAfterRender = false;
-            this._historyRangeSelect.focusTrigger();
+        if (this._historyRangeFocusId) {
+            findActor(this._popoverHost, this._historyRangeFocusId)?.grab_key_focus();
+            this._historyRangeFocusId = null;
         }
         this._syncPresentationTimer();
     }
@@ -328,25 +323,38 @@ export default class ClaudexUsageExtension extends Extension {
             x_expand: true,
         });
         head.add_child(label('Usage history', 'selected-section-title', {x_expand: true}));
-        const select = CompactSelect({
-            id: 'history-range',
-            choices: HISTORY_RANGES.map(choice => ({
-                id: choice.id,
-                label: choice.label,
-                accessibleName: `${choice.label} history range`,
-            })),
-            selected: range.id,
-            accessibleName: `Usage history range, ${range.label}`,
-            onSelect: id => {
-                if (id === range.id)
-                    return;
-                this._focusHistoryRangeAfterRender = true;
-                this._settings.set_enum('history-range', historyRangeIndex(id));
-            },
-            tokens: this._tokens,
+        const rangeStepper = new St.BoxLayout({
+            name: 'history-range-stepper',
+            style_class: 'claudex-history-range-stepper',
+            orientation: Clutter.Orientation.HORIZONTAL,
+            x_align: Clutter.ActorAlign.END,
         });
-        this._historyRangeSelect = select;
-        head.add_child(select);
+        const step = (direction, text, accessibleName) => {
+            const controlId = `history-range-${direction}`;
+            const control = new St.Button({
+                name: controlId,
+                label: text,
+                style_class: 'claudex-history-range-step',
+                can_focus: true,
+                reactive: true,
+                track_hover: true,
+            });
+            control.set_accessible_name(accessibleName);
+            control.connect('clicked', () => {
+                const delta = direction === 'previous' ? -1 : 1;
+                const next = (range.index + delta + HISTORY_RANGES.length) %
+                    HISTORY_RANGES.length;
+                this._historyRangeFocusId = controlId;
+                this._settings.set_enum('history-range', next);
+            });
+            rangeStepper.add_child(control);
+        };
+        step('previous', '<', 'Previous history range');
+        rangeStepper.add_child(label(range.label, 'selected-choice-value', {
+            name: 'history-range-value',
+        }));
+        step('next', '>', 'Next history range');
+        head.add_child(rangeStepper);
         section.add_child(head);
         if (series.length === 0) {
             section.add_child(new St.Label({

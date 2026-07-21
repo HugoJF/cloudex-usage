@@ -91,7 +91,7 @@ Primitives composed: `PopoverScaffold`, `PanelIndicator`, `ProviderGroup`,
 `ProviderCard`, `UsageMetric`, `ProgressBar`, `IconButton`, `SettingsRow`,
 `Switch`, `ChoiceRow`, and `FooterStatus`.
 
-New primitive/variant budget: a compact select menu, per-value panel tone, optional
+New primitive/variant budget: a compact history-range stepper, per-value panel tone, optional
 provider detail, IconButton busy state, status-only footer, and an optional neutral
 ProgressBar marker. Shared changes land only in their owning slices.
 
