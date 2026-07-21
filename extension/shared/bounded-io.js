@@ -3,8 +3,14 @@ import GLib from 'gi://GLib';
 
 Gio._promisify(Gio.InputStream.prototype, 'read_bytes_async', 'read_bytes_finish');
 
+const READ_CHUNK_BYTES = 8192;
+
 export function closeStream(stream) {
-    try { stream?.close(null); } catch {}
+    try {
+        stream?.close(null);
+    } catch (_) {
+        // Cleanup is best effort after the owning operation has completed.
+    }
 }
 
 function joinChunks(chunks, total) {
@@ -26,14 +32,14 @@ export async function readBounded(stream, limit, cancellable) {
     let total = 0;
     while (true) {
         const bytes = await stream.read_bytes_async(
-            Math.min(8192, limit - total + 1),
+            Math.min(READ_CHUNK_BYTES, limit - total + 1),
             GLib.PRIORITY_DEFAULT, cancellable);
         const size = bytes.get_size();
         if (size === 0)
-            break;
+            {break;}
         total += size;
         if (total > limit)
-            throw new Error('Input exceeds its byte limit');
+            {throw new Error('Input exceeds its byte limit');}
         chunks.push(bytes.get_data());
     }
     return joinChunks(chunks, total);
@@ -43,7 +49,7 @@ export function readBoundedFile(file, limit) {
     const info = file.query_info('standard::type',
         Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
     if (info.get_file_type() !== Gio.FileType.REGULAR)
-        throw new Error('Input must be a regular file');
+        {throw new Error('Input must be a regular file');}
     const stream = file.read(null);
     try {
         const chunks = [];
@@ -52,10 +58,10 @@ export function readBoundedFile(file, limit) {
             const bytes = stream.read_bytes(limit - total + 1, null);
             const size = bytes.get_size();
             if (size === 0)
-                break;
+                {break;}
             total += size;
             if (total > limit)
-                throw new Error('Input exceeds its byte limit');
+                {throw new Error('Input exceeds its byte limit');}
             chunks.push(bytes.get_data());
         }
         return joinChunks(chunks, total);

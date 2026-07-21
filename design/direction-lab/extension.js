@@ -11,18 +11,16 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {CatalogState, HISTORY, USAGE} from './catalog-state.js';
 import {HISTORY_RANGES} from './shared/history-ranges.js';
 import {progressWidth, validateTokens} from './shared/token-geometry.js';
-import {
-    ChoiceRow,
-    FooterStatus,
-    HistoryChart,
-    IconButton,
-    Legend,
-    PanelIndicator,
-    PopoverScaffold,
-    ProgressBar,
-    ProviderCard,
-    SettingsRow,
-} from './shared/primitives.js';
+import {ChoiceRow} from './shared/choice-row.js';
+import {FooterStatus} from './shared/footer-status.js';
+import {HistoryChart} from './shared/history-chart.js';
+import {IconButton} from './shared/icon-button.js';
+import {Legend} from './shared/legend.js';
+import {PanelIndicator} from './shared/panel-indicator.js';
+import {PopoverScaffold} from './shared/popover-scaffold.js';
+import {ProgressBar} from './shared/progress-bar.js';
+import {ProviderCard} from './shared/provider-card.js';
+import {SettingsRow} from './shared/settings-row.js';
 import {HistoryRangeStepper} from './shared/history-range-stepper.js';
 
 function box(styleClass, orientation = Clutter.Orientation.HORIZONTAL, properties = {}) {
@@ -101,7 +99,7 @@ function updatePanelThemeIcons(actor, extensionPath, lightPanel) {
 }
 
 function compactPanelValue(text, muted, tokens) {
-    return label(text, 'claudex-panel-selected-value', muted
+    return label(text, 'claudex-panel-value', muted
         ? {style: `color: ${tokens.color.foregroundMuted};`}
         : {});
 }
@@ -160,15 +158,15 @@ function rangeLabel(range, variant) {
 }
 
 function rangeSelectPreview({range, variant, onActivate, tokens}) {
-    const row = box('selected-choice-row', Clutter.Orientation.HORIZONTAL);
-    row.add_child(label(rangeLabel(range, variant), 'selected-choice-value'));
+    const row = box('claudex-choice-row', Clutter.Orientation.HORIZONTAL);
+    row.add_child(label(rangeLabel(range, variant), 'claudex-choice-value'));
     row.add_child(new St.Icon({
         icon_name: 'pan-down-symbolic',
         icon_size: tokens.size.settingsIcon / 2,
     }));
     const actor = new St.Button({
         name: 'refinement-range-select',
-        style_class: 'selected-choice-button',
+        style_class: 'claudex-choice-button',
         can_focus: true,
         reactive: true,
         track_hover: true,
@@ -256,7 +254,7 @@ function refinementMetric({usage, variant, showTimePace, tokens}) {
 
 function refinementProviderCard({id, title, metrics, variant, showTimePace,
     extensionPath, tokens}) {
-    const actor = column('selected-provider-card', {name: `refinement-card-${id}`});
+    const actor = column('claudex-provider-card', {name: `refinement-card-${id}`});
     actor.add_child(refinementProviderHeader({
         id,
         title,
@@ -275,15 +273,15 @@ function refinementProviderCard({id, title, metrics, variant, showTimePace,
 }
 
 function statusRefreshButton({onActivate, tokens}) {
-    const row = box('selected-choice-row', Clutter.Orientation.HORIZONTAL);
+    const row = box('claudex-choice-row', Clutter.Orientation.HORIZONTAL);
     row.add_child(new St.Icon({
         icon_name: 'view-refresh-symbolic',
         icon_size: tokens.size.settingsIcon,
     }));
-    row.add_child(label('Updated 3 min', 'selected-choice-value'));
+    row.add_child(label('Updated 3 min', 'claudex-choice-value'));
     const actor = new St.Button({
         name: 'refinement-status-refresh',
-        style_class: 'selected-choice-button',
+        style_class: 'claudex-choice-button',
         can_focus: true,
         reactive: true,
         track_hover: true,
@@ -297,12 +295,12 @@ function statusRefreshButton({onActivate, tokens}) {
 function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
     showPreviewControls}) {
     const variant = 'a';
-    const header = box('selected-header', Clutter.Orientation.HORIZONTAL, {
+    const header = box('claudex-header', Clutter.Orientation.HORIZONTAL, {
         x_expand: true,
     });
-    const copy = column('selected-title-copy', {x_expand: true});
-    copy.add_child(label('USAGE', 'selected-kicker'));
-    copy.add_child(label('Claude + Codex', 'selected-title'));
+    const copy = column('claudex-title-copy', {x_expand: true});
+    copy.add_child(label('USAGE', 'claudex-kicker'));
+    copy.add_child(label('Claude + Codex', 'claudex-title'));
     header.add_child(copy);
     if (variant === 'b')
         header.add_child(label('Refreshing…', 'claudex-updated'));
@@ -331,10 +329,10 @@ function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
         tokens,
     }));
 
-    const history = column('selected-history');
-    const historyHeader = box('selected-history-header',
+    const history = column('claudex-history');
+    const historyHeader = box('claudex-history-header',
         Clutter.Orientation.HORIZONTAL, {x_expand: true});
-    historyHeader.add_child(label('Usage history', 'selected-section-title', {
+    historyHeader.add_child(label('Usage history', 'claudex-section-title', {
         x_expand: true,
     }));
     historyHeader.add_child(rangeSelectPreview({
@@ -348,7 +346,6 @@ function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
         id: 'refinement-history-chart',
         accessibleName: `Usage history for ${state.activeRange}, ` +
             'from zero to one hundred percent',
-        axisLabels: ['100%', '75%', '50%', '25%', '0%'],
         series: [
             {
                 id: 'claudeShort',
@@ -416,11 +413,11 @@ function buildRefinementUsagePopover({state, extensionPath, tokens, actions,
 
 function buildRefinementSettingsPopover({state, tokens, actions,
     showPreviewControls}) {
-    const header = box('selected-settings-header',
+    const header = box('claudex-settings-header',
         Clutter.Orientation.HORIZONTAL, {x_expand: true});
     const back = new St.Button({
         name: 'back-button',
-        style_class: 'selected-back-button',
+        style_class: 'claudex-back-button',
         can_focus: true,
         reactive: true,
         track_hover: true,
@@ -429,10 +426,10 @@ function buildRefinementSettingsPopover({state, tokens, actions,
     back.set_accessible_name('Back to usage');
     back.connect('clicked', actions.openUsage);
     header.add_child(back);
-    header.add_child(label('Settings', 'selected-settings-title', {x_expand: true}));
+    header.add_child(label('Settings', 'claudex-settings-title', {x_expand: true}));
 
-    const panelSection = column('selected-settings-section');
-    panelSection.add_child(label('PANEL', 'selected-settings-kicker'));
+    const panelSection = column('claudex-settings-section');
+    panelSection.add_child(label('PANEL', 'claudex-settings-kicker'));
     for (const [id, title] of [
         ['showClaudeShort', 'Claude 5-hour'],
         ['showClaudeWeekly', 'Claude weekly'],
@@ -456,8 +453,8 @@ function buildRefinementSettingsPopover({state, tokens, actions,
         onActivate: () => {},
     }));
 
-    const displaySection = column('selected-settings-section');
-    displaySection.add_child(label('DISPLAY', 'selected-settings-kicker'));
+    const displaySection = column('claudex-settings-section');
+    displaySection.add_child(label('DISPLAY', 'claudex-settings-kicker'));
     displaySection.add_child(SettingsRow({
         id: 'timePace',
         title: 'Time pace markers',
@@ -475,8 +472,8 @@ function buildRefinementSettingsPopover({state, tokens, actions,
         onActivate: actions.cycleWeeklyPace,
     }));
 
-    const historySection = column('selected-settings-section');
-    historySection.add_child(label('HISTORY', 'selected-settings-kicker'));
+    const historySection = column('claudex-settings-section');
+    historySection.add_child(label('HISTORY', 'claudex-settings-kicker'));
     historySection.add_child(SettingsRow({
         id: 'localHistory',
         title: 'Local usage history',
@@ -487,8 +484,8 @@ function buildRefinementSettingsPopover({state, tokens, actions,
         tokens,
     }));
 
-    const updatesSection = column('selected-settings-section');
-    updatesSection.add_child(label('UPDATES', 'selected-settings-kicker'));
+    const updatesSection = column('claudex-settings-section');
+    updatesSection.add_child(label('UPDATES', 'claudex-settings-kicker'));
     updatesSection.add_child(ChoiceRow({
         id: 'refresh-interval-choice',
         title: 'Refresh while visible',
@@ -550,12 +547,12 @@ function buildPanel({state, extensionPath, tokens, lightPanel}) {
 }
 
 function buildUsagePopover({state, extensionPath, tokens, actions}) {
-    const header = box('selected-header', Clutter.Orientation.HORIZONTAL, {
+    const header = box('claudex-header', Clutter.Orientation.HORIZONTAL, {
         x_expand: true,
     });
-    const copy = column('selected-title-copy', {x_expand: true});
-    copy.add_child(label('USAGE', 'selected-kicker'));
-    copy.add_child(label('Claude + Codex', 'selected-title'));
+    const copy = column('claudex-title-copy', {x_expand: true});
+    copy.add_child(label('USAGE', 'claudex-kicker'));
+    copy.add_child(label('Claude + Codex', 'claudex-title'));
     header.add_child(copy);
     header.add_child(IconButton({
         id: 'settings-button',
@@ -565,10 +562,10 @@ function buildUsagePopover({state, extensionPath, tokens, actions}) {
         tokens,
     }));
 
-    const history = column('selected-history');
-    const historyHeader = box('selected-history-header',
+    const history = column('claudex-history');
+    const historyHeader = box('claudex-history-header',
         Clutter.Orientation.HORIZONTAL, {x_expand: true});
-    historyHeader.add_child(label('Usage history', 'selected-section-title', {
+    historyHeader.add_child(label('Usage history', 'claudex-section-title', {
         x_expand: true,
     }));
     historyHeader.add_child(HistoryRangeStepper({
@@ -581,7 +578,6 @@ function buildUsagePopover({state, extensionPath, tokens, actions}) {
         id: 'history-chart',
         accessibleName: `Usage history for ${state.activeRange}, ` +
             'from zero to one hundred percent',
-        axisLabels: ['100%', '75%', '50%', '25%', '0%'],
         series: [
             {
                 id: 'claudeShort',
@@ -653,11 +649,11 @@ function buildUsagePopover({state, extensionPath, tokens, actions}) {
 }
 
 function buildSettingsPopover({state, tokens, actions}) {
-    const header = box('selected-settings-header',
+    const header = box('claudex-settings-header',
         Clutter.Orientation.HORIZONTAL, {x_expand: true});
     const back = new St.Button({
         name: 'back-button',
-        style_class: 'selected-back-button',
+        style_class: 'claudex-back-button',
         can_focus: true,
         reactive: true,
         track_hover: true,
@@ -666,10 +662,10 @@ function buildSettingsPopover({state, tokens, actions}) {
     back.set_accessible_name('Back to usage');
     back.connect('clicked', actions.openUsage);
     header.add_child(back);
-    header.add_child(label('Settings', 'selected-settings-title', {x_expand: true}));
+    header.add_child(label('Settings', 'claudex-settings-title', {x_expand: true}));
 
-    const panelSection = column('selected-settings-section');
-    panelSection.add_child(label('PANEL', 'selected-settings-kicker'));
+    const panelSection = column('claudex-settings-section');
+    panelSection.add_child(label('PANEL', 'claudex-settings-kicker'));
     for (const [id, title, description] of [
         ['showClaudeShort', 'Claude 5-hour', 'Show this limit in the top panel'],
         ['showClaudeWeekly', 'Claude weekly', 'Show this limit in the top panel'],
@@ -688,8 +684,8 @@ function buildSettingsPopover({state, tokens, actions}) {
         }));
     }
 
-    const updatesSection = column('selected-settings-section');
-    updatesSection.add_child(label('UPDATES & HISTORY', 'selected-settings-kicker'));
+    const updatesSection = column('claudex-settings-section');
+    updatesSection.add_child(label('UPDATES & HISTORY', 'claudex-settings-kicker'));
     updatesSection.add_child(ChoiceRow({
         id: 'refresh-interval-choice',
         title: 'Refresh while visible',

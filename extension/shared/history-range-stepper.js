@@ -47,7 +47,7 @@ export function HistoryRangeStepper({choices, selected, onSelect}) {
         accessibleName: 'Previous history range',
         onActivate: () => choose(-1, PREVIOUS_ID)}));
     actor.add_child(new St.Label({name: VALUE_ID, text: selected.label,
-        style_class: 'selected-choice-value', y_align: Clutter.ActorAlign.CENTER}));
+        style_class: 'claudex-choice-value', y_align: Clutter.ActorAlign.CENTER}));
     actor.add_child(stepButton({id: NEXT_ID, text: '>',
         accessibleName: 'Next history range',
         onActivate: () => choose(1, NEXT_ID)}));

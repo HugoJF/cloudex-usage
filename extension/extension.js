@@ -8,19 +8,17 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {
-    FooterStatus,
-    HistoryChart,
-    IconButton,
-    Legend,
-    PanelIndicator,
-    PopoverScaffold,
-    ProviderCard,
-    ProviderGroup,
-    ChoiceRow,
-    setProgressBarPace,
-    SettingsRow,
-} from './shared/primitives.js';
+import {ChoiceRow} from './shared/choice-row.js';
+import {FooterStatus} from './shared/footer-status.js';
+import {HistoryChart} from './shared/history-chart.js';
+import {IconButton} from './shared/icon-button.js';
+import {Legend} from './shared/legend.js';
+import {PanelIndicator} from './shared/panel-indicator.js';
+import {PopoverScaffold} from './shared/popover-scaffold.js';
+import {setProgressBarPace} from './shared/progress-bar.js';
+import {ProviderCard} from './shared/provider-card.js';
+import {ProviderGroup} from './shared/provider-group.js';
+import {SettingsRow} from './shared/settings-row.js';
 import {HistoryRangeStepper} from './shared/history-range-stepper.js';
 import {HISTORY_RANGES} from './shared/history-ranges.js';
 import {
@@ -267,14 +265,14 @@ export default class ClaudexUsageExtension extends Extension {
 
     _usagePopover(snapshot) {
         const header = new St.BoxLayout({
-            style_class: 'selected-header',
+            style_class: 'claudex-header',
             orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
         });
-        const copy = column('selected-title-copy');
+        const copy = column('claudex-title-copy');
         copy.x_expand = true;
-        copy.add_child(label('USAGE', 'selected-kicker'));
-        copy.add_child(label('Claude + Codex', 'selected-title'));
+        copy.add_child(label('USAGE', 'claudex-kicker'));
+        copy.add_child(label('Claude + Codex', 'claudex-title'));
         header.add_child(copy);
         header.add_child(IconButton({
             id: 'refresh-button',
@@ -319,13 +317,13 @@ export default class ClaudexUsageExtension extends Extension {
             values: item.values.map(value => this._displayPercent(value)),
         }));
         const key = item => `${item.providerId}:${item.windowId}`;
-        const section = column('selected-history', 'history-section');
+        const section = column('claudex-history', 'history-section');
         const head = new St.BoxLayout({
-            style_class: 'selected-history-header',
+            style_class: 'claudex-history-header',
             orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
         });
-        head.add_child(label('Usage history', 'selected-section-title', {x_expand: true}));
+        head.add_child(label('Usage history', 'claudex-section-title', {x_expand: true}));
         head.add_child(HistoryRangeStepper({
             choices: HISTORY_RANGES,
             selected: range,
@@ -348,7 +346,6 @@ export default class ClaudexUsageExtension extends Extension {
             accessibleName: `Usage history for ${range.label}, percentage ` +
                 `${this._preferences.usageDisplay.id}, ` +
                 'from zero to one hundred percent',
-            axisLabels: ['100%', '75%', '50%', '25%', '0%'],
             series: displayedSeries.map(item => ({
                 id: `${item.providerId}-${item.windowId}`,
                 values: item.values,
@@ -370,13 +367,13 @@ export default class ClaudexUsageExtension extends Extension {
 
     _settingsPopover() {
         const header = new St.BoxLayout({
-            style_class: 'selected-settings-header',
+            style_class: 'claudex-settings-header',
             orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
         });
         const back = new St.Button({
             name: 'back-button',
-            style_class: 'selected-back-button',
+            style_class: 'claudex-back-button',
             can_focus: true,
             reactive: true,
             track_hover: true,
@@ -388,10 +385,10 @@ export default class ClaudexUsageExtension extends Extension {
             this._render();
         });
         header.add_child(back);
-        header.add_child(label('Settings', 'selected-settings-title', {x_expand: true}));
+        header.add_child(label('Settings', 'claudex-settings-title', {x_expand: true}));
 
-        const panel = column('selected-settings-section');
-        panel.add_child(label('PANEL', 'selected-settings-kicker'));
+        const panel = column('claudex-settings-section');
+        panel.add_child(label('PANEL', 'claudex-settings-kicker'));
         for (const limit of PANEL_LIMITS) {
             panel.add_child(SettingsRow({
                 ...limit,
@@ -411,8 +408,8 @@ export default class ClaudexUsageExtension extends Extension {
             onActivate: () => this._settings.set_enum(USAGE_DISPLAY_KEY,
                 nextUsageDisplay(display.index).index),
         }));
-        const displaySettings = column('selected-settings-section');
-        displaySettings.add_child(label('DISPLAY', 'selected-settings-kicker'));
+        const displaySettings = column('claudex-settings-section');
+        displaySettings.add_child(label('DISPLAY', 'claudex-settings-kicker'));
         displaySettings.add_child(SettingsRow({
             id: 'showTimePace',
             title: 'Time pace markers',
@@ -432,8 +429,8 @@ export default class ClaudexUsageExtension extends Extension {
             onActivate: () => this._settings.set_enum(WEEKLY_PACE_KEY,
                 nextWeeklyPace(weeklyPace.index).index),
         }));
-        const history = column('selected-settings-section');
-        history.add_child(label('HISTORY', 'selected-settings-kicker'));
+        const history = column('claudex-settings-section');
+        history.add_child(label('HISTORY', 'claudex-settings-kicker'));
         history.add_child(SettingsRow({
             id: 'showUsageHistory',
             title: 'Local usage history',
@@ -444,8 +441,8 @@ export default class ClaudexUsageExtension extends Extension {
                 !this._preferences.localHistory),
             tokens: this._tokens,
         }));
-        const updates = column('selected-settings-section');
-        updates.add_child(label('UPDATES', 'selected-settings-kicker'));
+        const updates = column('claudex-settings-section');
+        updates.add_child(label('UPDATES', 'claudex-settings-kicker'));
         const interval = this._preferences.refreshInterval;
         updates.add_child(ChoiceRow({
             id: 'refresh-interval-choice',
@@ -502,7 +499,7 @@ export default class ClaudexUsageExtension extends Extension {
                 tokens: this._tokens,
             });
         }
-        const card = column('selected-provider-card', `provider-card-${provider.id}`);
+        const card = column('claudex-provider-card', `provider-card-${provider.id}`);
         card.add_child(ProviderGroup({model: presentation, tokens: this._tokens}));
         card.add_child(new St.Label({
             name: `unavailable-${provider.id}`,

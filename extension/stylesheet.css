@@ -29,16 +29,16 @@
   background-color: rgba(255, 255, 255, 0.28);
 }
 
-.claudex-panel-selected-value {
+.claudex-panel-value {
   font-size: 9pt;
   font-weight: 700;
 }
 
-.claudex-panel-selected-value.muted {
+.claudex-panel-value.muted {
   color: #898c84;
 }
 
-.direction-selected {
+.claudex-popover {
   min-width: 380px;
   padding: 17px;
   spacing: 13px;
@@ -47,28 +47,28 @@
   color: #f0efe9;
 }
 
-.selected-header,
-.selected-title-copy,
-.selected-history,
-.selected-settings-header {
+.claudex-header,
+.claudex-title-copy,
+.claudex-history,
+.claudex-settings-header {
   spacing: 9px;
 }
 
-.selected-kicker,
-.selected-settings-kicker {
+.claudex-kicker,
+.claudex-settings-kicker {
   font-size: 7pt;
   font-weight: 800;
   letter-spacing: 1.2px;
   color: #898c84;
 }
 
-.selected-title,
-.selected-settings-title {
+.claudex-title,
+.claudex-settings-title {
   font-size: 15pt;
   font-weight: 700;
 }
 
-.selected-settings-button {
+.claudex-icon-button {
   min-width: 32px;
   min-height: 32px;
   padding: 4px;
@@ -77,22 +77,22 @@
   background-color: transparent;
 }
 
-.selected-settings-button:hover,
-.selected-settings-button:focus {
+.claudex-icon-button:hover,
+.claudex-icon-button:focus {
   color: #f0efe9;
   background-color: rgba(255, 255, 255, 0.08);
 }
 
-.selected-settings-button:focus,
-.selected-back-button:focus,
+.claudex-icon-button:focus,
+.claudex-back-button:focus,
 .claudex-history-range-step:focus,
 .claudex-text-button:focus,
-.selected-setting-button:focus,
-.selected-choice-button:focus {
+.claudex-setting-button:focus,
+.claudex-choice-button:focus {
   box-shadow: inset 0 0 0 1px #b7baaf;
 }
 
-.selected-provider-card {
+.claudex-provider-card {
   padding: 11px;
   spacing: 9px;
   border-radius: 9px;
@@ -157,15 +157,15 @@
   border-radius: 999px;
 }
 
-.selected-history {
+.claudex-history {
   padding-top: 2px;
 }
 
-.selected-history-header {
+.claudex-history-header {
   spacing: 7px;
 }
 
-.selected-section-title {
+.claudex-section-title {
   font-size: 9pt;
   font-weight: 700;
 }
@@ -249,20 +249,20 @@
   color: inherit;
 }
 
-.selected-back-button {
+.claudex-back-button {
   padding: 4px 7px;
   border-radius: 8px;
   color: #b7bab1;
   background-color: #292a27;
 }
 
-.selected-back-button:hover,
-.selected-back-button:focus {
+.claudex-back-button:hover,
+.claudex-back-button:focus {
   color: #f0efe9;
   background-color: #363733;
 }
 
-.selected-settings-section {
+.claudex-settings-section {
   spacing: 7px;
   padding: 11px;
   border-radius: 9px;
@@ -270,57 +270,57 @@
   border: 1px solid #353632;
 }
 
-.selected-setting-button,
-.selected-choice-button {
+.claudex-setting-button,
+.claudex-choice-button {
   padding: 7px 4px;
   border-radius: 8px;
   background-color: transparent;
 }
 
-.selected-setting-button:hover,
-.selected-setting-button:focus,
-.selected-choice-button:hover,
-.selected-choice-button:focus {
+.claudex-setting-button:hover,
+.claudex-setting-button:focus,
+.claudex-choice-button:hover,
+.claudex-choice-button:focus {
   background-color: #30312d;
 }
 
-.selected-setting-row,
-.selected-choice-row {
+.claudex-setting-row,
+.claudex-choice-row {
   spacing: 9px;
 }
 
-.selected-setting-copy {
+.claudex-setting-copy {
   spacing: 2px;
 }
 
-.selected-setting-title {
+.claudex-setting-title {
   font-size: 9pt;
   font-weight: 700;
 }
 
-.selected-setting-description {
+.claudex-setting-description {
   font-size: 7.5pt;
   color: #858880;
 }
 
-.selected-switch {
+.claudex-switch {
   width: 32px;
   height: 18px;
   border-radius: 999px;
   background-color: #454641;
 }
 
-.selected-switch.active {
+.claudex-switch.active {
   background-color: #71877a;
 }
 
-.selected-switch-knob {
+.claudex-switch-knob {
   border-radius: 999px;
   background-color: #f1f2ed;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.38);
 }
 
-.selected-choice-value {
+.claudex-choice-value {
   font-size: 8.5pt;
   color: #b7bab1;
 }

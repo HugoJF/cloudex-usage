@@ -28,16 +28,16 @@
   background-color: {{color.separator}};
 }
 
-.claudex-panel-selected-value {
+.claudex-panel-value {
   font-size: {{type.bodyStrong.size}}pt;
   font-weight: {{type.bodyStrong.weight}};
 }
 
-.claudex-panel-selected-value.muted {
+.claudex-panel-value.muted {
   color: {{color.foregroundMuted}};
 }
 
-.direction-selected {
+.claudex-popover {
   min-width: {{size.popoverMinWidth}}px;
   padding: {{space.popoverInset}}px;
   spacing: {{space.section}}px;
@@ -46,28 +46,28 @@
   color: {{color.foregroundPrimary}};
 }
 
-.selected-header,
-.selected-title-copy,
-.selected-history,
-.selected-settings-header {
+.claudex-header,
+.claudex-title-copy,
+.claudex-history,
+.claudex-settings-header {
   spacing: {{space.control}}px;
 }
 
-.selected-kicker,
-.selected-settings-kicker {
+.claudex-kicker,
+.claudex-settings-kicker {
   font-size: {{type.kicker.size}}pt;
   font-weight: {{type.kicker.weight}};
   letter-spacing: {{type.kicker.tracking}}px;
   color: {{color.foregroundMuted}};
 }
 
-.selected-title,
-.selected-settings-title {
+.claudex-title,
+.claudex-settings-title {
   font-size: {{type.title.size}}pt;
   font-weight: {{type.title.weight}};
 }
 
-.selected-settings-button {
+.claudex-icon-button {
   min-width: {{size.iconButtonHitTarget}}px;
   min-height: {{size.iconButtonHitTarget}}px;
   padding: {{space.iconText}}px;
@@ -76,22 +76,22 @@
   background-color: transparent;
 }
 
-.selected-settings-button:hover,
-.selected-settings-button:focus {
+.claudex-icon-button:hover,
+.claudex-icon-button:focus {
   color: {{color.foregroundPrimary}};
   background-color: {{color.hoverOverlay}};
 }
 
-.selected-settings-button:focus,
-.selected-back-button:focus,
+.claudex-icon-button:focus,
+.claudex-back-button:focus,
 .claudex-history-range-step:focus,
 .claudex-text-button:focus,
-.selected-setting-button:focus,
-.selected-choice-button:focus {
+.claudex-setting-button:focus,
+.claudex-choice-button:focus {
   box-shadow: inset 0 0 0 1px {{color.focus}};
 }
 
-.selected-provider-card {
+.claudex-provider-card {
   padding: {{space.cardInset}}px;
   spacing: {{space.control}}px;
   border-radius: {{radius.card}}px;
@@ -156,15 +156,15 @@
   border-radius: {{radius.pill}}px;
 }
 
-.selected-history {
+.claudex-history {
   padding-top: {{space.micro}}px;
 }
 
-.selected-history-header {
+.claudex-history-header {
   spacing: {{space.compact}}px;
 }
 
-.selected-section-title {
+.claudex-section-title {
   font-size: {{type.bodyStrong.size}}pt;
   font-weight: {{type.bodyStrong.weight}};
 }
@@ -248,20 +248,20 @@
   color: inherit;
 }
 
-.selected-back-button {
+.claudex-back-button {
   padding: {{space.iconText}}px {{space.compact}}px;
   border-radius: {{radius.control}}px;
   color: {{color.foregroundSecondary}};
   background-color: {{color.surfaceControl}};
 }
 
-.selected-back-button:hover,
-.selected-back-button:focus {
+.claudex-back-button:hover,
+.claudex-back-button:focus {
   color: {{color.foregroundPrimary}};
   background-color: {{color.surfaceHover}};
 }
 
-.selected-settings-section {
+.claudex-settings-section {
   spacing: {{space.compact}}px;
   padding: {{space.cardInset}}px;
   border-radius: {{radius.card}}px;
@@ -269,57 +269,57 @@
   border: 1px solid {{color.borderSubtle}};
 }
 
-.selected-setting-button,
-.selected-choice-button {
+.claudex-setting-button,
+.claudex-choice-button {
   padding: {{space.compact}}px {{space.iconText}}px;
   border-radius: {{radius.control}}px;
   background-color: transparent;
 }
 
-.selected-setting-button:hover,
-.selected-setting-button:focus,
-.selected-choice-button:hover,
-.selected-choice-button:focus {
+.claudex-setting-button:hover,
+.claudex-setting-button:focus,
+.claudex-choice-button:hover,
+.claudex-choice-button:focus {
   background-color: {{color.borderChart}};
 }
 
-.selected-setting-row,
-.selected-choice-row {
+.claudex-setting-row,
+.claudex-choice-row {
   spacing: {{space.control}}px;
 }
 
-.selected-setting-copy {
+.claudex-setting-copy {
   spacing: {{space.micro}}px;
 }
 
-.selected-setting-title {
+.claudex-setting-title {
   font-size: {{type.body.size}}pt;
   font-weight: {{type.bodyStrong.weight}};
 }
 
-.selected-setting-description {
+.claudex-setting-description {
   font-size: {{type.supporting.size}}pt;
   color: {{color.foregroundSubtle}};
 }
 
-.selected-switch {
+.claudex-switch {
   width: {{size.switchTrackWidth}}px;
   height: {{size.switchTrackHeight}}px;
   border-radius: {{radius.pill}}px;
   background-color: {{color.switchInactive}};
 }
 
-.selected-switch.active {
+.claudex-switch.active {
   background-color: {{color.switchActive}};
 }
 
-.selected-switch-knob {
+.claudex-switch-knob {
   border-radius: {{radius.pill}}px;
   background-color: {{color.switchThumb}};
   box-shadow: 0 1px 2px {{color.switchShadow}};
 }
 
-.selected-choice-value {
+.claudex-choice-value {
   font-size: {{type.meta.size}}pt;
   color: {{color.foregroundSecondary}};
 }

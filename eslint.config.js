@@ -29,6 +29,7 @@ const nodeGlobals = {
 
 const gjsGlobals = {
     ARGV: 'readonly',
+    TextDecoder: 'readonly',
     console: 'readonly',
     global: 'readonly',
     log: 'readonly',
@@ -43,7 +44,7 @@ export default [
             // Removed slice-by-slice as the first-party modules are decomposed.
             'design/direction-lab/{catalog-state,extension}.js',
             'extension/*.js',
-            'extension/shared/{primitives,token-geometry}.js',
+            'extension/shared/token-geometry.js',
             'scripts/**',
             'tests/unit/**',
             'tests/journeys/**',
@@ -77,7 +78,7 @@ export default [
         rules: commonRules,
     },
     {
-        files: ['extension/shared/history-range-stepper.js'],
+        files: ['extension/shared/*.js'],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',

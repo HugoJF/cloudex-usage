@@ -152,7 +152,12 @@ function assertPackageEntries(entries, label, extraRequired = []) {
         'extension.js',
         'stylesheet.css',
         'tokens.json',
-        'shared/primitives.js',
+        'shared/actor-utils.js',
+        'shared/history-chart.js',
+        'shared/history-range-stepper.js',
+        'shared/panel-indicator.js',
+        'shared/presentation-validation.js',
+        'shared/provider-card.js',
         'shared/token-geometry.js',
         'shared/stylesheet.template.css',
         ...extraRequired,
@@ -160,7 +165,7 @@ function assertPackageEntries(entries, label, extraRequired = []) {
         if (!entries.has(required))
             throw new Error(`${label} package is missing ${required}`);
     }
-    for (const stale of ['primitives.js', 'token-geometry.js',
+    for (const stale of ['primitives.js', 'shared/primitives.js', 'token-geometry.js',
         'stylesheet.template.css']) {
         if (entries.has(stale))
             throw new Error(`${label} package contains stale root ${stale}`);
@@ -221,7 +226,7 @@ function assertProductionVerifierRejects(entries) {
         'claude-contract.js', 'claude-runtime.js',
         'history-store.js', 'history-runtime.js',
         'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
-        'shared/primitives.js', 'tokens.json',
+        'shared/provider-card.js', 'tokens.json',
         'icons/claude.svg']) {
         const absent = new Set(entries);
         absent.delete(required);

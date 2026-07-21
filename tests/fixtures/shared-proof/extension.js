@@ -4,7 +4,8 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {HistoryRangeStepper} from './shared/history-range-stepper.js';
 import {HISTORY_RANGES} from './shared/history-ranges.js';
-import {PanelIndicator, PopoverScaffold} from './shared/primitives.js';
+import {PanelIndicator} from './shared/panel-indicator.js';
+import {PopoverScaffold} from './shared/popover-scaffold.js';
 import {validateTokens} from './shared/token-geometry.js';
 
 function loadTokens(extensionPath) {
