@@ -43,7 +43,6 @@ export default [
             'design/direction-lab/stylesheet.css',
             // Removed slice-by-slice as the first-party modules are decomposed.
             'design/direction-lab/{catalog-state,extension}.js',
-            'extension/*.js',
             'extension/shared/token-geometry.js',
             'scripts/**',
             'tests/unit/**',
@@ -78,7 +77,10 @@ export default [
         rules: commonRules,
     },
     {
-        files: ['extension/shared/*.js'],
+        files: [
+            'extension/shared/*.js',
+            'extension/{controller-snapshot,controller-validation,temporal}.js',
+        ],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',

@@ -43,7 +43,8 @@ const HISTORY_SERIES_META = Object.freeze({
     'codex:weekly': {dataRole: 'dataCodexWeekly', stroke: 'weekly', label: 'Codex weekly'},
 });
 import {validateTokens} from './shared/token-geometry.js';
-import {nextMinuteDelay, SurfaceController} from './surface-controller.js';
+import {SurfaceController} from './surface-controller.js';
+import {nextMinuteDelay} from './temporal.js';
 
 function loadTokens(extensionPath) {
     const file = Gio.File.new_for_path(`${extensionPath}/tokens.json`);

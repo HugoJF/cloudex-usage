@@ -1,237 +1,16 @@
-const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
-const SAFE_PATH = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9][A-Za-z0-9_./-]*$/;
-const DEFAULT_DATA_ROLES = Object.freeze([
-    'dataClaudeShort',
-    'dataClaudeWeekly',
-    'dataCodexWeekly',
-]);
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_WEEKDAY_SEGMENTS = 9;
-
-function requireId(value, name) {
-    if (typeof value !== 'string' || !SAFE_ID.test(value))
-        throw new Error(`${name} must be a safe ID`);
-    return value;
-}
-
-function requireText(value, name) {
-    if (typeof value !== 'string' || value.length === 0)
-        throw new Error(`${name} must be nonempty text`);
-    return value;
-}
-
-function requireCallback(value, name) {
-    if (typeof value !== 'function')
-        throw new Error(`${name} must be a callback`);
-    return value;
-}
-
-function requirePositiveSafeInteger(value, name) {
-    if (!Number.isSafeInteger(value) || value <= 0)
-        throw new Error(`${name} must be a positive safe integer`);
-    return value;
-}
-
-function requireNonnegativeSafeInteger(value, name) {
-    if (!Number.isSafeInteger(value) || value < 0)
-        throw new Error(`${name} must be a non-negative safe integer`);
-    return value;
-}
-
-export function isValidClock(value) {
-    return Number.isSafeInteger(value) && value >= 0;
-}
-
-function requirePath(value, name) {
-    if (typeof value !== 'string' || !SAFE_PATH.test(value))
-        throw new Error(`${name} must be a safe package-relative path`);
-    return value;
-}
+import {
+    DEFAULT_DATA_ROLES,
+    requireCallback,
+    requireId,
+    snapshotPresentation as snapshotProviderPresentation,
+    validateResult as validateProviderResult,
+} from './controller-validation.js';
+import {
+    buildSurfaceSnapshot,
+} from './controller-snapshot.js';
 
 function frozen(value) {
     return Object.freeze(value);
-}
-
-function snapshotPresentation(provider, dataRoles, id, read) {
-    const order = read(() => provider.order);
-    if (!Number.isInteger(order) || order < 0)
-        throw new Error('Provider order must be a non-negative integer');
-    const label = read(() => provider.label);
-    const detail = read(() => provider.detail);
-    const marks = read(() => provider.marks);
-    if (!marks || typeof marks !== 'object')
-        throw new Error('Provider marks are required');
-    const darkPanel = read(() => marks.darkPanel);
-    const lightPanel = read(() => marks.lightPanel);
-    const popup = read(() => marks.popup);
-    const markAccessibleName = read(() => marks.accessibleName);
-    const windows = read(() => provider.windows);
-    if (!Array.isArray(windows))
-        throw new Error('Provider windows must be nonempty');
-    const windowCount = read(() => windows.length);
-    if (windowCount === 0)
-        throw new Error('Provider windows must be nonempty');
-    const ids = new Set();
-    const windowSnapshots = [];
-    for (let index = 0; index < windowCount; index++) {
-        const window = read(() => windows[index]);
-        if (!window || typeof window !== 'object')
-            throw new Error('Provider window must be an object');
-        const windowId = requireId(read(() => window.id), 'Provider window ID');
-        if (ids.has(windowId))
-            throw new Error('Provider window IDs must be unique');
-        ids.add(windowId);
-        const windowLabel = read(() => window.label);
-        const dataRole = read(() => window.dataRole);
-        const durationMs = read(() => window.durationMs);
-        if (!dataRoles.includes(dataRole))
-            throw new Error('Provider window dataRole must be token-backed');
-        const windowSnapshot = {
-            id: windowId,
-            label: requireText(windowLabel, 'Provider window label'),
-            dataRole,
-        };
-        if (durationMs !== undefined) {
-            windowSnapshot.durationMs = requirePositiveSafeInteger(durationMs,
-                'Provider window duration');
-        }
-        windowSnapshots.push(frozen(windowSnapshot));
-    }
-    return frozen({
-        id,
-        order,
-        label: requireText(label, 'Provider label'),
-        detail: requireText(detail, 'Provider detail'),
-        marks: frozen({
-            darkPanel: requirePath(darkPanel, 'Dark panel mark'),
-            lightPanel: requirePath(lightPanel, 'Light panel mark'),
-            popup: requirePath(popup, 'Popup mark'),
-            accessibleName: requireText(markAccessibleName,
-                'Provider mark accessible name'),
-        }),
-        windows: frozen(windowSnapshots),
-    });
-}
-
-function validateResult(result, windows) {
-    if (!result || typeof result !== 'object')
-        return null;
-    if (result.status === 'unavailable')
-        return Object.keys(result).length === 1 ? frozen({status: 'unavailable'}) : null;
-    if (result.status !== 'available' || !Array.isArray(result.readings))
-        return null;
-    if (result.readings.length !== windows.length)
-        return null;
-    const byId = new Map();
-    for (const reading of result.readings) {
-        if (!reading || typeof reading !== 'object' || typeof reading.id !== 'string' ||
-            byId.has(reading.id) || !Number.isFinite(reading.percent) ||
-            reading.percent < 0 || reading.percent > 100 ||
-            !Number.isSafeInteger(reading.resetAtMs) || reading.resetAtMs < 0) {
-            return null;
-        }
-        byId.set(reading.id, frozen({
-            id: reading.id,
-            percent: reading.percent,
-            resetAtMs: reading.resetAtMs,
-        }));
-    }
-    const readings = [];
-    for (const window of windows) {
-        const reading = byId.get(window.id);
-        if (!reading)
-            return null;
-        readings.push(reading);
-    }
-    return frozen({status: 'available', readings: frozen(readings)});
-}
-
-function plural(value, unit) {
-    return `${value} ${unit}${value === 1 ? '' : 's'}`;
-}
-
-export function formatReset(resetAtMs, nowMs) {
-    const minutes = Math.max(0, Math.ceil((resetAtMs - nowMs) / 60000));
-    if (minutes === 0)
-        return 'Resets now';
-    const days = Math.floor(minutes / 1440);
-    const hours = Math.floor((minutes % 1440) / 60);
-    const remainingMinutes = minutes % 60;
-    const parts = [];
-    if (days > 0)
-        parts.push(plural(days, 'day'));
-    if (hours > 0)
-        parts.push(plural(hours, 'hr'));
-    if (remainingMinutes > 0 && days === 0)
-        parts.push(plural(remainingMinutes, 'min'));
-    return `Resets in ${parts.join(', ')}`;
-}
-
-export function formatFreshness(completedAtMs, nowMs) {
-    const minutes = Math.max(0, Math.floor((nowMs - completedAtMs) / 60000));
-    return minutes === 0 ? 'Updated just now' : `Updated ${plural(minutes, 'min')} ago`;
-}
-
-export function nextMinuteDelay(nowMs) {
-    if (!Number.isSafeInteger(nowMs) || nowMs < 0)
-        throw new Error('Presentation clock must be a non-negative safe integer');
-    const remainder = nowMs % 60000;
-    return remainder === 0 ? 60000 : 60000 - remainder;
-}
-
-export function elapsedWindowPercent(durationMs, resetAtMs, nowMs) {
-    requirePositiveSafeInteger(durationMs, 'Window duration');
-    requireNonnegativeSafeInteger(resetAtMs, 'Window reset');
-    requireNonnegativeSafeInteger(nowMs, 'Presentation clock');
-    const startAtMs = resetAtMs - durationMs;
-    if (nowMs <= startAtMs)
-        return 0;
-    if (nowMs >= resetAtMs)
-        return 100;
-    const remainingMs = resetAtMs - nowMs;
-    const elapsedMs = durationMs - remainingMs;
-    return elapsedMs / durationMs * 100;
-}
-
-function weekdayMilliseconds(startAtMs, endAtMs) {
-    let cursor = startAtMs;
-    let total = 0;
-    for (let segment = 0; cursor < endAtMs; segment++) {
-        if (segment >= MAX_WEEKDAY_SEGMENTS) {
-            return null;
-        }
-        const cursorDate = new Date(cursor);
-        if (!Number.isFinite(cursorDate.getTime())) {
-            return null;
-        }
-        const day = cursorDate.getDay();
-        const nextDay = new Date(cursor);
-        nextDay.setHours(24, 0, 0, 0);
-        const nextAtMs = nextDay.getTime();
-        if (!Number.isFinite(nextAtMs) || nextAtMs <= cursor) {
-            return null;
-        }
-        const segmentEndAtMs = Math.min(nextAtMs, endAtMs);
-        if (day >= 1 && day <= 5) {
-            total += segmentEndAtMs - cursor;
-        }
-        cursor = segmentEndAtMs;
-    }
-    return total;
-}
-
-function weekdayElapsedWindowPercent(resetAtMs, nowMs) {
-    const startAtMs = resetAtMs - WEEK_MS;
-    const durationMs = weekdayMilliseconds(startAtMs, resetAtMs);
-    if (durationMs === null || durationMs === 0) {
-        return null;
-    }
-    const elapsedUntilMs = Math.max(startAtMs, Math.min(nowMs, resetAtMs));
-    const elapsedMs = weekdayMilliseconds(startAtMs, elapsedUntilMs);
-    if (elapsedMs === null) {
-        return null;
-    }
-    return elapsedMs / durationMs * 100;
 }
 
 export class SurfaceController {
@@ -282,7 +61,8 @@ export class SurfaceController {
             return value;
         };
         try {
-            const presentation = snapshotPresentation(provider, this._dataRoles, id, read);
+            const presentation = snapshotProviderPresentation(
+                provider, this._dataRoles, id, read);
             const isEligible = requireCallback(read(() => provider.isEligible),
                 'Provider isEligible');
             const initial = read(() => isEligible());
@@ -391,59 +171,8 @@ export class SurfaceController {
     }
 
     getSnapshot() {
-        const now = this._now();
-        const clockValid = isValidClock(now);
-        const providers = this._orderedEligible().map(state => {
-            const {presentation, result} = state;
-            const metrics = result?.status === 'available'
-                ? presentation.windows.map(window => {
-                    const reading = result.readings.find(item => item.id === window.id);
-                    const metric = {
-                        id: `${presentation.id}--${window.id}`,
-                        windowId: window.id,
-                        label: window.label,
-                        percent: reading.percent,
-                        resetAtMs: reading.resetAtMs,
-                        resetLabel: clockValid
-                            ? formatReset(reading.resetAtMs, now)
-                            : 'Reset time unavailable',
-                        dataRole: window.dataRole,
-                        accessibleName: `${presentation.label} ${window.label} at ${reading.percent} percent`,
-                    };
-                    if (clockValid && window.durationMs !== undefined) {
-                        metric.elapsedPercent = elapsedWindowPercent(
-                            window.durationMs, reading.resetAtMs, now);
-                        if (window.durationMs === WEEK_MS) {
-                            metric.weekdayElapsedPercent =
-                                weekdayElapsedWindowPercent(reading.resetAtMs, now);
-                        }
-                    }
-                    return frozen(metric);
-                })
-                : frozen([]);
-            return frozen({
-                ...presentation,
-                availability: result?.status ?? 'pending',
-                metrics: frozen(metrics),
-            });
-        });
-        const anyAvailable = providers.some(provider => provider.availability === 'available');
-        const hasResults = providers.some(provider => provider.availability !== 'pending');
-        const footer = !hasResults
-            ? 'Not checked yet'
-            : !clockValid
-                ? 'Update time unavailable'
-            : anyAvailable
-                ? formatFreshness(this._lastCompletedAtMs, now)
-                : `Checked ${this._lastCompletedAtMs === null
-                    ? 'just now' : formatFreshness(this._lastCompletedAtMs, now).replace(/^Updated /, '')}`;
-        return frozen({
-            providers: frozen(providers),
-            refreshing: this._refreshing,
-            footer,
-            visible: providers.length > 0,
-            clockValid,
-        });
+        return buildSurfaceSnapshot(this._orderedEligible(), this._refreshing,
+            this._lastCompletedAtMs, this._now());
     }
 
     dispose() {
@@ -526,7 +255,8 @@ export class SurfaceController {
                     }
                     return Promise.resolve(refreshResult)
                         .then(result => ({state, generation,
-                            result: validateResult(result, state.presentation.windows),
+                            result: validateProviderResult(
+                                result, state.presentation.windows),
                             skipped: false}))
                         .catch(() => ({state, generation, result: null, skipped: false}));
                 });

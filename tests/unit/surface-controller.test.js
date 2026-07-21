@@ -6,8 +6,8 @@ import {
     formatFreshness,
     formatReset,
     nextMinuteDelay,
-    SurfaceController,
-} from '../../extension/surface-controller.js';
+} from '../../extension/temporal.js';
+import {SurfaceController} from '../../extension/surface-controller.js';
 
 function deferred() {
     let resolve;
