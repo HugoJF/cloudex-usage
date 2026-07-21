@@ -1,10 +1,10 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import Shell from 'gi://Shell';
 import Soup from 'gi://Soup?version=3.0';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
+import {captureActor as capture} from './capture-actor.js';
 const UUID = 'claudex-usage@hugo.local', PORT = 19876;
 const LEFT_CAPTURE = 'surface-left-popup-dark-100.png';
 const RANGE_CAPTURES = {
@@ -18,8 +18,6 @@ const SCALED_POPUP_BOUNDS = {
     leftOffset: 4,
     topOffset: 24,
 };
-Gio._promisify(Shell.Screenshot.prototype, 'screenshot_area',
-    'screenshot_area_finish');
 export const METRICS = {};
 export function init() {}
 function assert(value, message) {
@@ -46,53 +44,8 @@ function setShellColorScheme(scheme) {
     Main.sessionMode.colorScheme = scheme;
     St.Settings.get().notify('color-scheme');
 }
-function captureDirectory() {
-    const override = GLib.getenv('CLAUDEX_CAPTURE_DIR');
-    if (override)
-        {return Gio.File.new_for_path(override);}
-    return Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent()
-        .get_child('design').get_child('captures');
-}
-async function captureActor(target, filename, padding = 8,
-    fixedTopRight = null) {
-    let actor = null;
-    let width = 0;
-    let height = 0;
-    for (let attempt = 0; attempt < 60; attempt++) {
-        actor = typeof target === 'function' ? target() : target;
-        if (actor?.is_mapped())
-            {[width, height] = actor.get_transformed_size();}
-        if (width > 0 && height > 0)
-            {break;}
-        await Scripting.sleep(80);
-    }
-    assert(actor?.is_mapped(), `${filename} actor is not mapped`);
-    assert(width > 0 && height > 0, `${filename} actor has no allocated geometry`);
-    const directory = captureDirectory();
-    if (!directory.query_exists(null))
-        {directory.make_directory_with_parents(null);}
-    const [transformedX, transformedY] = actor.get_transformed_position();
-    const actorX = fixedTopRight
-        ? global.screen_width - fixedTopRight.width - padding -
-            fixedTopRight.leftOffset
-        : transformedX;
-    const actorY = fixedTopRight
-        ? padding + fixedTopRight.topOffset
-        : transformedY;
-    if (fixedTopRight)
-        {[width, height] = [fixedTopRight.width, fixedTopRight.height];}
-    const x = Math.max(0, Math.floor(actorX - padding));
-    const y = Math.max(0, Math.floor(actorY - padding));
-    const captureWidth = Math.min(global.screen_width - x,
-        Math.ceil(width + padding * 2));
-    const captureHeight = Math.min(global.screen_height - y,
-        Math.ceil(height + padding * 2));
-    const stream = directory.get_child(filename).replace(null, false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION, null);
-    const screenshot = new Shell.Screenshot();
-    await screenshot.screenshot_area(x, y, captureWidth, captureHeight, stream);
-    stream.close(null);
-}
+const captureActor = (target, filename, padding = 8, fixedTopRight = null) =>
+    capture({target, filename, padding, fixedTopRight, assert});
 async function waitFor(callback, message) {
     for (let attempt = 0; attempt < 120; attempt++) {
         if (callback())

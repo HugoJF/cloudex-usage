@@ -7,8 +7,8 @@ The product constraints governing provider boundaries are canonical in the
 
 `extension/shared` is the neutral presentation source. `token-geometry.js` owns
 token validation, strict CSS-color conversion, and percentage geometry;
-`primitives.js` owns only the documented St/Clutter primitive inventory; and
-`stylesheet.template.css` is the canonical Shell stylesheet contract. Both
+the component-per-module files own the documented St/Clutter primitive inventory;
+and `stylesheet.template.css` is the canonical Shell stylesheet contract. Shared
 JavaScript modules fail closed on invalid presentation input and import no catalog
 fixtures or state.
 

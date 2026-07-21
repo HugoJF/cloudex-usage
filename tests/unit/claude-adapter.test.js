@@ -104,6 +104,16 @@ let passed = 0;
 async function test(name, callback) {
     await callback(); print(`ok ${++passed} - ${name}`);
 }
+function assertProviderMetadata(provider) {
+    assert(Object.isFrozen(provider) && provider.id === 'claude' &&
+        provider.order === 0 &&
+        provider.windows[0].dataRole === 'dataClaudeShort' &&
+        provider.windows[0].durationMs === 18_000_000 &&
+        provider.windows[1].dataRole === 'dataClaudeWeekly' &&
+        provider.windows[1].durationMs === 604_800_000 &&
+        Object.isFrozen(provider.windows[0]) &&
+        Object.isFrozen(provider.windows[1]), 'metadata');
+}
 try {
     await test('provider and runtime reject malformed public boundaries', async () => {
         let listener;
@@ -113,14 +123,7 @@ try {
             refreshUsage: async () => ({status: 'unavailable'}),
             cancelRefresh: () => cancelled++};
         const provider = createClaudeProvider(source);
-        assert(Object.isFrozen(provider) && provider.id === 'claude' &&
-            provider.order === 0 &&
-            provider.windows[0].dataRole === 'dataClaudeShort' &&
-            provider.windows[0].durationMs === 18_000_000 &&
-            provider.windows[1].dataRole === 'dataClaudeWeekly' &&
-            provider.windows[1].durationMs === 604_800_000 &&
-            Object.isFrozen(provider.windows[0]) &&
-            Object.isFrozen(provider.windows[1]), 'metadata');
+        assertProviderMetadata(provider);
         let observed;
         provider.subscribeEligibility(value => observed = value);
         listener('invalid');

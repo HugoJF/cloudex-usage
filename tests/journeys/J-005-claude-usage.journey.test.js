@@ -45,6 +45,22 @@ function stopClaude(process) {
     process.force_exit(); directory.get_child('comm').delete(null);
     directory.delete(null);
 }
+function companionProvider() {
+    return {
+        id: 'eligibility-companion', order: 99, label: 'Companion',
+        detail: 'Journey-only eligible provider',
+        marks: {darkPanel: 'icons/codex.svg',
+            lightPanel: 'icons/codex-light.svg', popup: 'icons/codex.svg',
+            accessibleName: 'Journey companion mark'},
+        windows: [{id: 'weekly', label: 'Weekly window',
+            dataRole: 'dataCodexWeekly'}],
+        isEligible: () => true,
+        subscribeEligibility: () => () => {},
+        refresh: async () => ({status: 'available', readings: [{
+            id: 'weekly', percent: 33, resetAtMs: Date.now() + 86400 * 1000,
+        }]}),
+    };
+}
 export async function run() {
     const state = {short: 12, weekly: 37, malformed: false, hold: false,
         held: null, requests: 0, authorization: null};
@@ -124,30 +140,7 @@ export async function run() {
             'cancelled refresh settlement');
         assert(!extension.getSurfaceSnapshot().visible,
             'cancelled completion cannot resurrect an absent provider');
-        const companion = {
-            id: 'eligibility-companion',
-            order: 99,
-            label: 'Companion',
-            detail: 'Journey-only eligible provider',
-            marks: {
-                darkPanel: 'icons/codex.svg',
-                lightPanel: 'icons/codex-light.svg',
-                popup: 'icons/codex.svg',
-                accessibleName: 'Journey companion mark',
-            },
-            windows: [{
-                id: 'weekly',
-                label: 'Weekly window',
-                dataRole: 'dataCodexWeekly',
-            }],
-            isEligible: () => true,
-            subscribeEligibility: () => () => {},
-            refresh: async () => ({status: 'available', readings: [{
-                id: 'weekly',
-                percent: 33,
-                resetAtMs: Date.now() + 86400 * 1000,
-            }]}),
-        };
+        const companion = companionProvider();
         removeCompanion = extension.registerProvider(companion);
         await waitFor(() => extension.getSurfaceSnapshot().providers
             .some(item => item.id === 'eligibility-companion' &&

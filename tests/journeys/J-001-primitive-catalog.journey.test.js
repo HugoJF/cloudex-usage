@@ -1,14 +1,10 @@
 import Atk from 'gi://Atk';
-import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
-import Shell from 'gi://Shell';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 
-Gio._promisify(Shell.Screenshot.prototype, 'screenshot_area',
-    'screenshot_area_finish');
+import {captureActor as capture} from './capture-actor.js';
 
 const UUID = 'claudex-usage-design@hugo.local';
 const EXPECTED_CAPTURES = [
@@ -58,89 +54,8 @@ async function settle() {
     await Scripting.sleep(180);
 }
 
-function captureDirectory() {
-    const override = GLib.getenv('CLAUDEX_CAPTURE_DIR');
-    if (override)
-        {return Gio.File.new_for_path(override);}
-    const repo = Gio.File.new_for_uri(import.meta.url)
-        .get_parent()
-        .get_parent()
-        .get_parent();
-    return repo.get_child('design').get_child('captures');
-}
-
-async function captureActor(actorSource, filename, padding = 8,
-    useAllocation = false) {
-    const directory = captureDirectory();
-    if (!directory.query_exists(null))
-        {directory.make_directory_with_parents(null);}
-
-    const getActor = typeof actorSource === 'function'
-        ? actorSource
-        : () => actorSource;
-    let actor = null;
-    let geometry = null;
-    for (let attempt = 0; attempt < 60; attempt++) {
-        const candidate = getActor();
-        if (candidate?.is_mapped()) {
-            if (!useAllocation) {
-                const [actorX, actorY] = candidate.get_transformed_position();
-                const [actorWidth, actorHeight] = candidate.get_transformed_size();
-                if (Number.isFinite(actorX) && Number.isFinite(actorY) &&
-                    actorWidth > 0 && actorHeight > 0) {
-                    actor = candidate;
-                    geometry = {actorX, actorY, actorWidth, actorHeight};
-                    break;
-                }
-            }
-            if (useAllocation) {
-                let child = candidate;
-                let ancestor = child.get_parent();
-                let offsetX = child.x;
-                let offsetY = child.y;
-                while (ancestor) {
-                    const [ancestorX, ancestorY] = ancestor.get_transformed_position();
-                    if (Number.isFinite(ancestorX) && Number.isFinite(ancestorY) &&
-                        candidate.width > 0 && candidate.height > 0) {
-                        actor = candidate;
-                        geometry = {
-                            actorX: ancestorX + offsetX,
-                            actorY: ancestorY + offsetY,
-                            actorWidth: candidate.width,
-                            actorHeight: candidate.height,
-                        };
-                        break;
-                    }
-                    child = ancestor;
-                    ancestor = child.get_parent();
-                    offsetX += child.x;
-                    offsetY += child.y;
-                }
-                if (geometry) {
-                    break;
-                }
-            }
-        }
-        await Scripting.sleep(80);
-    }
-    assert(actor?.is_mapped(), `${filename} actor is not mapped`);
-    assert(geometry, `${filename} capture has empty geometry`);
-
-    const {actorX, actorY, actorWidth, actorHeight} = geometry;
-    const x = Math.max(0, Math.floor(actorX - padding));
-    const y = Math.max(0, Math.floor(actorY - padding));
-    const width = Math.min(global.screen_width - x,
-        Math.ceil(actorWidth + padding * 2));
-    const height = Math.min(global.screen_height - y,
-        Math.ceil(actorHeight + padding * 2));
-
-    const file = directory.get_child(filename);
-    const stream = file.replace(null, false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION, null);
-    const screenshot = new Shell.Screenshot();
-    await screenshot.screenshot_area(x, y, width, height, stream);
-    stream.close(null);
-}
+const captureActor = (target, filename, padding = 8, useAllocation = false) =>
+    capture({target, filename, padding, useAllocation, assert});
 
 function click(actor, description) {
     assert(actor, `${description} actor exists`);

@@ -9,9 +9,19 @@ import {
 import {decodeUtf8, readBounded} from './shared/bounded-io.js';
 import {cancelRequest, cleanupRequest} from './shared/cancellable-request.js';
 import {hasExactProcess} from './shared/process-presence.js';
+import {SoupTransport} from './shared/soup-transport.js';
 Gio._promisify(Gio.File.prototype, 'read_async', 'read_finish');
-Gio._promisify(Soup.Session.prototype, 'send_async', 'send_finish');
 const ENDPOINT = 'https://chatgpt.com/backend-api/wham/usage';
+const DAYS_PER_WEEK = 7;
+const HOURS_PER_DAY = 24;
+const MINUTES_PER_HOUR = 60;
+const MILLISECONDS_PER_MINUTE = 60000;
+const WEEK_MS = DAYS_PER_WEEK * HOURS_PER_DAY * MINUTES_PER_HOUR *
+    MILLISECONDS_PER_MINUTE;
+const DEFAULT_PRESENCE_INTERVAL_MS = 2000;
+const DEFAULT_AUTH_MAX_BYTES = 65536;
+const DEFAULT_RESPONSE_MAX_BYTES = 262144;
+const HTTP_OK = 200;
 const OPTION_KEYS = new Set([
     'procRoot', 'codexHome', 'currentUser', 'endpoint',
     'presenceIntervalMs', 'authMaxBytes', 'responseMaxBytes',
@@ -34,7 +44,7 @@ export function createCodexProvider(runtime) {
         }),
         windows: Object.freeze([Object.freeze({
             id: 'weekly', label: 'Weekly window', dataRole: 'dataCodexWeekly',
-            durationMs: 7 * 24 * 60 * 60 * 1000,
+            durationMs: WEEK_MS,
         })]),
         isEligible() {
             try { return runtime.isPresent() === true; } catch {
@@ -94,48 +104,60 @@ function absoluteHttpUri(value) {
         return value;
     } catch { throw new Error('Codex endpoint must be an absolute HTTP(S) URI'); }
 }
-class SoupTransport {
-    constructor() { this._session = new Soup.Session({timeout: 15}); }
-    async send(message, cancellable) {
-        const stream = await this._session.send_async(
-            message, GLib.PRIORITY_DEFAULT, cancellable);
-        return {statusCode: message.status_code, stream};
-    }
-    abort() { this._session.abort(); }
+
+function codexHome(options) {
+    if (options.codexHome !== undefined)
+        {return absolutePath(options.codexHome, 'codexHome');}
+    const inherited = GLib.getenv('CODEX_HOME');
+    if (inherited === null)
+        {return GLib.build_filenamev([GLib.get_home_dir(), '.codex']);}
+    return GLib.path_is_absolute(inherited) ? inherited : null;
 }
+
+function scheduling(options) {
+    const oneProvided = (options.schedule === undefined) !==
+        (options.cancel === undefined);
+    const invalidCallbacks = options.schedule !== undefined &&
+        (typeof options.schedule !== 'function' || typeof options.cancel !== 'function');
+    if (oneProvided || invalidCallbacks)
+        {throw new Error('schedule and cancel must be supplied together');}
+    return {
+        schedule: options.schedule ?? ((callback, delay) =>
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+                callback();
+                return GLib.SOURCE_CONTINUE;
+            })),
+        cancel: options.cancel ?? (sourceId => GLib.Source.remove(sourceId)),
+    };
+}
+
+function requestSession(session) {
+    const value = session ?? new SoupTransport();
+    if (typeof value.send !== 'function' || typeof value.abort !== 'function')
+        {throw new Error('session must expose send and abort functions');}
+    return value;
+}
+
 export class CodexRuntime {
     constructor(options) {
         options = requireRecord(options);
         this._procRoot = absolutePath(options.procRoot ?? '/proc', 'procRoot');
         this._currentUser = nonempty(options.currentUser ?? GLib.get_user_name(),
             'currentUser');
-        const inheritedHome = GLib.getenv('CODEX_HOME');
-        if (options.codexHome !== undefined)
-            {this._codexHome = absolutePath(options.codexHome, 'codexHome');}
-        else if (inheritedHome === null)
-            {this._codexHome = GLib.build_filenamev([GLib.get_home_dir(), '.codex']);}
-        else
-            {this._codexHome = GLib.path_is_absolute(inheritedHome) ? inheritedHome : null;}
+        this._codexHome = codexHome(options);
         this._endpoint = absoluteHttpUri(options.endpoint ?? ENDPOINT);
         this._presenceIntervalMs = positiveInteger(
-            options.presenceIntervalMs, 2000, 'presenceIntervalMs');
-        this._authMaxBytes = positiveInteger(options.authMaxBytes, 65536, 'authMaxBytes');
+            options.presenceIntervalMs, DEFAULT_PRESENCE_INTERVAL_MS,
+            'presenceIntervalMs');
+        this._authMaxBytes = positiveInteger(options.authMaxBytes,
+            DEFAULT_AUTH_MAX_BYTES, 'authMaxBytes');
         this._responseMaxBytes = positiveInteger(
-            options.responseMaxBytes, 262144, 'responseMaxBytes');
-        if ((options.schedule === undefined) !== (options.cancel === undefined) ||
-            options.schedule !== undefined && (typeof options.schedule !== 'function' ||
-            typeof options.cancel !== 'function'))
-            {throw new Error('schedule and cancel must be supplied together');}
-        this._schedule = options.schedule ?? ((callback, delay) =>
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
-                callback();
-                return GLib.SOURCE_CONTINUE;
-            }));
-        this._cancel = options.cancel ?? (sourceId => GLib.Source.remove(sourceId));
-        this._session = options.session ?? new SoupTransport();
-        if (typeof this._session.send !== 'function' ||
-            typeof this._session.abort !== 'function')
-            {throw new Error('session must expose send and abort functions');}
+            options.responseMaxBytes, DEFAULT_RESPONSE_MAX_BYTES,
+            'responseMaxBytes');
+        const scheduler = scheduling(options);
+        this._schedule = scheduler.schedule;
+        this._cancel = scheduler.cancel;
+        this._session = requestSession(options.session);
         this._listener = null; this._presenceTimer = null;
         this._attempt = null; this._disposed = false;
         this._present = this._scanPresence();
@@ -173,21 +195,7 @@ export class CodexRuntime {
             const token = await this._readToken(attempt.cancellable);
             if (!token || this._attempt !== attempt)
                 {return UNAVAILABLE;}
-            const message = Soup.Message.new('GET', this._endpoint);
-            if (!message)
-                {return UNAVAILABLE;}
-            attempt.message = message;
-            message.set_flags(message.get_flags() | Soup.MessageFlags.NO_REDIRECT);
-            message.request_headers.append('Authorization', `Bearer ${token}`);
-            message.request_headers.append('Accept', 'application/json');
-            const response = await this._session.send(message, attempt.cancellable);
-            attempt.stream = response?.stream ?? null;
-            if (this._attempt !== attempt || response?.statusCode !== 200 ||
-                !attempt.stream)
-                {return UNAVAILABLE;}
-            const bytes = await readBounded(attempt.stream,
-                this._responseMaxBytes, attempt.cancellable);
-            return mapCodexUsage(JSON.parse(decodeUtf8(bytes)));
+            return await this._requestUsage(token, attempt);
         } catch {
             return UNAVAILABLE;
         } finally {
@@ -195,6 +203,23 @@ export class CodexRuntime {
             if (this._attempt === attempt)
                 {this._attempt = null;}
         }
+    }
+    async _requestUsage(token, attempt) {
+        const message = Soup.Message.new('GET', this._endpoint);
+        if (!message)
+            {return UNAVAILABLE;}
+        attempt.message = message;
+        message.set_flags(message.get_flags() | Soup.MessageFlags.NO_REDIRECT);
+        message.request_headers.append('Authorization', `Bearer ${token}`);
+        message.request_headers.append('Accept', 'application/json');
+        const response = await this._session.send(message, attempt.cancellable);
+        attempt.stream = response?.stream ?? null;
+        if (this._attempt !== attempt || response?.statusCode !== HTTP_OK ||
+            !attempt.stream)
+            {return UNAVAILABLE;}
+        const bytes = await readBounded(attempt.stream, this._responseMaxBytes,
+            attempt.cancellable);
+        return mapCodexUsage(JSON.parse(decodeUtf8(bytes)));
     }
     cancelRefresh() {
         const attempt = this._attempt;

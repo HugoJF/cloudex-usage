@@ -1,5 +1,3 @@
-import Clutter from 'gi://Clutter';
-import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
@@ -8,82 +6,24 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {ChoiceRow} from './shared/choice-row.js';
-import {FooterStatus} from './shared/footer-status.js';
-import {HistoryChart} from './shared/history-chart.js';
-import {IconButton} from './shared/icon-button.js';
-import {Legend} from './shared/legend.js';
 import {PopoverScaffold} from './shared/popover-scaffold.js';
 import {setProgressBarPace} from './shared/progress-bar.js';
-import {ProviderCard} from './shared/provider-card.js';
-import {ProviderGroup} from './shared/provider-group.js';
-import {SettingsRow} from './shared/settings-row.js';
-import {HistoryRangeStepper} from './shared/history-range-stepper.js';
-import {HISTORY_RANGES} from './shared/history-ranges.js';
 import {
     displayPercent,
     isPreferenceKey,
-    nextRefreshInterval,
-    nextUsageDisplay,
-    nextWeeklyPace,
-    PANEL_LIMITS,
     readPanelPreferences,
-    TIME_PACE_KEY,
-    USAGE_DISPLAY_KEY,
-    WEEKLY_PACE_KEY,
 } from './panel-preferences.js';
 import {createCodexProvider, CodexRuntime} from './codex-runtime.js';
 import {createClaudeProvider, ClaudeRuntime} from './claude-runtime.js';
 import {HistoryRuntime} from './history-runtime.js';
-
-const HISTORY_SERIES_META = Object.freeze({
-    'claude:short': {dataRole: 'dataClaudeShort', stroke: 'claudeShort', label: 'Claude 5-hour'},
-    'claude:weekly': {dataRole: 'dataClaudeWeekly', stroke: 'weekly', label: 'Claude weekly'},
-    'codex:weekly': {dataRole: 'dataCodexWeekly', stroke: 'weekly', label: 'Codex weekly'},
-});
-import {validateTokens} from './shared/token-geometry.js';
+import {findActor, replaceChild} from './shared/actor-utils.js';
 import {SurfaceController} from './surface-controller.js';
 import {nextMinuteDelay} from './temporal.js';
 import {buildPanelView} from './panel-view.js';
-
-function loadTokens(extensionPath) {
-    const file = Gio.File.new_for_path(`${extensionPath}/tokens.json`);
-    const [loaded, contents] = file.load_contents(null);
-    if (!loaded)
-        {throw new Error('Unable to load packaged design tokens');}
-    return validateTokens(JSON.parse(new TextDecoder().decode(contents)));
-}
-
-function column(styleClass, name = null) {
-    return new St.BoxLayout({
-        name,
-        style_class: styleClass,
-        orientation: Clutter.Orientation.VERTICAL,
-        x_expand: true,
-    });
-}
-
-function label(text, styleClass, properties = {}) {
-    return new St.Label({
-        text,
-        style_class: styleClass,
-        y_align: Clutter.ActorAlign.CENTER,
-        ...properties,
-    });
-}
-
-function findActor(root, name) {
-    if (!root)
-        {return null;}
-    if (root.get_name?.() === name)
-        {return root;}
-    for (const child of root.get_children?.() ?? []) {
-        const found = findActor(child, name);
-        if (found)
-            {return found;}
-    }
-    return null;
-}
+import {buildHistoryView} from './history-view.js';
+import {buildSettingsView} from './settings-view.js';
+import {buildUsageView, displayUsageMetric} from './usage-view.js';
+import {loadTokens} from './load-tokens.js';
 
 export default class ClaudexUsageExtension extends Extension {
     _requireController() {
@@ -224,7 +164,7 @@ export default class ClaudexUsageExtension extends Extension {
             return;
         }
         this._ensureIndicator();
-        this._replaceChild(this._panelHost, buildPanelView({
+        replaceChild(this._panelHost, buildPanelView({
             snapshot,
             preferences: this._preferences,
             extensionPath: this.path,
@@ -232,10 +172,32 @@ export default class ClaudexUsageExtension extends Extension {
             displayPercent: percent => this._displayPercent(percent),
             tokens: this._tokens,
         }));
+        const history = buildHistoryView({
+            preferences: this._preferences,
+            history: this._history,
+            displayPercent: value => this._displayPercent(value),
+            tokens: this._tokens,
+            onSelectRange: (next, controlId) => {
+                this._historyRangeFocusId = controlId;
+                this._settings.set_enum('history-range', next.index);
+            },
+        });
         const children = this._view === 'settings'
-            ? this._settingsPopover()
-            : this._usagePopover(snapshot);
-        this._replaceChild(this._popoverHost, PopoverScaffold({
+            ? buildSettingsView({preferences: this._preferences,
+                settings: this._settings, tokens: this._tokens,
+                onBack: () => {
+                    this._view = 'usage';
+                    this._render();
+                }})
+            : buildUsageView({snapshot, preferences: this._preferences,
+                extensionPath: this.path, tokens: this._tokens, history,
+                displayPercent: value => this._displayPercent(value),
+                onRefresh: () => this._controller.refresh(),
+                onOpenSettings: () => {
+                    this._view = 'settings';
+                    this._render();
+                }});
+        replaceChild(this._popoverHost, PopoverScaffold({
             id: 'claudex-live-popover',
             view: this._view,
             children,
@@ -247,250 +209,8 @@ export default class ClaudexUsageExtension extends Extension {
         this._syncPresentationTimer(snapshot);
     }
 
-    _usagePopover(snapshot) {
-        const header = new St.BoxLayout({
-            style_class: 'claudex-header',
-            orientation: Clutter.Orientation.HORIZONTAL,
-            x_expand: true,
-        });
-        const copy = column('claudex-title-copy');
-        copy.x_expand = true;
-        copy.add_child(label('USAGE', 'claudex-kicker'));
-        copy.add_child(label('Claude + Codex', 'claudex-title'));
-        header.add_child(copy);
-        header.add_child(IconButton({
-            id: 'refresh-button',
-            iconName: snapshot.refreshing
-                ? 'process-working-symbolic'
-                : 'view-refresh-symbolic',
-            accessibleName: snapshot.refreshing ? 'Refreshing usage' : 'Refresh usage',
-            onActivate: () => this._controller.refresh(),
-            tokens: this._tokens,
-            busy: snapshot.refreshing,
-        }));
-        header.add_child(IconButton({
-            id: 'settings-button',
-            iconName: 'preferences-system-symbolic',
-            accessibleName: 'Open settings',
-            onActivate: () => {
-                this._view = 'settings';
-                this._render();
-            },
-            tokens: this._tokens,
-        }));
-        const children = [header, ...snapshot.providers.map(provider =>
-            this._providerCard(provider))];
-        const history = this._historySection();
-        if (history)
-            {children.push(history);}
-        children.push(FooterStatus({
-            status: snapshot.footer,
-        }));
-        return children;
-    }
-
-    _historySection() {
-        if (!this._preferences.localHistory || !this._history ||
-            !this._history.hasSamples())
-            {return null;}
-        const range = this._preferences.historyRange;
-        const series = this._history.series(range.id).filter(item =>
-            HISTORY_SERIES_META[`${item.providerId}:${item.windowId}`]);
-        const displayedSeries = series.map(item => ({
-            ...item,
-            values: item.values.map(value => this._displayPercent(value)),
-        }));
-        const key = item => `${item.providerId}:${item.windowId}`;
-        const section = column('claudex-history', 'history-section');
-        const head = new St.BoxLayout({
-            style_class: 'claudex-history-header',
-            orientation: Clutter.Orientation.HORIZONTAL,
-            x_expand: true,
-        });
-        head.add_child(label('Usage history', 'claudex-section-title', {x_expand: true}));
-        head.add_child(HistoryRangeStepper({
-            choices: HISTORY_RANGES,
-            selected: range,
-            onSelect: (next, controlId) => {
-                this._historyRangeFocusId = controlId;
-                this._settings.set_enum('history-range', next.index);
-            },
-        }));
-        section.add_child(head);
-        if (series.length === 0) {
-            section.add_child(new St.Label({
-                name: 'history-empty',
-                text: `Not enough history for the ${range.label} range yet`,
-                style_class: 'claudex-provider-detail',
-            }));
-            return section;
-        }
-        section.add_child(HistoryChart({
-            id: 'history-chart',
-            accessibleName: `Usage history for ${range.label}, percentage ` +
-                `${this._preferences.usageDisplay.id}, ` +
-                'from zero to one hundred percent',
-            series: displayedSeries.map(item => ({
-                id: `${item.providerId}-${item.windowId}`,
-                values: item.values,
-                dataRole: HISTORY_SERIES_META[key(item)].dataRole,
-                strokeWidth: this._tokens.stroke[HISTORY_SERIES_META[key(item)].stroke],
-            })),
-            tokens: this._tokens,
-        }));
-        section.add_child(Legend({
-            entries: displayedSeries.map(item => ({
-                id: `${item.providerId}-${item.windowId}`,
-                label: HISTORY_SERIES_META[key(item)].label,
-                dataRole: HISTORY_SERIES_META[key(item)].dataRole,
-            })),
-            tokens: this._tokens,
-        }));
-        return section;
-    }
-
-    _settingsPopover() {
-        const header = new St.BoxLayout({
-            style_class: 'claudex-settings-header',
-            orientation: Clutter.Orientation.HORIZONTAL,
-            x_expand: true,
-        });
-        const back = new St.Button({
-            name: 'back-button',
-            style_class: 'claudex-back-button',
-            can_focus: true,
-            reactive: true,
-            track_hover: true,
-            child: label('← Usage', 'claudex-button-label'),
-        });
-        back.set_accessible_name('Back to usage');
-        back.connect('clicked', () => {
-            this._view = 'usage';
-            this._render();
-        });
-        header.add_child(back);
-        header.add_child(label('Settings', 'claudex-settings-title', {x_expand: true}));
-
-        const panel = column('claudex-settings-section');
-        panel.add_child(label('PANEL', 'claudex-settings-kicker'));
-        for (const limit of PANEL_LIMITS) {
-            panel.add_child(SettingsRow({
-                ...limit,
-                accessibleName: limit.title,
-                active: this._preferences.visibility[limit.dataRole],
-                onToggle: () => this._settings.set_boolean(limit.key,
-                    !this._preferences.visibility[limit.dataRole]),
-                tokens: this._tokens,
-            }));
-        }
-        const display = this._preferences.usageDisplay;
-        panel.add_child(ChoiceRow({
-            id: 'usage-display-choice',
-            title: 'Usage display',
-            value: `${display.label}  ›`,
-            accessibleName: `Usage display, ${display.label}`,
-            onActivate: () => this._settings.set_enum(USAGE_DISPLAY_KEY,
-                nextUsageDisplay(display.index).index),
-        }));
-        const displaySettings = column('claudex-settings-section');
-        displaySettings.add_child(label('DISPLAY', 'claudex-settings-kicker'));
-        displaySettings.add_child(SettingsRow({
-            id: 'showTimePace',
-            title: 'Time pace markers',
-            description: 'Compare usage with elapsed window time',
-            accessibleName: 'Time pace markers',
-            active: this._preferences.timePace,
-            onToggle: () => this._settings.set_boolean(TIME_PACE_KEY,
-                !this._preferences.timePace),
-            tokens: this._tokens,
-        }));
-        const weeklyPace = this._preferences.weeklyPace;
-        displaySettings.add_child(ChoiceRow({
-            id: 'weekly-pace-choice',
-            title: 'Weekly pace',
-            value: `${weeklyPace.label}  ›`,
-            accessibleName: `Weekly pace, ${weeklyPace.label}`,
-            onActivate: () => this._settings.set_enum(WEEKLY_PACE_KEY,
-                nextWeeklyPace(weeklyPace.index).index),
-        }));
-        const history = column('claudex-settings-section');
-        history.add_child(label('HISTORY', 'claudex-settings-kicker'));
-        history.add_child(SettingsRow({
-            id: 'showUsageHistory',
-            title: 'Local usage history',
-            description: 'Record and chart usage on this machine',
-            accessibleName: 'Local usage history',
-            active: this._preferences.localHistory,
-            onToggle: () => this._settings.set_boolean('show-usage-history',
-                !this._preferences.localHistory),
-            tokens: this._tokens,
-        }));
-        const updates = column('claudex-settings-section');
-        updates.add_child(label('UPDATES', 'claudex-settings-kicker'));
-        const interval = this._preferences.refreshInterval;
-        updates.add_child(ChoiceRow({
-            id: 'refresh-interval-choice',
-            title: 'Refresh while visible',
-            value: `${interval.label}  ›`,
-            accessibleName: `Refresh while visible, ${interval.label}`,
-            onActivate: () => this._settings.set_enum('refresh-interval',
-                nextRefreshInterval(interval.index).index),
-        }));
-        return [header, panel, displaySettings, history, updates];
-    }
-
     _displayPercent(percent) {
         return displayPercent(percent, this._preferences.usageDisplay.id);
-    }
-
-    _displayMetric(provider, metric) {
-        const percent = this._displayPercent(metric.percent);
-        let elapsedPercent = metric.elapsedPercent;
-        if (this._preferences.weeklyPace.id === 'weekdays' &&
-            Object.hasOwn(metric, 'weekdayElapsedPercent')) {
-            elapsedPercent = metric.weekdayElapsedPercent ?? undefined;
-        }
-        const pacePercent = this._preferences.timePace &&
-            elapsedPercent !== undefined
-            ? this._displayPercent(elapsedPercent)
-            : undefined;
-        const paceAccessible = pacePercent === undefined
-            ? ''
-            : `; Time pace ${Math.round(pacePercent)} percent ` +
-                this._preferences.usageDisplay.id;
-        return {
-            ...metric,
-            percent,
-            ...(pacePercent === undefined ? {} : {pacePercent}),
-            accessibleName: `${provider.label} ${metric.label} at ${percent} percent ` +
-                this._preferences.usageDisplay.id + paceAccessible,
-        };
-    }
-
-    _providerCard(provider) {
-        const presentation = {
-            id: `provider-${provider.id}`,
-            label: provider.label,
-            iconPath: `${this.path}/${provider.marks.popup}`,
-            iconAccessibleName: provider.marks.accessibleName,
-        };
-        if (provider.availability === 'available') {
-            return ProviderCard({
-                id: `provider-card-${provider.id}`,
-                provider: presentation,
-                metrics: provider.metrics.map(metric =>
-                    this._displayMetric(provider, metric)),
-                tokens: this._tokens,
-            });
-        }
-        const card = column('claudex-provider-card', `provider-card-${provider.id}`);
-        card.add_child(ProviderGroup({model: presentation, tokens: this._tokens}));
-        card.add_child(new St.Label({
-            name: `unavailable-${provider.id}`,
-            text: 'Usage unavailable',
-            style_class: 'claudex-provider-detail',
-        }));
-        return card;
     }
 
     _ensureIndicator() {
@@ -578,7 +298,8 @@ export default class ClaudexUsageExtension extends Extension {
                 const reset = findActor(root, `reset-label-${metric.id}`);
                 if (reset)
                     {reset.text = metric.resetLabel;}
-                const presentation = this._displayMetric(provider, metric);
+                const presentation = displayUsageMetric(provider, metric,
+                    this._preferences, value => this._displayPercent(value));
                 const progress = findActor(root, `progress-${metric.id}`);
                 if (progress && presentation.pacePercent !== undefined) {
                     setProgressBarPace(progress, presentation.pacePercent);
@@ -595,8 +316,4 @@ export default class ClaudexUsageExtension extends Extension {
         this._presentationSourceId = null;
     }
 
-    _replaceChild(host, actor) {
-        host.get_child()?.destroy();
-        host.set_child(actor);
-    }
 }

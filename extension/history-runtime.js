@@ -12,7 +12,9 @@ import {
 
 const OPTION_KEYS = new Set(['dir', 'now']);
 const FILE_NAME = 'history.json';
-export const HISTORY_FILE_MAX_BYTES = 1024 * 1024;
+const KIBIBYTE_BYTES = 1024;
+const PRIVATE_DIRECTORY_MODE = 0o700;
+export const HISTORY_FILE_MAX_BYTES = KIBIBYTE_BYTES * KIBIBYTE_BYTES;
 
 function decode(bytes) {
     return new TextDecoder('utf-8', {fatal: true}).decode(bytes);
@@ -68,6 +70,14 @@ function requireRecord(value) {
     return value;
 }
 
+function nextRecordTime(observed, previous) {
+    if (!Number.isSafeInteger(observed) || observed < 0)
+        {return null;}
+    if (observed !== previous)
+        {return observed;}
+    return observed === Number.MAX_SAFE_INTEGER ? null : observed + 1;
+}
+
 export class HistoryRuntime {
     constructor(options) {
         options = requireRecord(options);
@@ -92,33 +102,31 @@ export class HistoryRuntime {
     record(samples) {
         if (!Array.isArray(samples) || samples.length === 0)
             {return;}
-        let atMs = this._now();
-        if (!Number.isSafeInteger(atMs) || atMs < 0)
+        const atMs = nextRecordTime(this._now(), this._lastRecordAtMs);
+        if (atMs === null)
             {return;}
-        if (atMs === this._lastRecordAtMs) {
-            if (atMs === Number.MAX_SAFE_INTEGER)
-                {return;}
-            atMs += 1;
-        }
         let changed = false;
-        for (const sample of samples) {
-            if (!sample || typeof sample !== 'object')
-                {continue;}
-            const next = recordSample(this._store, {
-                providerId: sample.providerId,
-                windowId: sample.windowId,
-                percent: sample.percent,
-                atMs,
-            });
-            if (next !== this._store) {
-                this._store = next;
-                changed = true;
-            }
-        }
+        for (const sample of samples)
+            {changed = this._recordOne(sample, atMs) || changed;}
         if (changed) {
             this._lastRecordAtMs = atMs;
             this._persist();
         }
+    }
+
+    _recordOne(sample, atMs) {
+        if (!sample || typeof sample !== 'object')
+            {return false;}
+        const next = recordSample(this._store, {
+            providerId: sample.providerId,
+            windowId: sample.windowId,
+            percent: sample.percent,
+            atMs,
+        });
+        if (next === this._store)
+            {return false;}
+        this._store = next;
+        return true;
     }
 
     series(rangeId) {
@@ -140,7 +148,7 @@ export class HistoryRuntime {
 
     _persist() {
         try {
-            GLib.mkdir_with_parents(this._dir, 0o700);
+            GLib.mkdir_with_parents(this._dir, PRIVATE_DIRECTORY_MODE);
             GLib.file_set_contents(this._path,
                 JSON.stringify(serializeStore(this._store)));
         } catch (_) {

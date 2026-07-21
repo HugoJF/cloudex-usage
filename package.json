@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "npm run lint && node scripts/verify-eslint-config.mjs && node scripts/check.mjs",
+    "test": "npm run lint && node scripts/verify-eslint-config.mjs && node scripts/check-module-graph.mjs && node scripts/check-css.mjs && node scripts/check.mjs",
     "check": "node scripts/check.mjs",
     "lint": "eslint .",
     "capture": "node scripts/check.mjs --update-captures",

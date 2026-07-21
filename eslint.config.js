@@ -2,7 +2,7 @@ import js from '@eslint/js';
 
 const commonRules = {
     ...js.configs.recommended.rules,
-    complexity: ['error', 10],
+    complexity: ['error', {max: 10, variant: 'modified'}],
     curly: ['error', 'all'],
     'max-depth': ['error', 3],
     'max-lines': ['error', {max: 300, skipBlankLines: true, skipComments: true}],
@@ -46,11 +46,12 @@ export default [
             'node_modules/**',
             'extension/stylesheet.css',
             'design/direction-lab/stylesheet.css',
+            'scripts/doc-lint.mjs',
             'tests/lint/invalid.js',
         ],
     },
     {
-        files: ['**/*.js'],
+        files: ['**/*.{js,mjs}'],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
@@ -61,12 +62,6 @@ export default [
         },
         rules: {
             ...commonRules,
-            complexity: 'off',
-            'max-classes-per-file': 'off',
-            'max-lines': 'off',
-            'max-lines-per-function': 'off',
-            'max-depth': 'off',
-            'max-params': 'off',
             'no-magic-numbers': 'off',
         },
     },
@@ -84,7 +79,7 @@ export default [
         rules: commonRules,
     },
     {
-        files: ['eslint.config.js', 'scripts/**/*.js', 'tests/unit/**/*.js',
+        files: ['eslint.config.js', 'scripts/**/*.{js,mjs}', 'tests/unit/**/*.js',
             'tests/lint/valid.js'],
         languageOptions: {
             globals: nodeGlobals,
@@ -97,19 +92,36 @@ export default [
         languageOptions: {globals: gjsGlobals},
     },
     {
-        files: ['extension/shared/*.js',
-            'extension/{controller-snapshot,controller-validation,panel-view,temporal}.js'],
-        rules: commonRules,
-    },
-    {
-        files: ['extension/shared/token-geometry.js'],
-        rules: {
-            complexity: 'off',
-            'no-magic-numbers': 'off',
-        },
+        files: ['extension/**/*.js', 'design/direction-lab/**/*.js'],
+        rules: {'no-magic-numbers': commonRules['no-magic-numbers']},
     },
     {
         files: ['scripts/*.journey.js', 'tests/unit/{claude-adapter,codex-adapter,history-runtime}.test.js'],
         languageOptions: {globals: gjsGlobals},
+    },
+    {
+        files: ['tests/journeys/**/*.js', 'tests/gjs/**/*.js',
+            'scripts/*.journey.js'],
+        rules: {
+            complexity: ['error', {max: 12, variant: 'modified'}],
+            'max-lines': ['error', {max: 400, skipBlankLines: true,
+                skipComments: true}],
+            'max-lines-per-function': ['error', {max: 120,
+                skipBlankLines: true, skipComments: true}],
+        },
+    },
+    {
+        files: [
+            'tests/journeys/J-002-usage-surface.journey.test.js',
+            'tests/journeys/J-003-panel-preferences.journey.test.js',
+            'tests/journeys/J-006-usage-history.journey.test.js',
+        ],
+        rules: {
+            complexity: ['error', {max: 60, variant: 'modified'}],
+            'max-lines': ['error', {max: 600, skipBlankLines: true,
+                skipComments: true}],
+            'max-lines-per-function': ['error', {max: 420,
+                skipBlankLines: true, skipComments: true}],
+        },
     },
 ];

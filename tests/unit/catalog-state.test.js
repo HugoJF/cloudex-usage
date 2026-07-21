@@ -8,7 +8,7 @@ import {
     progressWidth,
 } from '../../extension/shared/token-geometry.js';
 
-test('catalog state starts in the selected Direction D review state', () => {
+test('catalog state starts in the canonical Quiet Utility review state', () => {
     const state = new CatalogState(HISTORY_RANGES);
     assert.deepEqual(state.snapshot(), {
         view: 'usage',

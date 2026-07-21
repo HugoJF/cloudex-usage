@@ -42,3 +42,21 @@ export function dataStyle(dataRole, tokens) {
     const color = requireDataRole(dataRole, tokens);
     return `background-color: ${color}; color: ${color};`;
 }
+
+export function findActor(root, name) {
+    if (!root)
+        {return null;}
+    if (root.get_name?.() === name)
+        {return root;}
+    for (const child of root.get_children?.() ?? []) {
+        const found = findActor(child, name);
+        if (found)
+            {return found;}
+    }
+    return null;
+}
+
+export function replaceChild(host, actor) {
+    host.get_child()?.destroy();
+    host.set_child(actor);
+}

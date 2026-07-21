@@ -15,7 +15,9 @@ const MAX_SECOND = 59;
 const MAX_OFFSET_HOUR = 14;
 const MILLISECONDS_DIGITS = 3;
 const MINUTES_PER_HOUR = 60;
-const MILLISECONDS_PER_MINUTE = 60 * 1000;
+const MILLISECONDS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_MINUTE = SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
 
 function isRecord(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -41,44 +43,63 @@ export function extractClaudeAccessToken(authPayload) {
     }
 }
 
-function resetAtMs(value) {
-    if (typeof value !== 'string')
-        {return null;}
-    const match = ISO_8601.exec(value);
-    if (match === null)
+function timestampParts(value) {
+    const match = typeof value === 'string' ? ISO_8601.exec(value) : null;
+    if (!match)
         {return null;}
     const [, yearText, monthText, dayText, hourText, minuteText, secondText,
         fraction, zone] = match;
-    const year = Number(yearText);
-    const month = Number(monthText);
-    const day = Number(dayText);
-    const hour = Number(hourText);
-    const minute = Number(minuteText);
-    const second = Number(secondText);
-    if (year < MIN_YEAR || year > MAX_YEAR ||
-        month < 1 || month > MAX_MONTH || day < 1 || day > MAX_DAY ||
-        hour > MAX_HOUR || minute > MAX_MINUTE || second > MAX_SECOND)
+    return {year: Number(yearText), month: Number(monthText), day: Number(dayText),
+        hour: Number(hourText), minute: Number(minuteText),
+        second: Number(secondText), fraction, zone};
+}
+
+function inRange(value, minimum, maximum) {
+    return value >= minimum && value <= maximum;
+}
+
+function calendarEpoch(parts) {
+    const {year, month, day, hour, minute, second} = parts;
+    const validFields = [inRange(year, MIN_YEAR, MAX_YEAR),
+        inRange(month, 1, MAX_MONTH), inRange(day, 1, MAX_DAY),
+        inRange(hour, 0, MAX_HOUR), inRange(minute, 0, MAX_MINUTE),
+        inRange(second, 0, MAX_SECOND)];
+    if (!validFields.every(Boolean))
         {return null;}
     const base = Date.UTC(year, month - 1, day, hour, minute, second);
     const back = new Date(base);
-    if (back.getUTCFullYear() !== year || back.getUTCMonth() !== month - 1 ||
-        back.getUTCDate() !== day || back.getUTCHours() !== hour ||
-        back.getUTCMinutes() !== minute || back.getUTCSeconds() !== second)
+    const observed = [back.getUTCFullYear(), back.getUTCMonth() + 1,
+        back.getUTCDate(), back.getUTCHours(), back.getUTCMinutes(),
+        back.getUTCSeconds()];
+    return observed.every((value, index) => value ===
+        [year, month, day, hour, minute, second][index]) ? base : null;
+}
+
+function offsetMilliseconds(zone) {
+    if (zone === 'Z')
+        {return 0;}
+    const [signText, hourTens, hourOnes,, minuteTens, minuteOnes] = zone;
+    const hour = Number(`${hourTens}${hourOnes}`);
+    const minute = Number(`${minuteTens}${minuteOnes}`);
+    if (hour > MAX_OFFSET_HOUR || minute > MAX_MINUTE ||
+        hour === MAX_OFFSET_HOUR && minute !== 0)
         {return null;}
-    const fractionMs = fraction === undefined ? 0
-        : Number(fraction.slice(0, MILLISECONDS_DIGITS)
+    const sign = signText === '-' ? -1 : 1;
+    return sign * (hour * MINUTES_PER_HOUR + minute) * MILLISECONDS_PER_MINUTE;
+}
+
+function resetAtMs(value) {
+    const parts = timestampParts(value);
+    if (!parts)
+        {return null;}
+    const base = calendarEpoch(parts);
+    const offset = offsetMilliseconds(parts.zone);
+    if (base === null || offset === null)
+        {return null;}
+    const fractionMs = parts.fraction === undefined ? 0
+        : Number(parts.fraction.slice(0, MILLISECONDS_DIGITS)
             .padEnd(MILLISECONDS_DIGITS, '0'));
-    let ms = base + fractionMs;
-    if (zone !== 'Z') {
-        const sign = zone[0] === '-' ? -1 : 1;
-        const offsetHour = Number(zone.slice(1, 3));
-        const offsetMinute = Number(zone.slice(4, 6));
-        if (offsetHour > MAX_OFFSET_HOUR || offsetMinute > MAX_MINUTE ||
-            (offsetHour === MAX_OFFSET_HOUR && offsetMinute !== 0))
-            {return null;}
-        const offsetMinutes = offsetHour * MINUTES_PER_HOUR + offsetMinute;
-        ms -= sign * offsetMinutes * MILLISECONDS_PER_MINUTE;
-    }
+    const ms = base + fractionMs - offset;
     if (!Number.isSafeInteger(ms) || ms < 0)
         {return null;}
     return ms;

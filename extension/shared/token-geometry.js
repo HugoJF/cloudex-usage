@@ -66,6 +66,9 @@ const DECIMAL = String.raw`[+-]?(?:\d+(?:\.\d*)?|\.\d+)`;
 const FUNCTION_COLOR = new RegExp(
     String.raw`^(rgba?)\(\s*(${DECIMAL})\s*,\s*(${DECIMAL})\s*,\s*(${DECIMAL})` +
     String.raw`(?:\s*,\s*(${DECIMAL}))?\s*\)$`, 'i');
+const HEX_COLOR = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i;
+const HEX_RADIX = 16;
+const RGB_CHANNEL_MAX = 255;
 
 function valueAtPath(root, path) {
     return path.split('.').reduce((value, key) => value?.[key], root);
@@ -81,47 +84,51 @@ export function tokenValue(tokens, path) {
 export function colorToRgba(color) {
     if (typeof color !== 'string')
         {throw new Error(`Unsupported color: ${color}`);}
-    if (/^#[0-9a-f]{6}$/i.test(color)) {
-        return [
-            Number.parseInt(color.slice(1, 3), 16) / 255,
-            Number.parseInt(color.slice(3, 5), 16) / 255,
-            Number.parseInt(color.slice(5, 7), 16) / 255,
-            1,
-        ];
+    const hex = color.match(HEX_COLOR);
+    if (hex) {
+        const [, red, green, blue] = hex;
+        return [red, green, blue].map(channel =>
+            Number.parseInt(channel, HEX_RADIX) / RGB_CHANNEL_MAX).concat(1);
     }
-
-    const match = color.match(FUNCTION_COLOR);
-    if (!match || (match[1].toLowerCase() === 'rgb' && match[5] !== undefined) ||
-        (match[1].toLowerCase() === 'rgba' && match[5] === undefined))
+    const functional = color.match(FUNCTION_COLOR);
+    if (!functional)
         {throw new Error(`Unsupported color: ${color}`);}
-
-    const channels = match.slice(2, 5).map(Number);
-    const alpha = match[5] === undefined ? 1 : Number(match[5]);
-    if (channels.some(value => !Number.isFinite(value) || value < 0 || value > 255) ||
+    const [, kind, red, green, blue, alphaText] = functional;
+    if ((kind.toLowerCase() === 'rgb') !== (alphaText === undefined))
+        {throw new Error(`Unsupported color: ${color}`);}
+    const channels = [red, green, blue].map(Number);
+    const alpha = alphaText === undefined ? 1 : Number(alphaText);
+    if (channels.some(value => !Number.isFinite(value) || value < 0 ||
+        value > RGB_CHANNEL_MAX) ||
         !Number.isFinite(alpha) || alpha < 0 || alpha > 1)
         {throw new Error(`Color channels are out of range: ${color}`);}
-    return [...channels.map(value => value / 255), alpha];
+    return [...channels.map(value => value / RGB_CHANNEL_MAX), alpha];
 }
 
-export function validateTokens(tokens) {
-    if (!tokens || typeof tokens !== 'object' || Array.isArray(tokens))
-        {throw new Error('Design token manifest must be an object');}
+function validateToken(path, expectedType, tokens) {
+    const value = tokenValue(tokens, path);
+    if (typeof value !== expectedType)
+        {throw new Error(`Design token ${path} must be a ${expectedType}`);}
+    if (expectedType === 'number' && (!Number.isFinite(value) || value < 0))
+        {throw new Error(`Design token ${path} must be a non-negative finite number`);}
+}
 
-    for (const [path, expectedType] of Object.entries(REQUIRED_TOKENS)) {
-        const value = tokenValue(tokens, path);
-        if (typeof value !== expectedType)
-            {throw new Error(`Design token ${path} must be a ${expectedType}`);}
-        if (expectedType === 'number' && (!Number.isFinite(value) || value < 0))
-            {throw new Error(`Design token ${path} must be a non-negative finite number`);}
-    }
-    for (const [name, value] of Object.entries(tokens.color)) {
+function validateColors(colors) {
+    for (const [name, value] of Object.entries(colors)) {
         try {
             colorToRgba(value);
         } catch {
             throw new Error(`Design token color.${name} is not a supported CSS color`);
         }
     }
+}
 
+export function validateTokens(tokens) {
+    if (!tokens || typeof tokens !== 'object' || Array.isArray(tokens))
+        {throw new Error('Design token manifest must be an object');}
+    for (const [path, expectedType] of Object.entries(REQUIRED_TOKENS))
+        {validateToken(path, expectedType, tokens);}
+    validateColors(tokens.color);
     const expectedThumbTravel = tokens.size.switchTrackWidth -
         tokens.size.switchThumb - tokens.size.switchInset;
     if (expectedThumbTravel <= tokens.size.switchInset)

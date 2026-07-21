@@ -99,6 +99,9 @@ tokens and production geometry. Rejected executable variants and selectors are r
 - [x] `CLEAN-014` — split extension composition into focused view builders.
 - [x] `CLEAN-015` — split harness/package checks and strengthen recursive scanning.
 - [x] `CLEAN-016` — close lint exclusions, reconcile docs, and bind final assessment.
+- [x] `CLEAN-017` — repair assessment findings: enforce repository-wide linting,
+  account for exports, remove catalog variants, split runtime/harness modules, and
+  add CSS structure verification.
 
 ## Non-Scope
 

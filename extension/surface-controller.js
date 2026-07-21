@@ -13,9 +13,12 @@ function frozen(value) {
     return Object.freeze(value);
 }
 
+const DEFAULT_REFRESH_INTERVAL_MS = 300000;
+
 export class SurfaceController {
     constructor({now = () => Date.now(), schedule, cancel, onChange = () => {},
-        refreshIntervalMs = 5 * 60 * 1000, dataRoles = DEFAULT_DATA_ROLES} = {}) {
+        refreshIntervalMs = DEFAULT_REFRESH_INTERVAL_MS,
+        dataRoles = DEFAULT_DATA_ROLES} = {}) {
         this._now = requireCallback(now, 'Clock');
         this._schedule = requireCallback(schedule, 'Scheduler');
         this._cancel = requireCallback(cancel, 'Scheduler cancel');
@@ -34,83 +37,26 @@ export class SurfaceController {
     }
 
     registerProvider(provider) {
-        if (this._disposed)
-            {throw new Error('Surface controller is disposed');}
-        if (!provider || typeof provider !== 'object')
-            {throw new Error('Provider must be an object');}
-        const id = requireId(provider.id, 'Provider ID');
-        if (this._disposed)
-            {throw new Error('Surface controller is disposed');}
-        if (this._providers.has(id) || this._providerReservations.has(id))
-            {throw new Error(`Provider ID is already registered: ${id}`);}
-        this._providerReservations.add(id);
-
+        const id = this._reserveProvider(provider);
         let state = null;
         let acquiredUnsubscribe = null;
-        let committed = false;
-        const assertProvisionalActive = () => {
-            if (this._disposed)
-                {throw new Error('Surface controller is disposed');}
-            if (!this._providerReservations.has(id))
-                {throw new Error(`Provider registration was interrupted: ${id}`);}
-        };
         const read = callback => {
-            assertProvisionalActive();
+            this._assertProvisionalActive(id);
             const value = callback();
-            assertProvisionalActive();
+            this._assertProvisionalActive(id);
             return value;
         };
         try {
-            const presentation = snapshotProviderPresentation(
-                provider, this._dataRoles, id, read);
-            const isEligible = requireCallback(read(() => provider.isEligible),
-                'Provider isEligible');
-            const initial = read(() => isEligible());
-            if (typeof initial !== 'boolean')
-                {throw new Error('Provider isEligible must return a strict boolean');}
+            state = this._createProviderState(provider, id, read);
             const subscribeEligibility = requireCallback(
                 read(() => provider.subscribeEligibility),
                 'Provider subscribeEligibility');
-            const refresh = requireCallback(read(() => provider.refresh), 'Provider refresh');
-            state = {
-                presentation,
-                refresh,
-                eligible: initial,
-                result: null,
-                generation: Symbol('provider-generation'),
-                unsubscribe: null,
-                removed: false,
-                registered: false,
-            };
-            const receiveEligibility = eligible => {
-                if (state.removed)
-                    {return;}
-                let becameEligible = false;
-                if (typeof eligible !== 'boolean') {
-                    state.eligible = false;
-                    state.result = null;
-                    state.generation = Symbol('provider-generation');
-                } else if (state.eligible !== eligible) {
-                    state.eligible = eligible;
-                    state.result = null;
-                    state.generation = Symbol('provider-generation');
-                    becameEligible = eligible;
-                } else {
-                    return;
-                }
-                if (!state.registered)
-                    {return;}
-                this._changed();
-                if (becameEligible)
-                    {this._requestEligibilityRefresh();}
-                else
-                    {this._syncLifecycle();}
-            };
-            assertProvisionalActive();
-            const unsubscribe = subscribeEligibility(receiveEligibility);
+            this._assertProvisionalActive(id);
+            const unsubscribe = subscribeEligibility(eligible =>
+                this._receiveEligibility(state, eligible));
             if (typeof unsubscribe === 'function')
                 {acquiredUnsubscribe = unsubscribe;}
-            assertProvisionalActive();
+            this._assertProvisionalActive(id);
             if (typeof unsubscribe !== 'function') {
                 throw new Error(
                     'Provider subscribeEligibility must return an unsubscribe callback');
@@ -120,23 +66,12 @@ export class SurfaceController {
             state.unsubscribe = unsubscribe;
             state.registered = true;
             this._providers.set(id, state);
-            committed = true;
         } catch (error) {
-            if (state)
-                {state.removed = true;}
-            if (acquiredUnsubscribe) {
-                try {
-                    acquiredUnsubscribe();
-                } catch (_) {
-                    // Preserve the primary registration failure.
-                }
-            }
+            this._cleanupRegistration(state, acquiredUnsubscribe);
             throw error;
         } finally {
             this._providerReservations.delete(id);
         }
-        if (!committed)
-            {throw new Error(`Provider registration failed: ${id}`);}
         this._changed();
         if (state.eligible)
             {this._requestEligibilityRefresh();}
@@ -149,6 +84,72 @@ export class SurfaceController {
             unregistered = true;
             this._removeProvider(id, state);
         };
+    }
+
+    _reserveProvider(provider) {
+        if (this._disposed)
+            {throw new Error('Surface controller is disposed');}
+        if (!provider || typeof provider !== 'object')
+            {throw new Error('Provider must be an object');}
+        const id = requireId(provider.id, 'Provider ID');
+        if (this._disposed)
+            {throw new Error('Surface controller is disposed');}
+        if (this._providers.has(id) || this._providerReservations.has(id))
+            {throw new Error(`Provider ID is already registered: ${id}`);}
+        this._providerReservations.add(id);
+        return id;
+    }
+
+    _assertProvisionalActive(id) {
+        if (this._disposed)
+            {throw new Error('Surface controller is disposed');}
+        if (!this._providerReservations.has(id))
+            {throw new Error(`Provider registration was interrupted: ${id}`);}
+    }
+
+    _createProviderState(provider, id, read) {
+        const presentation = snapshotProviderPresentation(provider,
+            this._dataRoles, id, read);
+        const isEligible = requireCallback(read(() => provider.isEligible),
+            'Provider isEligible');
+        const initial = read(() => isEligible());
+        if (typeof initial !== 'boolean')
+            {throw new Error('Provider isEligible must return a strict boolean');}
+        return {presentation,
+            refresh: requireCallback(read(() => provider.refresh), 'Provider refresh'),
+            eligible: initial, result: null,
+            generation: Symbol('provider-generation'), unsubscribe: null,
+            removed: false, registered: false};
+    }
+
+    _receiveEligibility(state, eligible) {
+        if (state.removed)
+            {return;}
+        const changed = typeof eligible !== 'boolean' || state.eligible !== eligible;
+        if (!changed)
+            {return;}
+        state.eligible = eligible === true;
+        state.result = null;
+        state.generation = Symbol('provider-generation');
+        if (!state.registered)
+            {return;}
+        this._changed();
+        if (state.eligible)
+            {this._requestEligibilityRefresh();}
+        else
+            {this._syncLifecycle();}
+    }
+
+    _cleanupRegistration(state, unsubscribe) {
+        if (state)
+            {state.removed = true;}
+        if (!unsubscribe)
+            {return;}
+        try {
+            unsubscribe();
+        } catch (_) {
+            // Preserve the primary registration failure.
+        }
     }
 
     refresh() {
@@ -241,47 +242,54 @@ export class SurfaceController {
             {return;}
         this._refreshing = true;
         this._changed();
-        const attempts = this._orderedEligible().map(state => {
-            const generation = state.generation;
-            return Promise.resolve()
-                .then(() => {
-                    if (this._disposed || state.removed || !state.eligible ||
-                        state.generation !== generation) {
-                        return {state, generation, result: null, skipped: true};
-                    }
-                    let refreshResult;
-                    try {
-                        refreshResult = state.refresh();
-                    } catch {
-                        return {state, generation, result: null, skipped: false};
-                    }
-                    return Promise.resolve(refreshResult)
-                        .then(result => ({state, generation,
-                            result: validateProviderResult(
-                                result, state.presentation.windows),
-                            skipped: false}))
-                        .catch(() => ({state, generation, result: null, skipped: false}));
-                });
-        });
-        Promise.all(attempts).then(results => {
-            if (this._disposed)
-                {return;}
-            for (const {state, generation, result, skipped} of results) {
-                if (!skipped && !state.removed && state.eligible &&
-                    state.generation === generation) {
-                    state.result = result ?? frozen({status: 'unavailable'});
-                }
-            }
-            this._refreshing = false;
-            this._lastCompletedAtMs = this._hasEligible() ? this._now() : null;
-            this._changed();
-            if (this._hasEligible() && this._refreshRequested) {
-                this._refreshRequested = false;
-                this._startRefresh();
-            } else if (this._hasEligible()) {
-                this._scheduleNext();
+        const attempts = this._orderedEligible().map(state =>
+            this._attemptRefresh(state));
+        Promise.all(attempts).then(results => this._completeRefresh(results));
+    }
+
+    _attemptRefresh(state) {
+        const generation = state.generation;
+        return Promise.resolve().then(() => {
+            if (this._disposed || state.removed || !state.eligible ||
+                state.generation !== generation)
+                {return {state, generation, result: null, skipped: true};}
+            try {
+                return Promise.resolve(state.refresh())
+                    .then(result => ({state, generation,
+                        result: validateProviderResult(result,
+                            state.presentation.windows), skipped: false}))
+                    .catch(() => ({state, generation, result: null, skipped: false}));
+            } catch {
+                return {state, generation, result: null, skipped: false};
             }
         });
+    }
+
+    _completeRefresh(results) {
+        if (this._disposed)
+            {return;}
+        results.forEach(result => this._applyRefreshResult(result));
+        this._refreshing = false;
+        this._lastCompletedAtMs = this._hasEligible() ? this._now() : null;
+        this._changed();
+        this._scheduleAfterRefresh();
+    }
+
+    _applyRefreshResult({state, generation, result, skipped}) {
+        if (!skipped && !state.removed && state.eligible &&
+            state.generation === generation)
+            {state.result = result ?? frozen({status: 'unavailable'});}
+    }
+
+    _scheduleAfterRefresh() {
+        if (!this._hasEligible())
+            {return;}
+        if (this._refreshRequested) {
+            this._refreshRequested = false;
+            this._startRefresh();
+            return;
+        }
+        this._scheduleNext();
     }
 
     _scheduleNext() {

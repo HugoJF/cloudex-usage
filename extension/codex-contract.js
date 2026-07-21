@@ -1,4 +1,10 @@
-const WEEK_SECONDS = 7 * 24 * 60 * 60;
+const DAYS_PER_WEEK = 7;
+const HOURS_PER_DAY = 24;
+const MINUTES_PER_HOUR = 60;
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const WEEK_SECONDS = DAYS_PER_WEEK * HOURS_PER_DAY * MINUTES_PER_HOUR *
+    SECONDS_PER_MINUTE;
 
 function isRecord(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -24,33 +30,38 @@ export function extractCodexAccessToken(authPayload) {
     }
 }
 
+function weeklyWindow(payload) {
+    if (!isRecord(payload) || !isRecord(payload.rate_limit))
+        {return null;}
+    const candidates = [payload.rate_limit.primary_window,
+        payload.rate_limit.secondary_window].filter(window =>
+        isRecord(window) && window.limit_window_seconds === WEEK_SECONDS);
+    return candidates.length === 1 ? candidates[0] : null;
+}
+
+function reading(window) {
+    if (!window)
+        {return null;}
+    const {used_percent: percent, reset_at: resetAtSeconds} = window;
+    const validPercent = typeof percent === 'number' && Number.isFinite(percent) &&
+        percent >= 0 && percent <= 100;
+    const validReset = Number.isInteger(resetAtSeconds) && resetAtSeconds >= 0;
+    if (!validPercent || !validReset)
+        {return null;}
+    const resetAtMs = resetAtSeconds * MILLISECONDS_PER_SECOND;
+    return Number.isSafeInteger(resetAtMs)
+        ? Object.freeze({id: 'weekly', percent, resetAtMs})
+        : null;
+}
+
 export function mapCodexUsage(payload) {
     try {
-        if (!isRecord(payload) || !isRecord(payload.rate_limit))
+        const mapped = reading(weeklyWindow(payload));
+        if (!mapped)
             {return unavailable();}
-        const windows = [
-            payload.rate_limit.primary_window,
-            payload.rate_limit.secondary_window,
-        ];
-        const weekly = windows.filter(window =>
-            isRecord(window) && window.limit_window_seconds === WEEK_SECONDS);
-        if (weekly.length !== 1)
-            {return unavailable();}
-
-        const [{used_percent: percent, reset_at: resetAtSeconds}] = weekly;
-        if (typeof percent !== 'number' || !Number.isFinite(percent) ||
-            percent < 0 || percent > 100 ||
-            !Number.isInteger(resetAtSeconds) || resetAtSeconds < 0) {
-            return unavailable();
-        }
-        const resetAtMs = resetAtSeconds * 1000;
-        if (!Number.isSafeInteger(resetAtMs))
-            {return unavailable();}
-
-        const reading = Object.freeze({id: 'weekly', percent, resetAtMs});
         return Object.freeze({
             status: 'available',
-            readings: Object.freeze([reading]),
+            readings: Object.freeze([mapped]),
         });
     } catch {
         return unavailable();

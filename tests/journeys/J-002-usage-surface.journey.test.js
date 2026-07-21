@@ -7,8 +7,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 
-Gio._promisify(Shell.Screenshot.prototype, 'screenshot_area',
-    'screenshot_area_finish');
+import {captureActor as capture} from './capture-actor.js';
 
 const UUID = 'claudex-usage@hugo.local';
 const EXPECTED_CAPTURES = [
@@ -69,93 +68,10 @@ function collectLabelText(root, result = []) {
     return result;
 }
 
-function captureDirectory() {
-    const override = GLib.getenv('CLAUDEX_CAPTURE_DIR');
-    if (override)
-        {return Gio.File.new_for_path(override);}
-    const repo = Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent();
-    return repo.get_child('design').get_child('captures');
-}
-
-async function captureActor(target, filename, padding = 8,
-    useAllocation = false, fixedTopRight = null) {
-    let actor = null;
-    let geometry = null;
-    for (let attempt = 0; attempt < 40; attempt++) {
-        actor = typeof target === 'function' ? target() : target;
-        if (actor?.is_mapped()) {
-            if (fixedTopRight) {
-                geometry = {
-                    actorX: global.screen_width - fixedTopRight.width - padding,
-                    actorY: padding,
-                    actorWidth: fixedTopRight.width,
-                    actorHeight: fixedTopRight.height,
-                };
-                break;
-            }
-            const [actorX, actorY] = actor.get_transformed_position();
-            const [actorWidth, actorHeight] = actor.get_transformed_size();
-            if (Number.isFinite(actorX) && Number.isFinite(actorY) &&
-                actorWidth > 0 && actorHeight > 0) {
-                geometry = {actorX, actorY, actorWidth, actorHeight};
-                break;
-            }
-            if (Number.isFinite(actorX) && Number.isFinite(actorY) &&
-                actor.width > 0 && actor.height > 0) {
-                geometry = {
-                    actorX,
-                    actorY,
-                    actorWidth: actor.width,
-                    actorHeight: actor.height,
-                };
-                break;
-            }
-            if (useAllocation) {
-                let child = actor;
-                let ancestor = child.get_parent();
-                let offsetX = child.x;
-                let offsetY = child.y;
-                while (ancestor) {
-                    const [ancestorX, ancestorY] = ancestor.get_transformed_position();
-                    if (Number.isFinite(ancestorX) && Number.isFinite(ancestorY) &&
-                        actor.width > 0 && actor.height > 0) {
-                        geometry = {
-                            actorX: ancestorX + offsetX,
-                            actorY: ancestorY + offsetY,
-                            actorWidth: actor.width,
-                            actorHeight: actor.height,
-                        };
-                        break;
-                    }
-                    child = ancestor;
-                    ancestor = child.get_parent();
-                    offsetX += child.x;
-                    offsetY += child.y;
-                }
-                if (geometry) {
-                    break;
-                }
-            }
-        }
-        await Scripting.sleep(50);
-    }
-    assert(actor?.is_mapped(), `${filename} actor is not mapped`);
-    assert(geometry, `${filename} actor has no allocated geometry`);
-    const directory = captureDirectory();
-    if (!directory.query_exists(null)) {
-        directory.make_directory_with_parents(null);
-    }
-    const {actorX, actorY, actorWidth, actorHeight} = geometry;
-    const x = Math.max(0, Math.floor(actorX - padding));
-    const y = Math.max(0, Math.floor(actorY - padding));
-    const width = Math.min(global.screen_width - x, Math.ceil(actorWidth + padding * 2));
-    const height = Math.min(global.screen_height - y, Math.ceil(actorHeight + padding * 2));
-    const stream = directory.get_child(filename).replace(null, false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION, null);
-    const screenshot = new Shell.Screenshot();
-    await screenshot.screenshot_area(x, y, width, height, stream);
-    stream.close(null);
-}
+const captureActor = (target, filename, padding = 8, useAllocation = false) =>
+    capture({target, filename, padding, useAllocation, assert});
+const captureFixed = (target, filename, fixedTopRight) =>
+    capture({target, filename, fixedTopRight, assert});
 
 async function settle() {
     await Scripting.sleep(260);
@@ -378,8 +294,7 @@ export async function run() {
     'surface fixture records uncovered history only inside its isolated store');
     const historyFile = Gio.File.new_for_path(historyRoot).get_child('history.json');
     let historyBeforeTick = readFileText(historyFile);
-    await captureActor(popover, EXPECTED_CAPTURES[1], 8, false,
-        {width: 426, height: 421});
+    await captureFixed(popover, EXPECTED_CAPTURES[1], {width: 426, height: 421});
 
     claudeDeferred = deferred();
     refresh.emit('clicked', 1);
@@ -396,8 +311,7 @@ export async function run() {
     'manual refresh swaps the header icon to its accessible busy state');
     refreshButton.add_style_pseudo_class('hover');
     refreshButton.grab_key_focus();
-    await captureActor(popover, EXPECTED_CAPTURES[2], 8, false,
-        {width: 426, height: 421});
+    await captureFixed(popover, EXPECTED_CAPTURES[2], {width: 426, height: 421});
     refreshButton.remove_style_pseudo_class('hover');
     claudePercent = 28;
     claudeReset = nowMs + 56 * 60 * 1000;
@@ -571,8 +485,7 @@ export async function run() {
         'unavailable provider drops its Time pace marker with the numeric bar');
     assert(collectLabelText(findActor(popover, 'provider-card-claude')).includes('28%'),
         'other provider remains live when one provider fails');
-    await captureActor(popover, EXPECTED_CAPTURES[3], 8, false,
-        {width: 426, height: 383});
+    await captureFixed(popover, EXPECTED_CAPTURES[3], {width: 426, height: 383});
 
     indicator.menu.close();
     assert(extension._presentationSourceId === null,

@@ -25,14 +25,14 @@ export const PANEL_LIMITS = Object.freeze([
 ]);
 
 export const REFRESH_INTERVALS = Object.freeze([
-    Object.freeze({index: 0, nick: 'five-minutes', label: '5 min', ms: 5 * 60 * 1000}),
-    Object.freeze({index: 1, nick: 'ten-minutes', label: '10 min', ms: 10 * 60 * 1000}),
-    Object.freeze({index: 2, nick: 'fifteen-minutes', label: '15 min', ms: 15 * 60 * 1000}),
+    Object.freeze({index: 0, nick: 'five-minutes', label: '5 min', ms: 300000}),
+    Object.freeze({index: 1, nick: 'ten-minutes', label: '10 min', ms: 600000}),
+    Object.freeze({index: 2, nick: 'fifteen-minutes', label: '15 min', ms: 900000}),
 ]);
 
-export const REFRESH_INTERVAL_KEY = 'refresh-interval';
-export const LOCAL_HISTORY_KEY = 'show-usage-history';
-export const HISTORY_RANGE_KEY = 'history-range';
+const REFRESH_INTERVAL_KEY = 'refresh-interval';
+const LOCAL_HISTORY_KEY = 'show-usage-history';
+const HISTORY_RANGE_KEY = 'history-range';
 export const USAGE_DISPLAY_KEY = 'usage-display';
 export const TIME_PACE_KEY = 'show-time-pace';
 export const WEEKLY_PACE_KEY = 'weekly-pace';
