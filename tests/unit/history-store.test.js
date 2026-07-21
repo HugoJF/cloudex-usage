@@ -133,11 +133,28 @@ test('serialize and deserialize round-trip and fail closed on malformed data', (
     assert.deepEqual(deserializeStore({version: 2, windows: {}}), {windows: {}});
     assert.deepEqual(deserializeStore({version: 1, windows: []}), {windows: {}});
 
-    const partial = deserializeStore({version: 1, windows: {
+    const malformed = deserializeStore({version: 1, windows: {
         'claude:short': [[1000, 10], [2000, 20]],
         'codex:weekly': [[3000, 30], [2000, 40]],
         'claude:weekly': [[1000, 150]],
         'bad:row': [[1000]],
     }});
-    assert.deepEqual(Object.keys(partial.windows), ['claude:short']);
+    assert.deepEqual(malformed, emptyStore());
+
+    for (const key of ['missing-colon', ':short', 'claude:',
+        'claude:short:extra', 'claude/unsafe:short']) {
+        assert.deepEqual(deserializeStore({version: 1, windows: {
+            [key]: [[1000, 10]],
+        }}), emptyStore());
+    }
+    const tooMany = Array.from({length: 5001}, (_value, index) => [index, 10]);
+    assert.deepEqual(deserializeStore({version: 1, windows: {
+        'claude:short': tooMany,
+    }}), emptyStore());
+
+    const source = {windows: {'claude:short': [{atMs: 1000, percent: 10}]}};
+    const serialized = serializeStore(source);
+    source.windows['claude:short'][0].percent = 90;
+    assert.deepEqual(serialized.windows['claude:short'], [[1000, 10]]);
+    assertDeepFrozen(serialized);
 });

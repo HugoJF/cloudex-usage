@@ -2,6 +2,7 @@ import {HISTORY_RANGES} from './shared/history-ranges.js';
 export const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 export const SERIES_POINTS = 30;
 const MAX_SAMPLES = 5000;
+const SAFE_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
 const RANGE_BY_ID = new Map(HISTORY_RANGES.map(range => [range.id, range]));
 
 function isRecord(value) {
@@ -30,8 +31,8 @@ function windowsOf(store) {
 
 function isValidSample(sample) {
     return isRecord(sample) &&
-        typeof sample.providerId === 'string' && sample.providerId.length > 0 &&
-        typeof sample.windowId === 'string' && sample.windowId.length > 0 &&
+        typeof sample.providerId === 'string' && SAFE_ID.test(sample.providerId) &&
+        typeof sample.windowId === 'string' && SAFE_ID.test(sample.windowId) &&
         typeof sample.percent === 'number' && Number.isFinite(sample.percent) &&
         sample.percent >= 0 && sample.percent <= 100 &&
         Number.isSafeInteger(sample.atMs) && sample.atMs >= 0;
@@ -40,6 +41,17 @@ function isValidSample(sample) {
 function splitKey(key) {
     const separator = key.indexOf(':');
     return [key.slice(0, separator), key.slice(separator + 1)];
+}
+
+function validKey(key) {
+    if (typeof key !== 'string')
+        return false;
+    const separator = key.indexOf(':');
+    if (separator <= 0 || separator !== key.lastIndexOf(':') ||
+        separator === key.length - 1)
+        return false;
+    const [providerId, windowId] = splitKey(key);
+    return SAFE_ID.test(providerId) && SAFE_ID.test(windowId);
 }
 
 export function recordSample(store, sample) {
@@ -105,13 +117,18 @@ export function seriesForRange(store, rangeId, nowMs) {
 }
 
 export function serializeStore(store) {
-    const serialized = {};
-    for (const [key, samples] of Object.entries(windowsOf(store))) {
-        if (Array.isArray(samples) && samples.length > 0) {
-            serialized[key] = samples.map(point => [point.atMs, point.percent]);
+    try {
+        const serialized = {};
+        for (const [key, samples] of Object.entries(windowsOf(store))) {
+            if (!validKey(key) || !Array.isArray(samples) || samples.length === 0)
+                continue;
+            serialized[key] = Object.freeze(samples.map(point =>
+                Object.freeze([point.atMs, point.percent])));
         }
+        return Object.freeze({version: 1, windows: Object.freeze(serialized)});
+    } catch {
+        return Object.freeze({version: 1, windows: Object.freeze({})});
     }
-    return {version: 1, windows: serialized};
 }
 
 export function deserializeStore(data) {
@@ -121,30 +138,29 @@ export function deserializeStore(data) {
         }
         const windows = {};
         for (const [key, rows] of Object.entries(data.windows)) {
-            if (typeof key !== 'string' || !key.includes(':') || !Array.isArray(rows)) {
-                continue;
-            }
+            if (!validKey(key) || !Array.isArray(rows) || rows.length === 0 ||
+                rows.length > MAX_SAMPLES)
+                return emptyStore();
             const samples = [];
             let previousAtMs = -1;
             let valid = true;
             for (const row of rows) {
                 if (!Array.isArray(row) || row.length !== 2) {
                     valid = false;
-                    break;
+                    return emptyStore();
                 }
                 const [atMs, percent] = row;
                 if (!Number.isSafeInteger(atMs) || atMs < 0 || atMs <= previousAtMs ||
                     typeof percent !== 'number' || !Number.isFinite(percent) ||
                     percent < 0 || percent > 100) {
-                    valid = false;
-                    break;
+                    return emptyStore();
                 }
                 previousAtMs = atMs;
                 samples.push(Object.freeze({atMs, percent}));
             }
-            if (valid && samples.length > 0) {
-                windows[key] = Object.freeze(samples);
-            }
+            if (!valid)
+                return emptyStore();
+            windows[key] = Object.freeze(samples);
         }
         return frozenStore(windows);
     } catch {

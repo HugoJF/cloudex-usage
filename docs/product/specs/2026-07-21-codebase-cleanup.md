@@ -92,7 +92,7 @@ tokens and production geometry. Rejected executable variants and selectors are r
 - [x] `CLEAN-006` — make one frozen range model authoritative everywhere.
 - [x] `CLEAN-007` — strictly parse Claude timestamps with built-in `Date`.
 - [x] `CLEAN-008` — harden process, bounded-file, and cancellation boundaries.
-- [ ] `CLEAN-009` — harden history ingress, identifiers, v1 validation, and ownership.
+- [x] `CLEAN-009` — harden history ingress, identifiers, v1 validation, and ownership.
 - [ ] `CLEAN-010` — share only proven provider infrastructure.
 - [ ] `CLEAN-011` — split presentation primitives and remove hidden geometry state.
 - [ ] `CLEAN-012` — make invalid-clock behavior explicit and safe.

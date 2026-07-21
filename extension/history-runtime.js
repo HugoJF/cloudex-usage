@@ -12,9 +12,46 @@ import {
 
 const OPTION_KEYS = new Set(['dir', 'now']);
 const FILE_NAME = 'history.json';
+export const HISTORY_FILE_MAX_BYTES = 1024 * 1024;
 
 function decode(bytes) {
-    return new TextDecoder('utf-8').decode(bytes);
+    return new TextDecoder('utf-8', {fatal: true}).decode(bytes);
+}
+
+function close(stream) {
+    try { stream?.close(null); } catch {}
+}
+
+function readHistoryFile(path) {
+    const file = Gio.File.new_for_path(path);
+    const info = file.query_info('standard::type',
+        Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
+    if (info.get_file_type() !== Gio.FileType.REGULAR)
+        throw new Error('History input must be a regular file');
+    const stream = file.read(null);
+    try {
+        const chunks = [];
+        let total = 0;
+        while (true) {
+            const bytes = stream.read_bytes(HISTORY_FILE_MAX_BYTES - total + 1, null);
+            const size = bytes.get_size();
+            if (size === 0)
+                break;
+            total += size;
+            if (total > HISTORY_FILE_MAX_BYTES)
+                throw new Error('History input exceeds its byte limit');
+            chunks.push(bytes.get_data());
+        }
+        const result = new Uint8Array(total);
+        let offset = 0;
+        for (const chunk of chunks) {
+            result.set(chunk, offset);
+            offset += chunk.length;
+        }
+        return result;
+    } finally {
+        close(stream);
+    }
 }
 
 function requireRecord(value) {
@@ -90,10 +127,7 @@ export class HistoryRuntime {
 
     _load() {
         try {
-            const [loaded, bytes] = Gio.File.new_for_path(this._path)
-                .load_contents(null);
-            if (!loaded)
-                return emptyStore();
+            const bytes = readHistoryFile(this._path);
             return deserializeStore(JSON.parse(decode(bytes)));
         } catch {
             return emptyStore();

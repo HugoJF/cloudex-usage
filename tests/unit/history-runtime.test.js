@@ -1,7 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-import {HistoryRuntime} from '../../extension/history-runtime.js';
+import {HISTORY_FILE_MAX_BYTES, HistoryRuntime} from '../../extension/history-runtime.js';
 
 function assert(value, message) {
     if (!value) throw new Error(message);
@@ -152,6 +152,29 @@ try {
         clock = 3_600_000;
         instance.record([{providerId: 'codex', windowId: 'weekly', percent: 12}]);
         assert(instance.series('1h').length === 1, 'recovers after corrupt load');
+    });
+
+    test('fails closed on oversized, invalid UTF-8, and symlinked history', () => {
+        for (const [name, contents] of [
+            ['oversized', ' '.repeat(HISTORY_FILE_MAX_BYTES + 1)],
+            ['invalid-utf8', new Uint8Array([0xff])],
+        ]) {
+            const dir = GLib.build_filenamev([root, name]);
+            GLib.mkdir_with_parents(dir, 0o700);
+            GLib.file_set_contents(GLib.build_filenamev([dir, 'history.json']), contents);
+            clock = 0;
+            assert(!new HistoryRuntime({dir, now: () => clock}).hasSamples(), name);
+        }
+        const targetDir = GLib.build_filenamev([root, 'symlink-target']);
+        const linkDir = GLib.build_filenamev([root, 'symlink']);
+        GLib.mkdir_with_parents(targetDir, 0o700);
+        GLib.mkdir_with_parents(linkDir, 0o700);
+        const target = GLib.build_filenamev([targetDir, 'history.json']);
+        GLib.file_set_contents(target, '{"version":1,"windows":{}}');
+        Gio.File.new_for_path(GLib.build_filenamev([linkDir, 'history.json']))
+            .make_symbolic_link(target, null);
+        assert(!new HistoryRuntime({dir: linkDir, now: () => 0}).hasSamples(),
+            'symlink history');
     });
 } finally {
     removeTree(root);
