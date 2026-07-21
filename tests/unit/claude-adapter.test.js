@@ -156,6 +156,12 @@ try {
         process('claude-helper');
         const wrongName = runtime();
         assert(!wrongName.isPresent(), 'comm'); wrongName.dispose();
+        removeTree(processPath); process(' claude ');
+        const paddedName = runtime();
+        assert(!paddedName.isPresent(), 'comm whitespace'); paddedName.dispose();
+        removeTree(processPath); process('x'.repeat(65));
+        const oversizedName = runtime();
+        assert(!oversizedName.isPresent(), 'comm ceiling'); oversizedName.dispose();
         removeTree(processPath);
     });
 
@@ -206,6 +212,8 @@ try {
         const stale = instance.refreshUsage();
         await idleUntil(() => session.requests.length === 1);
         instance.cancelRefresh(); removeTree(processPath); instance._pollPresence();
+        assert(session.requests[0].message.request_headers
+            .get_one('Authorization') === null, 'immediate cancellation cleanup');
         process(); instance._pollPresence();
         const current = instance.refreshUsage();
         equal(await stale, {status: 'unavailable'}, 'cancelled');

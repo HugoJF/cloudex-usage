@@ -16,6 +16,8 @@ const OPTION_KEYS = new Set([
     'schedule', 'cancel', 'session',
 ]);
 const UNAVAILABLE = Object.freeze({status: 'unavailable'});
+const COMM_MAX_BYTES = 64;
+const CODEX_COMM = 'codex\n';
 export function createCodexProvider(runtime) {
     for (const name of ['isPresent', 'subscribePresence', 'refreshUsage',
         'cancelRefresh']) {
@@ -115,6 +117,36 @@ async function readBounded(stream, limit, cancellable) {
         joined.set(chunk, offset); offset += chunk.length;
     }
     return joined;
+}
+function readBoundedFile(file, limit) {
+    const info = file.query_info('standard::type',
+        Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
+    if (info.get_file_type() !== Gio.FileType.REGULAR)
+        throw new Error('Input must be a regular file');
+    const stream = file.read(null);
+    try {
+        const chunks = [];
+        let total = 0;
+        while (true) {
+            const bytes = stream.read_bytes(limit - total + 1, null);
+            const size = bytes.get_size();
+            if (size === 0)
+                break;
+            total += size;
+            if (total > limit)
+                throw new Error('Input exceeds its byte limit');
+            chunks.push(bytes.get_data());
+        }
+        const result = new Uint8Array(total);
+        let offset = 0;
+        for (const chunk of chunks) {
+            result.set(chunk, offset);
+            offset += chunk.length;
+        }
+        return result;
+    } finally {
+        close(stream);
+    }
 }
 class SoupTransport {
     constructor() { this._session = new Soup.Session({timeout: 15}); }
@@ -222,7 +254,9 @@ export class CodexRuntime {
     }
     cancelRefresh() {
         const attempt = this._attempt;
-        this._attempt = null; attempt?.cancellable.cancel();
+        this._attempt = null;
+        attempt?.message?.request_headers.remove('Authorization');
+        attempt?.cancellable.cancel();
     }
     dispose() {
         if (this._disposed)
@@ -258,8 +292,8 @@ export class CodexRuntime {
                 const comm = Gio.File.new_for_path(GLib.build_filenamev(
                     [this._procRoot, name, 'comm']));
                 try {
-                    const [loaded, bytes] = comm.load_contents(null);
-                    if (loaded && bytes.length <= 64 && decode(bytes).trim() === 'codex')
+                    const bytes = readBoundedFile(comm, COMM_MAX_BYTES);
+                    if (decode(bytes) === CODEX_COMM)
                         return true;
                 } catch {}
             }
