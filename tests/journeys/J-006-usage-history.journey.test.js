@@ -17,23 +17,23 @@ Gio._promisify(Shell.Screenshot.prototype, 'screenshot_area',
 export const METRICS = {};
 export function init() {}
 function assert(value, message) {
-    if (!value) throw new Error(`J-006 failed: ${message}`);
+    if (!value) {throw new Error(`J-006 failed: ${message}`);}
 }
 function findActor(root, name) {
     if (root?.get_name?.() === name)
-        return root;
+        {return root;}
     for (const child of root?.get_children?.() ?? []) {
         const found = findActor(child, name);
         if (found)
-            return found;
+            {return found;}
     }
     return null;
 }
 function labels(root, values = []) {
     if (root instanceof St.Label)
-        values.push(root.text);
+        {values.push(root.text);}
     for (const child of root?.get_children?.() ?? [])
-        labels(child, values);
+        {labels(child, values);}
     return values;
 }
 function setShellColorScheme(scheme) {
@@ -43,7 +43,7 @@ function setShellColorScheme(scheme) {
 function captureDirectory() {
     const override = GLib.getenv('CLAUDEX_CAPTURE_DIR');
     if (override)
-        return Gio.File.new_for_path(override);
+        {return Gio.File.new_for_path(override);}
     return Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent()
         .get_child('design').get_child('captures');
 }
@@ -54,16 +54,16 @@ async function captureActor(target, filename, padding = 8) {
     for (let attempt = 0; attempt < 60; attempt++) {
         actor = typeof target === 'function' ? target() : target;
         if (actor?.is_mapped())
-            [width, height] = actor.get_transformed_size();
+            {[width, height] = actor.get_transformed_size();}
         if (width > 0 && height > 0)
-            break;
+            {break;}
         await Scripting.sleep(80);
     }
     assert(actor?.is_mapped(), `${filename} actor is not mapped`);
     assert(width > 0 && height > 0, `${filename} actor has no allocated geometry`);
     const directory = captureDirectory();
     if (!directory.query_exists(null))
-        directory.make_directory_with_parents(null);
+        {directory.make_directory_with_parents(null);}
     const [actorX, actorY] = actor.get_transformed_position();
     const x = Math.max(0, Math.floor(actorX - padding));
     const y = Math.max(0, Math.floor(actorY - padding));
@@ -80,7 +80,7 @@ async function captureActor(target, filename, padding = 8) {
 async function waitFor(callback, message) {
     for (let attempt = 0; attempt < 120; attempt++) {
         if (callback())
-            return;
+            {return;}
         await Scripting.sleep(100);
     }
     throw new Error(`J-006 timed out: ${message}`);
@@ -94,7 +94,7 @@ function historyWindows() {
     const path = GLib.build_filenamev([GLib.getenv('CLAUDEX_HISTORY_DIR'), 'history.json']);
     const [ok, bytes] = GLib.file_get_contents(path);
     if (!ok)
-        return {};
+        {return {};}
     return JSON.parse(new TextDecoder('utf-8').decode(bytes)).windows ?? {};
 }
 function historyText() {
@@ -155,6 +155,16 @@ export async function run() {
         process = startClaude();
         await waitFor(() => extension.getSurfaceSnapshot().providers[0]
             ?.metrics[0]?.percent === 12, 'live Claude usage');
+        if (GLib.getenv('CLAUDEX_J006_PHASE') === 'restore') {
+            const indicator = Main.panel.statusArea[UUID];
+            indicator.menu.open();
+            await waitFor(() => findActor(indicator.menu.actor, 'history-chart'),
+                'fresh session renders persisted history');
+            assert(seeded > 0,
+                'fresh extension loaded history before its first provider result');
+            indicator.menu.close();
+            return;
+        }
         await waitFor(() => (historyWindows()['claude:short']?.length ?? 0) > seeded,
             'the completed refresh records a durable sample');
         const afterInitial = historyWindows()['claude:short'].length;
@@ -315,7 +325,7 @@ export async function run() {
             ...historySection.get_children().slice(1),
         ].filter(Boolean);
         for (const actor of isolatedForScale)
-            actor.hide();
+            {actor.hide();}
         const themeContext = St.ThemeContext.get_for_stage(global.stage);
         const originalScale = themeContext.scale_factor;
         themeContext.set_scale_factor(2);
@@ -327,7 +337,7 @@ export async function run() {
         await captureActor(() => indicator.menu.actor, RANGE_CAPTURES.scaled);
         themeContext.set_scale_factor(originalScale);
         for (const actor of isolatedForScale)
-            actor.show();
+            {actor.show();}
         await Scripting.sleep(150);
         indicator.menu.close();
         await waitFor(() => !indicator.menu.isOpen,
@@ -386,7 +396,7 @@ export async function run() {
             'the current-value provider card stays live');
     } finally {
         if (process)
-            stopClaude(process);
+            {stopClaude(process);}
         if (state.held) {
             reply(state.held);
             server.unpause_message(state.held);

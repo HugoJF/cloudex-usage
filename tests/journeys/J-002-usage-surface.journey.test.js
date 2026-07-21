@@ -28,7 +28,7 @@ export function init() {
 
 function assert(condition, message) {
     if (!condition)
-        throw new Error(`J-002 failed: ${message}`);
+        {throw new Error(`J-002 failed: ${message}`);}
 }
 
 function markerX(percent, width) {
@@ -48,31 +48,31 @@ function deferred() {
 
 function findActor(root, name) {
     if (!root)
-        return null;
+        {return null;}
     if (root.get_name?.() === name)
-        return root;
+        {return root;}
     for (const child of root.get_children?.() ?? []) {
         const found = findActor(child, name);
         if (found)
-            return found;
+            {return found;}
     }
     return null;
 }
 
 function collectLabelText(root, result = []) {
     if (!root)
-        return result;
+        {return result;}
     if (root instanceof St.Label)
-        result.push(root.text);
+        {result.push(root.text);}
     for (const child of root.get_children?.() ?? [])
-        collectLabelText(child, result);
+        {collectLabelText(child, result);}
     return result;
 }
 
 function captureDirectory() {
     const override = GLib.getenv('CLAUDEX_CAPTURE_DIR');
     if (override)
-        return Gio.File.new_for_path(override);
+        {return Gio.File.new_for_path(override);}
     const repo = Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent();
     return repo.get_child('design').get_child('captures');
 }
@@ -159,6 +159,16 @@ async function captureActor(target, filename, padding = 8,
 
 async function settle() {
     await Scripting.sleep(260);
+}
+
+async function waitFor(predicate, message) {
+    const attempts = 20;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+        if (predicate())
+            {return;}
+        await settle();
+    }
+    throw new Error(`J-002 failed: ${message}`);
 }
 
 function setShellColorScheme(scheme) {
@@ -307,7 +317,7 @@ export async function run() {
     assert(indicator.menu.isOpen, 'Shell popup menu opens before capture');
     let popover = findActor(indicator.menu.actor, 'claudex-live-popover');
     assert(popover?.is_mapped(), 'usage popup maps before capture');
-    let text = collectLabelText(popover);
+    const text = collectLabelText(popover);
     for (const expected of ['Claude', 'Codex', '5-hour window', 'Weekly window',
         '8%', '42%', 'Resets in']) {
         assert(text.some(value => value.includes(expected)), `popup includes ${expected}`);
@@ -560,15 +570,18 @@ export async function run() {
     await settle();
     indicator.menu.open();
     await settle();
-    const scaledPopover = findActor(indicator.menu.actor, 'claudex-live-popover');
-    const scaledShortProgress = findActor(scaledPopover,
-        'progress-claude--short');
-    const scaledShortFill = findActor(scaledShortProgress,
-        'progress-fill-claude--short');
-    assert(scaledShortProgress.width === scaledShortProgress.get_parent().width &&
-        scaledShortFill.width === Math.round(
-            scaledShortProgress.width * 0.28 / themeContext.scale_factor),
-    '200 percent scale preserves full-row logical progress geometry');
+    await waitFor(() => {
+        const scaledPopover = findActor(indicator.menu.actor,
+            'claudex-live-popover');
+        const scaledShortProgress = findActor(scaledPopover,
+            'progress-claude--short');
+        const scaledShortFill = findActor(scaledShortProgress,
+            'progress-fill-claude--short');
+        return scaledShortProgress?.width ===
+            scaledShortProgress?.get_parent().width &&
+            scaledShortFill?.width === Math.round(
+                scaledShortProgress.width * 0.28 / themeContext.scale_factor);
+    }, '200 percent scale preserves full-row logical progress geometry');
     indicator.menu.close();
     await settle();
     await captureActor(

@@ -98,7 +98,7 @@ tokens and production geometry. Rejected executable variants and selectors are r
 - [x] `CLEAN-012` — make invalid-clock behavior explicit and safe.
 - [x] `CLEAN-013` — split controller validation, time, and state-machine concerns.
 - [x] `CLEAN-014` — split extension composition into focused view builders.
-- [ ] `CLEAN-015` — split harness/package checks and strengthen recursive scanning.
+- [x] `CLEAN-015` — split harness/package checks and strengthen recursive scanning.
 - [ ] `CLEAN-016` — close lint exclusions, reconcile docs, and bind final assessment.
 
 ## Non-Scope

@@ -8,18 +8,18 @@ const UUID = 'claudex-usage@hugo.local', PORT = 19876;
 export const METRICS = {};
 export function init() {}
 function assert(value, message) {
-    if (!value) throw new Error(`J-005 failed: ${message}`);
+    if (!value) {throw new Error(`J-005 failed: ${message}`);}
 }
 function labels(root, values = []) {
-    if (root instanceof St.Label) values.push(root.text);
+    if (root instanceof St.Label) {values.push(root.text);}
     for (const child of root?.get_children?.() ?? [])
-        labels(child, values);
+        {labels(child, values);}
     return values;
 }
 async function waitFor(callback, message) {
     for (let attempt = 0; attempt < 120; attempt++) {
         if (callback())
-            return;
+            {return;}
         await Scripting.sleep(100);
     }
     throw new Error(`J-005 timed out: ${message}`);
@@ -66,7 +66,7 @@ export async function run() {
             state.hold = false; state.held = message;
             server.pause_message(message);
         } else
-            reply(message);
+            {reply(message);}
     });
     server.listen_local(PORT, Soup.ServerListenOptions.IPV4_ONLY);
     await Scripting.sleep(300);
@@ -160,7 +160,7 @@ export async function run() {
             'Claude eligibility requests usage immediately instead of waiting for cadence');
     } finally {
         if (process)
-            stopClaude(process);
+            {stopClaude(process);}
         if (state.held) {
             reply(state.held);
             server.unpause_message(state.held);

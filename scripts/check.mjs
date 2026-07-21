@@ -179,6 +179,28 @@ function assertPackage(zipPath, label, extraRequired = []) {
     return entries;
 }
 
+function assertPackagedJavaScriptSafety(zipPath, entries, label) {
+    const forbidden = [
+        /\bconsole\.(?:log|warn|error)\s*\(/,
+        /\blog\s*\(/,
+        /\b(?:localStorage|sessionStorage)\b/,
+        /\b(?:access[_-]?token|password)\s*[:=]\s*['"][^'"]+['"]/i,
+    ];
+    for (const entry of entries) {
+        if (!entry.endsWith('.js'))
+            continue;
+        const result = spawnSync('unzip', ['-p', zipPath, entry], {
+            cwd: root,
+            encoding: 'utf8',
+        });
+        if (result.error || result.status !== 0)
+            throw result.error ?? new Error(`Unable to inspect packaged ${entry}`);
+        if (forbidden.some(pattern => pattern.test(result.stdout)))
+            throw new Error(`${label} package has unsafe JavaScript in ${entry}`);
+    }
+    process.stdout.write(`${label} package JavaScript: recursively scanned\n`);
+}
+
 function assertVerifierRejects(entries) {
     const expectFailure = (fixture, message) => {
         try {
@@ -334,467 +356,6 @@ function writeSharedConsumer(sourceDir, journeyPath) {
     copyFileSync(path.join(root, 'design/direction-lab/stylesheet.css'),
         path.join(sourceDir, 'stylesheet.css'));
     copyFileSync(path.join(root, 'tests/gjs/shared-proof.journey.js'), journeyPath);
-    return;
-    writeFileSync(path.join(sourceDir, 'metadata.json'), JSON.stringify({
-        uuid: 'claudex-shared-proof@hugo.local',
-        name: 'Claudex Shared Presentation Proof',
-        description: 'Temporary second consumer for SURF-001 validation',
-        version: 1,
-        'shell-version': ['50'],
-    }, null, 2));
-    writeFileSync(path.join(sourceDir, 'extension.js'), `
-import Atk from 'gi://Atk';
-import Gio from 'gi://Gio';
-
-import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-import {
-    FooterStatus,
-    HistoryChart,
-    IconButton,
-    PanelIndicator,
-    PopoverScaffold,
-    ProgressBar,
-    ProviderGroup,
-    RangeSelector,
-    setProgressBarPace,
-    SettingsRow,
-    Switch,
-    UsageMetric,
-    validatePresentationModels,
-} from './shared/primitives.js';
-import {validateTokens} from './shared/token-geometry.js';
-
-function loadTokens(extensionPath) {
-    const file = Gio.File.new_for_path(\`\${extensionPath}/tokens.json\`);
-    const [loaded, contents] = file.load_contents(null);
-    if (!loaded)
-        throw new Error('proof tokens did not load');
-    return validateTokens(JSON.parse(new TextDecoder().decode(contents)));
-}
-
-export default class SharedProofExtension extends Extension {
-    enable() {
-        console.log('SURF-001 proof extension enabled');
-        const tokens = loadTokens(this.path);
-        this.tokens = tokens;
-        this.events = [];
-        this.panel = PanelIndicator({
-            id: 'proof-panel',
-            groups: [{
-                id: 'aurora',
-                iconPath: '/tmp/noncanonical-aurora.svg',
-                accessibleName: 'Aurora',
-                values: [
-                    {
-                        id: 'burst',
-                        percent: 37.5,
-                        accessibleName: 'Burst window, 37.5 percent',
-                        tone: 'muted',
-                    },
-                    {id: 'season', percent: 62.5},
-                ],
-            }],
-            tokens,
-        });
-        this.compactProvider = ProviderGroup({
-            model: {
-                id: 'compact-provider',
-                label: 'Compact provider',
-                iconPath: '/tmp/noncanonical-compact.svg',
-                iconAccessibleName: 'Compact provider mark',
-            },
-            tokens,
-        });
-        this.detailedProvider = ProviderGroup({
-            model: {
-                id: 'detailed-provider',
-                label: 'Detailed provider',
-                detail: 'Optional detail',
-                iconPath: '/tmp/noncanonical-detailed.svg',
-                iconAccessibleName: 'Detailed provider mark',
-            },
-            tokens,
-        });
-        this.range = RangeSelector({
-            choices: [
-                {id: 'burst', label: 'Burst', accessibleName: 'Burst range'},
-                {id: 'season', label: 'Season', accessibleName: 'Season range'},
-            ],
-            selected: 'season',
-            onSelect: id => this.events.push(['range', id]),
-        });
-        this.setting = SettingsRow({
-            id: 'ambientMode',
-            title: 'Ambient mode',
-            description: 'A noncatalog setting',
-            accessibleName: 'Toggle ambient mode',
-            active: false,
-            onToggle: id => this.events.push(['toggle', id]),
-            tokens,
-        });
-        this.refreshIdle = IconButton({
-            id: 'proof-refresh-idle',
-            iconName: 'view-refresh-symbolic',
-            accessibleName: 'Refresh proof',
-            onActivate: () => {},
-            tokens,
-        });
-        this.refreshBusy = IconButton({
-            id: 'proof-refresh-busy',
-            iconName: 'process-working-symbolic',
-            accessibleName: 'Refreshing proof',
-            onActivate: () => {},
-            tokens,
-            busy: true,
-        });
-        this.footer = FooterStatus({status: 'Updated 1 min ago'});
-        this.actionFooter = FooterStatus({
-            status: 'Updated just now',
-            action: {
-                id: 'proof-footer-action',
-                label: 'Act',
-                accessibleName: 'Act on proof',
-                onActivate: () => {},
-            },
-        });
-        this.metric = UsageMetric({
-            metric: {
-                id: 'proof--burst',
-                label: 'Burst window',
-                percent: 37.5,
-                resetLabel: 'Resets in 1 hr',
-                accessibleName: 'Burst window at 37.5 percent',
-                dataRole: 'dataCodexWeekly',
-            },
-            tokens,
-        });
-        this.progress = ProgressBar({
-            metric: {
-                id: 'burstLoad',
-                percent: 37.5,
-                pacePercent: 37.5,
-                accessibleName: 'Burst load at 37.5 percent',
-                dataRole: 'dataCodexWeekly',
-            },
-            tokens,
-        });
-        this.plainProgress = ProgressBar({
-            metric: {
-                id: 'plainLoad',
-                percent: 62.5,
-                accessibleName: 'Plain load at 62.5 percent',
-                dataRole: 'dataClaudeWeekly',
-            },
-            tokens,
-        });
-        this.chart = HistoryChart({
-            id: 'proof-chart',
-            accessibleName: 'Synthetic proof history',
-            axisLabels: ['Peak', 'High', 'Middle', 'Low', 'Floor'],
-            series: [
-                {id: 'north', values: [0, 12.5, 100],
-                    dataRole: 'dataClaudeShort', strokeWidth: 1.5},
-                {id: 'south', values: [100, 40, 0],
-                    dataRole: 'dataCodexWeekly', strokeWidth: 3},
-            ],
-            tokens,
-        });
-        this.root = PopoverScaffold({
-            id: 'proof-popover',
-            view: 'proof',
-            children: [this.panel, this.compactProvider, this.detailedProvider,
-                this.progress, this.plainProgress, this.range, this.setting,
-                this.refreshIdle, this.refreshBusy, this.footer,
-                this.actionFooter, this.metric, this.chart],
-        });
-        this.destroyed = false;
-        this.root.connect('destroy', () => {
-            this.destroyed = true;
-        });
-    }
-
-    getProof() {
-        return {
-            root: this.root,
-            panel: this.panel,
-            compactProvider: this.compactProvider,
-            detailedProvider: this.detailedProvider,
-            range: this.range,
-            setting: this.setting,
-            refreshIdle: this.refreshIdle,
-            refreshBusy: this.refreshBusy,
-            footer: this.footer,
-            actionFooter: this.actionFooter,
-            metric: this.metric,
-            progress: this.progress,
-            plainProgress: this.plainProgress,
-            events: this.events,
-            destroyed: this.destroyed,
-        };
-    }
-
-    setProofPace(actor, percent) {
-        setProgressBarPace(actor, percent);
-    }
-
-    validationFailures() {
-        const baseSeries = {id: 'line', values: [0, 100],
-            dataRole: 'dataClaudeShort', strokeWidth: 1};
-        const probes = [
-            ['unsafe id', () => validatePresentationModels({ids: ['unsafe id']})],
-            ['duplicate id', () => validatePresentationModels({ids: ['same', 'same']})],
-            ['not-a-number percent', () => validatePresentationModels({percentages: [NaN]})],
-            ['negative percent', () => validatePresentationModels({percentages: [-1]})],
-            ['overflow percent', () => validatePresentationModels({percentages: [101]})],
-            ['empty history', () => validatePresentationModels({historySeries: []})],
-            ['short history', () => validatePresentationModels({historySeries: [
-                {...baseSeries, values: [1]},
-            ]})],
-            ['unequal history', () => validatePresentationModels({historySeries: [
-                baseSeries,
-                {...baseSeries, id: 'other', values: [0, 1, 2]},
-            ]})],
-            ['infinite history', () => validatePresentationModels({historySeries: [
-                {...baseSeries, values: [0, Infinity]},
-            ]})],
-            ['empty ranges', () => validatePresentationModels(
-                {rangeChoices: [], selectedRange: 'x'})],
-            ['duplicate ranges', () => validatePresentationModels({rangeChoices: [
-                {id: 'x'}, {id: 'x'},
-            ], selectedRange: 'x'})],
-            ['unknown range', () => validatePresentationModels(
-                {rangeChoices: [{id: 'x'}], selectedRange: 'y'})],
-            ['null callback', () => validatePresentationModels({callbacks: [null]})],
-            ['empty accessible name', () => validatePresentationModels(
-                {accessibleNames: ['']})],
-            ['unsafe data role', () => validatePresentationModels(
-                {dataRoles: ['unsafe role']})],
-            ['unknown data role', () => validatePresentationModels({
-                dataRoles: ['dataMissing'],
-                tokens: this.tokens,
-            })],
-            ['invalid switch', () => Switch({active: 'false', tokens: this.tokens})],
-            ['invalid busy string', () => IconButton({
-                id: 'bad-busy',
-                iconName: 'view-refresh-symbolic',
-                accessibleName: 'Bad busy',
-                onActivate: () => {},
-                tokens: this.tokens,
-                busy: 'true',
-            })],
-            ['invalid busy null', () => IconButton({
-                id: 'bad-busy-null',
-                iconName: 'view-refresh-symbolic',
-                accessibleName: 'Bad busy null',
-                onActivate: () => {},
-                tokens: this.tokens,
-                busy: null,
-            })],
-            ['invalid panel tone', () => PanelIndicator({
-                id: 'bad-tone-panel',
-                groups: [{
-                    id: 'aurora',
-                    iconPath: '/tmp/noncanonical-aurora.svg',
-                    accessibleName: 'Aurora',
-                    values: [{id: 'burst', percent: 37.5, tone: 'quiet'}],
-                }],
-                tokens: this.tokens,
-            })],
-            ['invalid panel value accessible name', () => PanelIndicator({
-                id: 'bad-value-name-panel',
-                groups: [{
-                    id: 'aurora',
-                    iconPath: '/tmp/noncanonical-aurora.svg',
-                    accessibleName: 'Aurora',
-                    values: [{id: 'burst', percent: 37.5, accessibleName: ''}],
-                }],
-                tokens: this.tokens,
-            })],
-            ['invalid provider detail', () => ProviderGroup({
-                model: {
-                    id: 'bad-provider',
-                    label: 'Bad provider',
-                    detail: '',
-                    iconPath: '/tmp/noncanonical-bad.svg',
-                    iconAccessibleName: 'Bad provider mark',
-                },
-                tokens: this.tokens,
-            })],
-            ['invalid pace null', () => ProgressBar({
-                metric: {
-                    id: 'bad-pace-null',
-                    percent: 37.5,
-                    pacePercent: null,
-                    accessibleName: 'Bad pace null',
-                    dataRole: 'dataCodexWeekly',
-                },
-                tokens: this.tokens,
-            })],
-            ['invalid pace overflow', () => ProgressBar({
-                metric: {
-                    id: 'bad-pace-overflow',
-                    percent: 37.5,
-                    pacePercent: 101,
-                    accessibleName: 'Bad pace overflow',
-                    dataRole: 'dataCodexWeekly',
-                },
-                tokens: this.tokens,
-            })],
-            ['pace track too narrow', () => ProgressBar({
-                metric: {
-                    id: 'bad-pace-track',
-                    percent: 37.5,
-                    pacePercent: 50,
-                    accessibleName: 'Bad pace track',
-                    dataRole: 'dataCodexWeekly',
-                },
-                tokens: {
-                    ...this.tokens,
-                    size: {...this.tokens.size, progressWidth: 1},
-                },
-            })],
-            ['empty footer status', () => FooterStatus({status: ''})],
-            ['invalid footer action', () => FooterStatus({
-                status: 'Ready',
-                action: {id: 'bad-action', label: 'Act',
-                    accessibleName: 'Bad action'},
-            })],
-        ];
-        return Object.fromEntries(probes.map(([name, probe]) => {
-            try {
-                probe();
-                return [name, false];
-            } catch {
-                return [name, true];
-            }
-        }));
-    }
-
-    destroyProof() {
-        this.root?.destroy();
-        this.root = null;
-    }
-
-    disable() {
-        this.destroyProof();
-        this.range = null;
-        this.panel = null;
-        this.compactProvider = null;
-        this.detailedProvider = null;
-        this.setting = null;
-        this.refreshIdle = null;
-        this.refreshBusy = null;
-        this.footer = null;
-        this.actionFooter = null;
-        this.metric = null;
-        this.progress = null;
-        this.plainProgress = null;
-        this.chart = null;
-        this.tokens = null;
-        this.events = null;
-    }
-}
-`);
-    writeFileSync(journeyPath, `
-import Atk from 'gi://Atk';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
-
-const UUID = 'claudex-shared-proof@hugo.local';
-export const METRICS = {};
-export function init() {}
-function assert(condition, message) {
-    if (!condition)
-        throw new Error(\`SURF-001 proof failed: \${message}\`);
-}
-function rejects(callback) {
-    try {
-        callback();
-        return false;
-    } catch {
-        return true;
-    }
-}
-function findActor(root, name) {
-    if (root?.get_name?.() === name)
-        return root;
-    for (const child of root?.get_children?.() ?? []) {
-        const found = findActor(child, name);
-        if (found)
-            return found;
-    }
-    return null;
-}
-function hasState(actor, state) {
-    return actor.get_accessible().ref_state_set().contains_state(state);
-}
-export async function run() {
-    await Scripting.sleep(180);
-    const record = Main.extensionManager.lookup(UUID);
-    console.log('SURF-001 proof lookup: state=' + record?.state +
-        ', error=' + record?.error + ', stateObj=' + Boolean(record?.stateObj));
-    const extension = record?.stateObj;
-    assert(extension, 'temporary second consumer loaded');
-    const proof = extension.getProof();
-    assert(proof.panel.get_name() === 'proof-panel',
-        'documented panel model works without catalog empty groups');
-    const mutedPanelValue = findActor(proof.panel, 'panel-value-aurora--burst');
-    const defaultPanelValue = findActor(proof.panel, 'panel-value-aurora--season');
-    assert(mutedPanelValue.has_style_class_name('muted') &&
-        mutedPanelValue.get_accessible_name() ===
-            'Burst window, 37.5 percent' &&
-        !defaultPanelValue.has_style_class_name('muted') &&
-        defaultPanelValue.get_accessible_name() === '62.5 percent',
-    'panel values support explicit muted tone and accessible-name defaults');
-    assert(proof.compactProvider.get_children()[1].get_children().length === 1 &&
-        proof.detailedProvider.get_children()[1].get_children().length === 2,
-    'provider detail is explicitly optional');
-    assert(proof.progress.accessible_role === Atk.Role.PROGRESS_BAR,
-        'progress role is preserved');
-    assert(proof.progress.get_accessible_name() ===
-        'Burst load at 37.5 percent', 'progress accessible name is model-driven');
-    const paceMarker = findActor(proof.progress, 'pace-burstLoad');
-    const progressChildren = proof.progress.get_children();
-    assert(paceMarker?.x === Math.round(proof.progress.width * 0.375) - 1 &&
-        progressChildren[progressChildren.length - 1] === paceMarker &&
-        !findActor(proof.plainProgress, 'pace-plainLoad'),
-    'optional Time pace marker uses canonical geometry and stacks above the fill');
-    extension.setProofPace(proof.progress, 100);
-    assert(paceMarker.x === proof.progress.width - 2 &&
-        rejects(() => extension.setProofPace(proof.plainProgress, 50)) &&
-        rejects(() => extension.setProofPace(proof.progress, -1)),
-    'Time pace setter clamps endpoints and rejects plain or invalid bars');
-    const choices = proof.range.get_children();
-    assert(choices[0].accessible_role === Atk.Role.RADIO_BUTTON,
-        'range role is preserved');
-    assert(proof.setting.accessible_role === Atk.Role.SWITCH,
-        'settings role is preserved');
-    assert(!proof.refreshIdle.has_style_class_name('busy') &&
-        !hasState(proof.refreshIdle, Atk.StateType.BUSY) &&
-        proof.refreshBusy.has_style_class_name('busy') &&
-        hasState(proof.refreshBusy, Atk.StateType.BUSY),
-    'icon button busy state is explicit and defaults off');
-    assert(proof.footer.get_children().length === 1 &&
-        findActor(proof.footer, 'footer-status')?.text === 'Updated 1 min ago' &&
-        findActor(proof.actionFooter, 'proof-footer-action'),
-    'footer supports status-only and explicit-action consumers');
-    const reset = findActor(proof.metric, 'reset-label-proof--burst');
-    assert(reset?.text === 'Resets in 1 hr',
-        'usage metric exposes its stable reset-label actor contract');
-    choices[0].emit('clicked', 1);
-    proof.setting.emit('clicked', 1);
-    assert(JSON.stringify(proof.events) ===
-        JSON.stringify([['range', 'burst'], ['toggle', 'ambientMode']]),
-        'callbacks receive stable model ids');
-    for (const [name, rejected] of Object.entries(extension.validationFailures()))
-        assert(rejected, \`invalid presentation model fails closed: \${name}\`);
-    const destroyedProgress = proof.progress;
-    extension.destroyProof();
-    assert(extension.getProof().root === null && extension.getProof().destroyed &&
-        rejects(() => extension.setProofPace(destroyedProgress, 50)),
-        'second consumer destroys its actor tree');
-}
-`);
 }
 
 const temporaryRoot = mkdtempSync(path.join(os.tmpdir(), 'claudex-usage-check-'));
@@ -856,6 +417,9 @@ copyFileSync('/usr/bin/python3', fakeClaude);
 chmodSync(fakeClaude, 0o700);
 
 try {
+    for (const script of ['scripts/gsettings-session-wrapper.sh',
+        'scripts/live-check.sh', 'scripts/live-play.sh'])
+        run('bash', ['-n', script]);
     run('node', ['scripts/doc-lint.mjs', 'docs/product', 'docs/engineering']);
     run('node', ['scripts/render-catalog-styles.mjs', '--check']);
     run('node', ['--test', 'tests/unit/catalog-state.test.js',
@@ -888,6 +452,7 @@ try {
         'icons/codex.svg',
         'icons/codex-light.svg',
     ]);
+    assertPackagedJavaScriptSafety(zipPath, catalogEntries, 'catalog');
     assertVerifierRejects(catalogEntries);
     run('gnome-extensions', [
         'pack',
@@ -918,12 +483,18 @@ try {
         'claude-runtime.js',
         'history-store.js',
         'history-runtime.js',
+        'controller-snapshot.js',
+        'controller-validation.js',
+        'panel-view.js',
+        'temporal.js',
         'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
         'icons/claude.svg',
         'icons/claude-light.svg',
         'icons/codex.svg',
         'icons/codex-light.svg',
     ]);
+    assertPackagedJavaScriptSafety(productionZipPath, productionEntries,
+        'production');
     for (const forbidden of ['catalog-state.js', 'stub-provider.js']) {
         if (productionEntries.has(forbidden))
             throw new Error(`production package contains forbidden ${forbidden}`);
@@ -986,15 +557,20 @@ try {
             'claude:weekly': [seedSample(7, 60), seedSample(3, 63), seedSample(1, 66)],
         },
     }));
-    run('dbus-run-session', ['--', 'gnome-shell-test-tool', '--devkit',
-        '--disable-animations', '--extension', claudeJourneyZipPath,
-        'tests/journeys/J-006-usage-history.journey.test.js',
-    ], {
-        env: {...process.env, GSETTINGS_BACKEND: 'memory',
-            CLAUDE_CONFIG_DIR: claudeConfigHome,
-            CLAUDEX_FAKE_CLAUDE: fakeClaude, CLAUDEX_PROC_ROOT: claudeJourneyProcRoot,
-            CLAUDEX_HISTORY_DIR: claudeHistoryDir, CLAUDEX_CAPTURE_DIR: captureDir},
-    });
+    for (const phase of ['write', 'restore']) {
+        run('dbus-run-session', ['--', 'gnome-shell-test-tool', '--devkit',
+            '--disable-animations', '--extension', claudeJourneyZipPath,
+            'tests/journeys/J-006-usage-history.journey.test.js',
+        ], {
+            env: {...process.env, GSETTINGS_BACKEND: 'memory',
+                CLAUDE_CONFIG_DIR: claudeConfigHome,
+                CLAUDEX_FAKE_CLAUDE: fakeClaude,
+                CLAUDEX_PROC_ROOT: claudeJourneyProcRoot,
+                CLAUDEX_HISTORY_DIR: claudeHistoryDir,
+                CLAUDEX_CAPTURE_DIR: captureDir,
+                CLAUDEX_J006_PHASE: phase},
+        });
+    }
     writeSharedConsumer(proofSourceDir, proofJourneyPath);
     run('gnome-extensions', [
         'pack',

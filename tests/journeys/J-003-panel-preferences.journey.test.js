@@ -22,59 +22,59 @@ export function init() {}
 
 function assert(condition, message) {
     if (!condition)
-        throw new Error(`J-003 failed: ${message}`);
+        {throw new Error(`J-003 failed: ${message}`);}
 }
 
 function findActor(root, name) {
     if (!root)
-        return null;
+        {return null;}
     if (root.get_name?.() === name)
-        return root;
+        {return root;}
     for (const child of root.get_children?.() ?? []) {
         const found = findActor(child, name);
         if (found)
-            return found;
+            {return found;}
     }
     return null;
 }
 
 function findClass(root, fragment) {
     if (!root)
-        return null;
+        {return null;}
     if ((root.style_class ?? '').includes(fragment))
-        return root;
+        {return root;}
     for (const child of root.get_children?.() ?? []) {
         const found = findClass(child, fragment);
         if (found)
-            return found;
+            {return found;}
     }
     return null;
 }
 
 function findClasses(root, fragment, result = []) {
     if (!root)
-        return result;
+        {return result;}
     if ((root.style_class ?? '').includes(fragment))
-        result.push(root);
+        {result.push(root);}
     for (const child of root.get_children?.() ?? [])
-        findClasses(child, fragment, result);
+        {findClasses(child, fragment, result);}
     return result;
 }
 
 function collectLabelText(root, result = []) {
     if (!root)
-        return result;
+        {return result;}
     if (root instanceof St.Label)
-        result.push(root.text);
+        {result.push(root.text);}
     for (const child of root.get_children?.() ?? [])
-        collectLabelText(child, result);
+        {collectLabelText(child, result);}
     return result;
 }
 
 function captureDirectory() {
     const override = GLib.getenv('CLAUDEX_CAPTURE_DIR');
     if (override)
-        return Gio.File.new_for_path(override);
+        {return Gio.File.new_for_path(override);}
     return Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent()
         .get_child('design').get_child('captures');
 }
@@ -110,7 +110,6 @@ async function settle() {
 }
 
 function provider({id, order, label, detail, windows, readings, refreshCounts}) {
-    let listener = null;
     return {
         id,
         order,
@@ -124,12 +123,7 @@ function provider({id, order, label, detail, windows, readings, refreshCounts}) 
         },
         windows,
         isEligible: () => true,
-        subscribeEligibility: callback => {
-            listener = callback;
-            return () => {
-                listener = null;
-            };
-        },
+        subscribeEligibility: _ => () => undefined,
         refresh: async () => {
             refreshCounts[id] = (refreshCounts[id] ?? 0) + 1;
             return {status: 'available', readings};
@@ -285,7 +279,7 @@ async function writePhase(extension, indicator, refreshCounts) {
 
     findActor(popover, 'back-button').emit('clicked', 1);
     await settle();
-    let usageText = collectLabelText(indicator.menu.actor).join(' ');
+    const usageText = collectLabelText(indicator.menu.actor).join(' ');
     const shortProgress = findActor(indicator.menu.actor, 'progress-claude--short');
     const shortFill = findActor(shortProgress, 'progress-fill-claude--short');
     const shortPace = findActor(shortProgress, 'pace-claude--short');
@@ -478,9 +472,9 @@ export async function run() {
     const indicator = Main.panel.statusArea[UUID];
     assert(indicator, 'eligible providers create the surface');
     if (GLib.getenv('CLAUDEX_J003_PHASE') === 'restore')
-        await readPhase(extension, indicator, refreshCounts);
+        {await readPhase(extension, indicator, refreshCounts);}
     else
-        await writePhase(extension, indicator, refreshCounts);
+        {await writePhase(extension, indicator, refreshCounts);}
     removers.forEach(remove => remove());
     extension._now = productionClock;
 }
