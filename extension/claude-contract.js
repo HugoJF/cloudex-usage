@@ -5,6 +5,17 @@ const WINDOWS = [
 
 const ISO_8601 =
     /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$/;
+const MIN_YEAR = 1970;
+const MAX_YEAR = 9999;
+const MAX_MONTH = 12;
+const MAX_DAY = 31;
+const MAX_HOUR = 23;
+const MAX_MINUTE = 59;
+const MAX_SECOND = 59;
+const MAX_OFFSET_HOUR = 14;
+const MILLISECONDS_DIGITS = 3;
+const MINUTES_PER_HOUR = 60;
+const MILLISECONDS_PER_MINUTE = 60 * 1000;
 
 function isRecord(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -44,8 +55,9 @@ function resetAtMs(value) {
     const hour = Number(hourText);
     const minute = Number(minuteText);
     const second = Number(secondText);
-    if (month < 1 || month > 12 || day < 1 || day > 31 ||
-        hour > 23 || minute > 59 || second > 59)
+    if (year < MIN_YEAR || year > MAX_YEAR ||
+        month < 1 || month > MAX_MONTH || day < 1 || day > MAX_DAY ||
+        hour > MAX_HOUR || minute > MAX_MINUTE || second > MAX_SECOND)
         return null;
     const base = Date.UTC(year, month - 1, day, hour, minute, second);
     const back = new Date(base);
@@ -53,14 +65,19 @@ function resetAtMs(value) {
         back.getUTCDate() !== day || back.getUTCHours() !== hour ||
         back.getUTCMinutes() !== minute || back.getUTCSeconds() !== second)
         return null;
-    const fractionMs = fraction === undefined
-        ? 0
-        : Math.floor(Number(`0.${fraction}`) * 1000);
+    const fractionMs = fraction === undefined ? 0
+        : Number(fraction.slice(0, MILLISECONDS_DIGITS)
+            .padEnd(MILLISECONDS_DIGITS, '0'));
     let ms = base + fractionMs;
     if (zone !== 'Z') {
         const sign = zone[0] === '-' ? -1 : 1;
-        const offsetMinutes = Number(zone.slice(1, 3)) * 60 + Number(zone.slice(4, 6));
-        ms -= sign * offsetMinutes * 60 * 1000;
+        const offsetHour = Number(zone.slice(1, 3));
+        const offsetMinute = Number(zone.slice(4, 6));
+        if (offsetHour > MAX_OFFSET_HOUR || offsetMinute > MAX_MINUTE ||
+            (offsetHour === MAX_OFFSET_HOUR && offsetMinute !== 0))
+            return null;
+        const offsetMinutes = offsetHour * MINUTES_PER_HOUR + offsetMinute;
+        ms -= sign * offsetMinutes * MILLISECONDS_PER_MINUTE;
     }
     if (!Number.isSafeInteger(ms) || ms < 0)
         return null;

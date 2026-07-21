@@ -181,6 +181,10 @@ test('reset parsing is strict, offset-correct, and authoritative', () => {
         ['2026-07-17T20:30:00-02:00', SHORT_MS],
         ['2026-07-18T00:30:00+02:00', SHORT_MS],
         ['2026-07-17T22:30:00.5Z', SHORT_MS + 500],
+        ['2026-07-17T22:30:00.999999999Z', SHORT_MS + 999],
+        ['2026-07-18T12:30:00+14:00', SHORT_MS],
+        ['1970-01-01T00:00:00Z', 0],
+        ['9999-12-31T23:59:59.999Z', 253402300799999],
     ];
     for (const [resets_at, expected] of accept) {
         const result = mapClaudeUsage(windows({
@@ -199,6 +203,11 @@ test('reset parsing is strict, offset-correct, and authoritative', () => {
         '2026-07-17T22:60:00Z',
         '2026-07-17T22:30:00+0000',
         '2026-07-17T22:30:00.233637',
+        '2026-07-17T22:30:00+24:00',
+        '2026-07-17T22:30:00+14:01',
+        '2026-07-17T22:30:00+00:60',
+        '0099-07-17T22:30:00Z',
+        '10000-07-17T22:30:00Z',
         1784327400233,
         null,
     ];
