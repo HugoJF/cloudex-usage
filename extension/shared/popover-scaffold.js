@@ -6,7 +6,7 @@ import {requireId} from './presentation-validation.js';
 export function PopoverScaffold({id, view, children}) {
     requireId(id, 'Popover');
     requireId(view, 'Popover view');
-    const actor = column(`claudex-popover claudex-${view}-view`, {name: id});
+    const actor = column(`cloudex-popover cloudex-${view}-view`, {name: id});
     for (const child of children)
         {actor.add_child(child);}
     return actor;

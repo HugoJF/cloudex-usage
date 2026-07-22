@@ -1,7 +1,7 @@
 {
-  "name": "Claudex Usage Primitive Catalog",
-  "description": "Static Direction D primitive catalog for the Claudex Usage GNOME panel surface.",
-  "uuid": "claudex-usage-design@hugo.local",
+  "name": "Cloudex Usage Primitive Catalog",
+  "description": "Static Direction D primitive catalog for the Cloudex Usage GNOME panel surface.",
+  "uuid": "cloudex-usage-design@hugo.local",
   "shell-version": ["50"],
   "version": 3
 }

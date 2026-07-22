@@ -40,7 +40,7 @@ const PATHS = {
 
 export function createCheckWorkspace(root, updateCaptures) {
     const temporaryRoot = mkdtempSync(path.join(os.tmpdir(),
-        'claudex-usage-check-'));
+        'cloudex-usage-check-'));
     const workspace = {temporaryRoot};
     for (const [key, relativePath] of Object.entries(PATHS))
         {workspace[key] = path.join(temporaryRoot, relativePath);}

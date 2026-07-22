@@ -4,7 +4,7 @@ import Soup from 'gi://Soup?version=3.0';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
-const UUID = 'claudex-usage@hugo.local', PORT = 19876;
+const UUID = 'cloudex-usage@hugo.local', PORT = 19876;
 export const METRICS = {};
 export function init() {}
 function assert(value, message) {
@@ -29,18 +29,18 @@ function auth(token) {
     GLib.file_set_contents(path, JSON.stringify({tokens: {access_token: token}}));
 }
 function startCodex() {
-    const process = Gio.Subprocess.new([GLib.getenv('CLAUDEX_FAKE_CODEX'),
+    const process = Gio.Subprocess.new([GLib.getenv('CLOUDEX_FAKE_CODEX'),
         '-c', 'import time; time.sleep(30)'], Gio.SubprocessFlags.NONE);
     process.fixturePid = process.get_identifier();
     const directory = GLib.build_filenamev(
-        [GLib.getenv('CLAUDEX_PROC_ROOT'), process.fixturePid]);
+        [GLib.getenv('CLOUDEX_PROC_ROOT'), process.fixturePid]);
     GLib.mkdir_with_parents(directory, 0o700);
     GLib.file_set_contents(GLib.build_filenamev([directory, 'comm']), 'codex\n');
     return process;
 }
 function stopCodex(process) {
     const directory = Gio.File.new_for_path(GLib.build_filenamev(
-        [GLib.getenv('CLAUDEX_PROC_ROOT'), process.fixturePid]));
+        [GLib.getenv('CLOUDEX_PROC_ROOT'), process.fixturePid]));
     process.force_exit(); directory.get_child('comm').delete(null);
     directory.delete(null);
 }

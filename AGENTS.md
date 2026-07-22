@@ -2,7 +2,7 @@
 
 Canonical agent contract for this repository; `CLAUDE.md` is a compatibility
 pointer here. Workflow rules live in the installed Aura plugin's `WORKFLOW.md`.
-This file contains only Claudex Usage project facts.
+This file contains only Cloudex Usage project facts.
 
 ## Read Order
 

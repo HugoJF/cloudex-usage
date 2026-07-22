@@ -81,7 +81,7 @@ function nextRecordTime(observed, previous) {
 export class HistoryRuntime {
     constructor(options) {
         options = requireRecord(options);
-        const inheritedDir = GLib.getenv('CLAUDEX_HISTORY_DIR');
+        const inheritedDir = GLib.getenv('CLOUDEX_HISTORY_DIR');
         if (options.dir !== undefined) {
             if (typeof options.dir !== 'string' || !GLib.path_is_absolute(options.dir))
                 {throw new Error('History runtime dir must be an absolute path');}
@@ -89,7 +89,7 @@ export class HistoryRuntime {
         } else if (inheritedDir !== null && GLib.path_is_absolute(inheritedDir)) {
             this._dir = inheritedDir;
         } else {
-            this._dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'claudex-usage']);
+            this._dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'cloudex-usage']);
         }
         if (options.now !== undefined && typeof options.now !== 'function')
             {throw new Error('History runtime now must be a function');}

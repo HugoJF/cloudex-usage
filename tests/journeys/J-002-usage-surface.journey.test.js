@@ -9,7 +9,7 @@ import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 
 import {captureActor as capture} from './capture-actor.js';
 
-const UUID = 'claudex-usage@hugo.local';
+const UUID = 'cloudex-usage@hugo.local';
 const EXPECTED_CAPTURES = [
     'surface-panel-dark-100.png',
     'surface-popup-dark-100.png',
@@ -233,7 +233,7 @@ export async function run() {
     assert(claudeCalls === 1 && codexCalls === 2 &&
         snapshot.providers.find(item => item.id === 'codex')?.metrics[0]?.percent === 42,
     'new Claude eligibility immediately runs one full shared refresh cycle');
-    const panel = findActor(indicator, 'claudex-live-panel');
+    const panel = findActor(indicator, 'cloudex-live-panel');
     assert(panel.height <= Main.panel.height, 'unified panel stays at native height');
     assert(collectLabelText(panel).join(' ').includes('8%') &&
         collectLabelText(panel).join(' ').includes('42%'),
@@ -252,7 +252,7 @@ export async function run() {
     indicator.menu.open();
     await settle();
     assert(indicator.menu.isOpen, 'Shell popup menu opens before capture');
-    let popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    let popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(popover?.is_mapped(), 'usage popup maps before capture');
     const text = collectLabelText(popover);
     for (const expected of ['Claude', 'Codex', '5-hour window', 'Weekly window',
@@ -284,9 +284,9 @@ export async function run() {
     const footer = findActor(popover, 'footer-status');
     assert(footer && !findActor(footer.get_parent(), 'refresh-button'),
         'footer is status-only');
-    const historyRoot = GLib.getenv('CLAUDEX_HISTORY_DIR');
+    const historyRoot = GLib.getenv('CLOUDEX_HISTORY_DIR');
     const defaultHistoryRoot = GLib.build_filenamev([
-        GLib.get_user_data_dir(), 'claudex-usage',
+        GLib.get_user_data_dir(), 'cloudex-usage',
     ]);
     assert(historyRoot && historyRoot !== defaultHistoryRoot &&
         findActor(popover, 'history-range-stepper') &&
@@ -299,7 +299,7 @@ export async function run() {
     claudeDeferred = deferred();
     refresh.emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     const refreshButton = findActor(popover, 'refresh-button');
     assert(refreshButton.get_child().icon_name === 'process-working-symbolic' &&
         refreshButton.get_accessible_name() === 'Refreshing usage' &&
@@ -320,7 +320,7 @@ export async function run() {
     ]});
     claudeDeferred = null;
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(indicator.menu.isOpen && collectLabelText(popover).includes('Updated just now'),
         'manual refresh updates values and freshness without closing the popup');
     assert(collectLabelText(popover).includes('28%'), 'manual refresh changes visible values');
@@ -378,7 +378,7 @@ export async function run() {
     extension._settings.set_enum('weekly-pace', 1);
     extension.refresh();
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     const weeklyProgress = findActor(popover, 'progress-codex--weekly');
     const weeklyPace = findActor(weeklyProgress, 'pace-codex--weekly');
     const rawWeeklyBefore = extension.getSurfaceSnapshot().providers
@@ -420,7 +420,7 @@ export async function run() {
     codexReset = nowMs + 6 * 86400000 + 23 * 60 * 60 * 1000;
     extension.refresh();
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     const leftSnapshot = extension.getSurfaceSnapshot();
     const leftClaudeMetric = leftSnapshot.providers
         .find(provider => provider.id === 'claude').metrics[0];
@@ -459,14 +459,14 @@ export async function run() {
     codexReset = Number.MAX_SAFE_INTEGER;
     extension.refresh();
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     let overflowProgress = findActor(popover, 'progress-codex--weekly');
     assert(findActor(overflowProgress, 'pace-codex--weekly') &&
         overflowProgress.get_accessible_name().includes('Time pace 0 percent used'),
     'Every day remains available when the local calendar cannot represent the reset');
     extension._settings.set_enum('weekly-pace', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     overflowProgress = findActor(popover, 'progress-codex--weekly');
     assert(!findActor(overflowProgress, 'pace-codex--weekly') &&
         !overflowProgress.get_accessible_name().includes('Time pace'),
@@ -475,7 +475,7 @@ export async function run() {
     codexUnavailable = true;
     extension.refresh();
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     const codexCard = findActor(popover, 'provider-card-codex');
     assert(collectLabelText(codexCard).includes('Usage unavailable'),
         'failed provider presents the unavailable treatment');
@@ -494,7 +494,7 @@ export async function run() {
     setShellColorScheme('prefer-light');
     await settle();
     indicator = Main.panel.statusArea[UUID];
-    await capturePanel(indicator, findActor(indicator, 'claudex-live-panel'),
+    await capturePanel(indicator, findActor(indicator, 'cloudex-live-panel'),
         EXPECTED_CAPTURES[4]);
     setShellColorScheme(originalScheme);
     await settle();
@@ -506,7 +506,7 @@ export async function run() {
     await settle();
     await waitFor(() => {
         const scaledPopover = findActor(indicator.menu.actor,
-            'claudex-live-popover');
+            'cloudex-live-popover');
         const scaledShortProgress = findActor(scaledPopover,
             'progress-claude--short');
         const scaledShortFill = findActor(scaledShortProgress,
@@ -515,11 +515,23 @@ export async function run() {
             scaledShortProgress?.get_parent().width &&
             scaledShortFill?.width === Math.round(
                 scaledShortProgress.width * 0.28);
-    }, '200 percent scale preserves full-row logical progress geometry');
+    }, () => {
+        const scaledPopover = findActor(indicator.menu.actor,
+            'cloudex-live-popover');
+        const scaledShortProgress = findActor(scaledPopover,
+            'progress-claude--short');
+        const scaledShortFill = findActor(scaledShortProgress,
+            'progress-fill-claude--short');
+        return '200 percent scale preserves full-row logical progress geometry ' +
+            `(track ${scaledShortProgress?.width}, parent ` +
+            `${scaledShortProgress?.get_parent().width}, fill ` +
+            `${scaledShortFill?.width}, expected ` +
+            `${Math.round((scaledShortProgress?.width ?? 0) * 0.28)})`;
+    });
     indicator.menu.close();
     await settle();
     await capturePanel(indicator,
-        findActor(Main.panel.statusArea[UUID], 'claudex-live-panel'),
+        findActor(Main.panel.statusArea[UUID], 'cloudex-live-panel'),
         EXPECTED_CAPTURES[5]);
     themeContext.set_scale_factor(originalScale);
     await settle();

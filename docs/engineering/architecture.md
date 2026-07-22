@@ -30,7 +30,7 @@ second consumer into separate disposable GNOME devkit sessions.
 ## Production surface topology
 
 `extension/` is the persistent Shell 50 production package, UUID
-`claudex-usage@hugo.local`. It packages the shared primitives, token manifest,
+`cloudex-usage@hugo.local`. It packages the shared primitives, token manifest,
 generated stylesheet, and canonical provider marks. `surface-controller.js` is pure
 and Node-testable: it validates the provider-slot contract, snapshots presentation
 metadata, coalesces refreshes, and emits presentation models. `extension.js` owns
@@ -63,7 +63,7 @@ reduces to unavailable without logging, persistence, process launch, or retained
 source values. J-004 keeps this composition intact while substituting only disposable
 endpoint and process-root inputs.
 
-The package declares `org.gnome.shell.extensions.claudex-usage` and includes its
+The package declares `org.gnome.shell.extensions.cloudex-usage` and includes its
 GSettings schema, which GNOME compiles on installation. It persists nine preferences:
 three panel-visibility booleans, the refresh enum, the global Used/Left display enum,
 the global default-on Time pace boolean, the Every day/Weekdays weekly-pace enum, and

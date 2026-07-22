@@ -24,7 +24,7 @@ export function button({id, text, styleClass, accessibleName, onActivate,
     requireCallback(onActivate, 'Button activation');
     const actor = new St.Button({name: id, style_class: styleClass, can_focus: true,
         reactive: true, track_hover: true, toggle_mode: toggleMode, checked,
-        child: label(text, 'claudex-button-label')});
+        child: label(text, 'cloudex-button-label')});
     actor.set_accessible_name(requireText(accessibleName, 'Button accessible name'));
     actor.connect('clicked', onActivate);
     return actor;

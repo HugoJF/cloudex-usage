@@ -7,15 +7,15 @@ import {requireId, requireText} from './presentation-validation.js';
 /** @param {ProviderGroupProps} props */
 export function ProviderGroup({model, tokens}) {
     requireId(model.id, 'Provider group');
-    const actor = box('claudex-provider-header', Clutter.Orientation.HORIZONTAL,
+    const actor = box('cloudex-provider-header', Clutter.Orientation.HORIZONTAL,
         {x_expand: true});
     actor.add_child(providerIcon({path: model.iconPath, size: tokens.size.providerIcon,
-        styleClass: 'claudex-provider-icon', accessibleName: model.iconAccessibleName}));
-    const copy = column('claudex-provider-copy', {x_expand: true});
-    copy.add_child(label(model.label, 'claudex-provider-name'));
+        styleClass: 'cloudex-provider-icon', accessibleName: model.iconAccessibleName}));
+    const copy = column('cloudex-provider-copy', {x_expand: true});
+    copy.add_child(label(model.label, 'cloudex-provider-name'));
     if (model.detail !== undefined && model.detail !== null)
         {copy.add_child(label(requireText(model.detail, 'Provider detail'),
-            'claudex-provider-detail'));}
+            'cloudex-provider-detail'));}
     actor.add_child(copy);
     return actor;
 }

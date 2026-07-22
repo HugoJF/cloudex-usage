@@ -9,7 +9,7 @@ import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 Gio._promisify(Shell.Screenshot.prototype, 'screenshot_area',
     'screenshot_area_finish');
 
-const UUID = 'claudex-usage@hugo.local';
+const UUID = 'cloudex-usage@hugo.local';
 const CAPTURES = [
     'surface-settings-dark-100.png',
     'surface-settings-toggle-off-focus-hover.png',
@@ -72,7 +72,7 @@ function collectLabelText(root, result = []) {
 }
 
 function captureDirectory() {
-    const override = GLib.getenv('CLAUDEX_CAPTURE_DIR');
+    const override = GLib.getenv('CLOUDEX_CAPTURE_DIR');
     if (override)
         {return Gio.File.new_for_path(override);}
     return Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent()
@@ -193,8 +193,8 @@ async function writePhase(extension, indicator, refreshCounts) {
     assert(initial.weeklyPace.id === 'every-day' &&
         extension._settings.get_user_value('weekly-pace') === null,
     'a legacy backend with no weekly pace key resolves to Every day without writing it');
-    let icons = findClasses(findActor(indicator, 'claudex-live-panel'),
-        'claudex-panel-provider-icon');
+    let icons = findClasses(findActor(indicator, 'cloudex-live-panel'),
+        'cloudex-panel-provider-icon');
     assert(icons[0]?.get_accessible_name() === 'Claude mark, 68 percent used' &&
         icons[1]?.get_accessible_name() === 'Codex mark, no panel percentages',
     'the additive default names the Used basis in the panel');
@@ -213,7 +213,7 @@ async function writePhase(extension, indicator, refreshCounts) {
     await settle();
     findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
     await settle();
-    let popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    let popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(popover?.is_mapped() && collectLabelText(popover).includes('Settings'),
         'gear opens the in-place settings view');
     assert(!findActor(popover, 'history-chart') &&
@@ -234,7 +234,7 @@ async function writePhase(extension, indicator, refreshCounts) {
     const beforePaceChange = {...refreshCounts};
     findActor(popover, 'toggle-showTimePace').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(preferences(extension.getSurfaceSnapshot()).timePace === false &&
         findActor(popover, 'toggle-showTimePace').checked === false &&
         JSON.stringify(refreshCounts) === JSON.stringify(beforePaceChange),
@@ -247,10 +247,10 @@ async function writePhase(extension, indicator, refreshCounts) {
     'turning Time pace off removes every current marker');
     findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     findActor(popover, 'toggle-showTimePace').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(preferences(extension.getSurfaceSnapshot()).timePace === true &&
         findActor(popover, 'toggle-showTimePace').checked &&
         JSON.stringify(refreshCounts) === JSON.stringify(beforePaceChange),
@@ -260,16 +260,16 @@ async function writePhase(extension, indicator, refreshCounts) {
     usedChoice = findActor(popover, 'usage-display-choice');
     usedChoice.emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(indicator.menu.isOpen &&
         preferences(extension.getSurfaceSnapshot()).usageDisplay.id === 'left' &&
         findActor(popover, 'usage-display-choice').get_accessible_name() ===
             'Usage display, Left' &&
         JSON.stringify(refreshCounts) === JSON.stringify(beforeDisplayChange),
     'Left applies in place without refreshing a provider');
-    const panel = findActor(indicator, 'claudex-live-panel');
+    const panel = findActor(indicator, 'cloudex-live-panel');
     const panelText = collectLabelText(panel).join(' ');
-    icons = findClasses(panel, 'claudex-panel-provider-icon');
+    icons = findClasses(panel, 'cloudex-panel-provider-icon');
     assert(panelText.includes('92%') && panelText.includes('32%') &&
         panelText.includes('58%') &&
         icons[0]?.get_accessible_name() ===
@@ -308,12 +308,12 @@ async function writePhase(extension, indicator, refreshCounts) {
     'the surface snapshot remains canonical Used data');
     findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
 
     const beforeWeeklyPaceChange = {...refreshCounts};
     findActor(popover, 'weekly-pace-choice').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(preferences(extension.getSurfaceSnapshot()).weeklyPace.id === 'weekdays' &&
         findActor(popover, 'weekly-pace-choice').get_accessible_name() ===
             'Weekly pace, Weekdays' &&
@@ -335,15 +335,15 @@ async function writePhase(extension, indicator, refreshCounts) {
     'Weekdays compresses the weekly provider window onto local weekdays');
     findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
 
     findActor(popover, 'toggle-showClaudeShort').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     findActor(popover, 'toggle-showClaudeWeekly').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
-    const visibilityPanel = findActor(indicator, 'claudex-live-panel');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
+    const visibilityPanel = findActor(indicator, 'cloudex-live-panel');
     assert(indicator.menu.isOpen &&
         !collectLabelText(visibilityPanel).join(' ').includes('92%') &&
         !collectLabelText(visibilityPanel).join(' ').includes('32%') &&
@@ -352,13 +352,13 @@ async function writePhase(extension, indicator, refreshCounts) {
     'visibility updates panel immediately and preserves a muted Claude mark');
     findActor(popover, 'toggle-showCodexWeekly').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
-    assert(!collectLabelText(findActor(indicator, 'claudex-live-panel')).join(' ').match(/\d+%/) &&
-        findClass(findActor(indicator, 'claudex-live-panel'), 'muted'),
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
+    assert(!collectLabelText(findActor(indicator, 'cloudex-live-panel')).join(' ').match(/\d+%/) &&
+        findClass(findActor(indicator, 'cloudex-live-panel'), 'muted'),
     'all hidden limits retain muted eligible-provider marks without metrics');
     findActor(popover, 'toggle-showCodexWeekly').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     const toggle = findActor(popover, 'toggle-showClaudeWeekly');
     toggle.add_style_pseudo_class('hover');
     toggle.grab_key_focus();
@@ -368,7 +368,7 @@ async function writePhase(extension, indicator, refreshCounts) {
     const choice = findActor(popover, 'refresh-interval-choice');
     choice.emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(preferences(extension.getSurfaceSnapshot()).refreshInterval.ms === 600000 &&
         collectLabelText(popover).some(text => text.includes('10 min')),
     'cadence choice persists and applies to the live controller');
@@ -381,7 +381,7 @@ async function writePhase(extension, indicator, refreshCounts) {
     const beforeFinalPaceChange = {...refreshCounts};
     findActor(popover, 'toggle-showTimePace').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(preferences(extension.getSurfaceSnapshot()).timePace === false &&
         findActor(popover, 'toggle-showTimePace').checked === false &&
         JSON.stringify(refreshCounts) === JSON.stringify(beforeFinalPaceChange),
@@ -408,8 +408,8 @@ async function readPhase(extension, indicator, refreshCounts) {
         preferences(snapshot).timePace === false &&
         preferences(snapshot).weeklyPace.id === 'weekdays',
     'fresh Shell restores every persisted preference');
-    const panel = findActor(indicator, 'claudex-live-panel');
-    const panelIcons = findClasses(panel, 'claudex-panel-provider-icon');
+    const panel = findActor(indicator, 'cloudex-live-panel');
+    const panelIcons = findClasses(panel, 'cloudex-panel-provider-icon');
     assert(!collectLabelText(panel).join(' ').includes('92%') &&
         !collectLabelText(panel).join(' ').includes('32%') &&
         collectLabelText(panel).join(' ').includes('58%') &&
@@ -420,7 +420,7 @@ async function readPhase(extension, indicator, refreshCounts) {
     await settle();
     findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
     await settle();
-    let popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    let popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(collectLabelText(popover).some(text => text.includes('10 min')) &&
         findActor(popover, 'toggle-showClaudeShort').checked === false &&
         findActor(popover, 'toggle-showClaudeWeekly').checked === false &&
@@ -436,11 +436,11 @@ async function readPhase(extension, indicator, refreshCounts) {
         'the restored off choice omits Time pace markers');
     findActor(indicator.menu.actor, 'settings-button').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     const beforePaceChange = {...refreshCounts};
     findActor(popover, 'toggle-showTimePace').emit('clicked', 1);
     await settle();
-    popover = findActor(indicator.menu.actor, 'claudex-live-popover');
+    popover = findActor(indicator.menu.actor, 'cloudex-live-popover');
     assert(preferences(extension.getSurfaceSnapshot()).timePace === true &&
         findActor(popover, 'toggle-showTimePace').checked &&
         JSON.stringify(refreshCounts) === JSON.stringify(beforePaceChange),
@@ -461,17 +461,17 @@ export async function run() {
     const productionClock = extension._now;
     const nowMs = new Date(2026, 6, 21, 12).getTime();
     extension._now = () => nowMs;
-    const historyRoot = GLib.getenv('CLAUDEX_HISTORY_DIR');
+    const historyRoot = GLib.getenv('CLOUDEX_HISTORY_DIR');
     assert(historyRoot && GLib.path_is_absolute(historyRoot) &&
         historyRoot !== GLib.build_filenamev([
-            GLib.get_user_data_dir(), 'claudex-usage',
+            GLib.get_user_data_dir(), 'cloudex-usage',
         ]),
     'settings journey keeps any enabled history writes in its isolated directory');
     const {removers, refreshCounts} = registerFixtures(extension, nowMs);
     await settle();
     const indicator = Main.panel.statusArea[UUID];
     assert(indicator, 'eligible providers create the surface');
-    if (GLib.getenv('CLAUDEX_J003_PHASE') === 'restore')
+    if (GLib.getenv('CLOUDEX_J003_PHASE') === 'restore')
         {await readPhase(extension, indicator, refreshCounts);}
     else
         {await writePhase(extension, indicator, refreshCounts);}

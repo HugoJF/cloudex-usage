@@ -1,6 +1,6 @@
 # Design System
 
-Direction D, **Selected Blend**, is the canonical Claudex Usage visual language. It
+Direction D, **Selected Blend**, is the canonical Cloudex Usage visual language. It
 combines GNOME-native information hierarchy with neutral graphite surfaces, compact
 technical typography, provider grouping, and a quiet top-panel footprint.
 

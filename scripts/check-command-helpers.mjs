@@ -26,7 +26,7 @@ function validateLegacySettingsSeed(source) {
         'show-codex-weekly', 'refresh-interval', 'show-usage-history',
         'history-range'];
     if (typeof source !== 'string' ||
-        !source.includes('[org/gnome/shell/extensions/claudex-usage]') ||
+        !source.includes('[org/gnome/shell/extensions/cloudex-usage]') ||
         requiredKeys.some(key => !source.includes(`\n${key}=`)))
         {throw new Error('legacy GSettings seed is incomplete');}
     for (const key of ['usage-display', 'show-time-pace', 'weekly-pace']) {
@@ -38,7 +38,7 @@ function validateLegacySettingsSeed(source) {
 
 export function legacySettingsSeed() {
     return validateLegacySettingsSeed(
-        '[org/gnome/shell/extensions/claudex-usage]\n' +
+        '[org/gnome/shell/extensions/cloudex-usage]\n' +
         'show-claude-short=false\nshow-claude-weekly=true\n' +
         'show-codex-weekly=false\n' +
         "refresh-interval='fifteen-minutes'\n" +

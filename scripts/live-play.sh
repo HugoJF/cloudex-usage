@@ -14,7 +14,7 @@ trap 'rm -rf "$WORK"' EXIT
 cd "$ROOT"
 
 gnome-extensions pack --force \
-  --schema=schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml \
+  --schema=schemas/org.gnome.shell.extensions.cloudex-usage.gschema.xml \
   --extra-source=surface-controller.js \
   --extra-source=panel-preferences.js \
   --extra-source=codex-contract.js --extra-source=codex-runtime.js \
@@ -50,7 +50,7 @@ node -e '
 echo "opening playground window — close it to exit"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}" \
 CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}" \
-CLAUDEX_HISTORY_DIR="$HIST" \
+CLOUDEX_HISTORY_DIR="$HIST" \
   dbus-run-session -- gnome-shell-test-tool --devkit \
-    --extension "$WORK/claudex-usage@hugo.local.shell-extension.zip" \
+    --extension "$WORK/cloudex-usage@hugo.local.shell-extension.zip" \
     scripts/live-play.journey.js

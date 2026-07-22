@@ -6,13 +6,13 @@ import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 
-const UUID = 'claudex-usage@hugo.local';
+const UUID = 'cloudex-usage@hugo.local';
 export const METRICS = {};
 export function init() {}
 
 function historyCounts() {
     const path = GLib.build_filenamev(
-        [GLib.get_user_data_dir(), 'claudex-usage', 'history.json']);
+        [GLib.get_user_data_dir(), 'cloudex-usage', 'history.json']);
     const [ok, bytes] = GLib.file_get_contents(path);
     if (!ok)
         {return 'none yet';}

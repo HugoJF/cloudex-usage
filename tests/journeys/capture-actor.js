@@ -12,7 +12,7 @@ const CAPTURE_RETRY_MS = 80;
 const DEFAULT_PADDING_PX = 8;
 
 function captureDirectory() {
-    const override = GLib.getenv('CLAUDEX_CAPTURE_DIR');
+    const override = GLib.getenv('CLOUDEX_CAPTURE_DIR');
     if (override)
         {return Gio.File.new_for_path(override);}
     return Gio.File.new_for_uri(import.meta.url).get_parent().get_parent()

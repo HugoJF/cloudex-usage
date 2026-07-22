@@ -26,7 +26,7 @@ function loadTokens(extensionPath) {
     }
 }
 
-export default class ClaudexUsageCatalogExtension extends Extension {
+export default class CloudexUsageCatalogExtension extends Extension {
     enable() {
         this._tokens = loadTokens(this.path);
         this._state = new CatalogState(HISTORY_RANGES);
@@ -35,18 +35,18 @@ export default class ClaudexUsageCatalogExtension extends Extension {
             'notify::color-scheme', () => this._render());
 
         this._indicator = new PanelMenu.Button(0.0, this.metadata.name, false);
-        this._indicator.add_style_class_name('claudex-indicator');
-        this._indicator.set_accessible_name('Claudex Usage');
+        this._indicator.add_style_class_name('cloudex-indicator');
+        this._indicator.set_accessible_name('Cloudex Usage');
 
-        this._panelHost = new St.Bin({name: 'claudex-panel-host'});
+        this._panelHost = new St.Bin({name: 'cloudex-panel-host'});
         this._indicator.add_child(this._panelHost);
 
         this._menuItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
             can_focus: false,
-            style_class: 'claudex-menu-item',
+            style_class: 'cloudex-menu-item',
         });
-        this._popoverHost = new St.Bin({name: 'claudex-popover-host'});
+        this._popoverHost = new St.Bin({name: 'cloudex-popover-host'});
         this._menuItem.add_child(this._popoverHost);
         this._indicator.menu.addMenuItem(this._menuItem);
         Main.panel.addToStatusArea(this.uuid, this._indicator, 0, 'right');

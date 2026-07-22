@@ -1,10 +1,10 @@
 #!/bin/sh
 set -eu
 
-fixture_dir=${CLAUDEX_GSETTINGS_FIXTURE_DIR:?missing GSettings fixture directory}
+fixture_dir=${CLOUDEX_GSETTINGS_FIXTURE_DIR:?missing GSettings fixture directory}
 keyfile="$XDG_CONFIG_HOME/glib-2.0/settings/keyfile"
 saved_keyfile="$fixture_dir/keyfile"
-phase=${CLAUDEX_J003_PHASE:-write}
+phase=${CLOUDEX_J003_PHASE:-write}
 
 if [ "$phase" = write ]; then
     legacy_keyfile="$fixture_dir/legacy-keyfile"

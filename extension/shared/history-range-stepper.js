@@ -22,7 +22,7 @@ function requireProps({choices, selected, onSelect}) {
 
 function stepButton({id, text, accessibleName, onActivate}) {
     const actor = new St.Button({
-        name: id, label: text, style_class: 'claudex-history-range-step',
+        name: id, label: text, style_class: 'cloudex-history-range-step',
         can_focus: true, reactive: true, track_hover: true,
     });
     actor.set_accessible_name(accessibleName);
@@ -35,7 +35,7 @@ export function HistoryRangeStepper({choices, selected, onSelect}) {
     requireProps({choices, selected, onSelect});
     const actor = new St.BoxLayout({
         name: 'history-range-stepper',
-        style_class: 'claudex-history-range-stepper',
+        style_class: 'cloudex-history-range-stepper',
         orientation: Clutter.Orientation.HORIZONTAL,
         x_align: Clutter.ActorAlign.END,
     });
@@ -47,7 +47,7 @@ export function HistoryRangeStepper({choices, selected, onSelect}) {
         accessibleName: 'Previous history range',
         onActivate: () => choose(-1, PREVIOUS_ID)}));
     actor.add_child(new St.Label({name: VALUE_ID, text: selected.label,
-        style_class: 'claudex-choice-value', y_align: Clutter.ActorAlign.CENTER}));
+        style_class: 'cloudex-choice-value', y_align: Clutter.ActorAlign.CENTER}));
     actor.add_child(stepButton({id: NEXT_ID, text: '>',
         accessibleName: 'Next history range',
         onActivate: () => choose(1, NEXT_ID)}));

@@ -32,5 +32,5 @@ export function buildPanelView({snapshot, preferences, extensionPath, light,
             values,
         };
     });
-    return PanelIndicator({id: 'claudex-live-panel', groups, tokens});
+    return PanelIndicator({id: 'cloudex-live-panel', groups, tokens});
 }

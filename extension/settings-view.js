@@ -19,9 +19,9 @@ function column(styleClass) {
 }
 
 function section(title) {
-    const actor = column('claudex-settings-section');
+    const actor = column('cloudex-settings-section');
     actor.add_child(new St.Label({text: title,
-        style_class: 'claudex-settings-kicker',
+        style_class: 'cloudex-settings-kicker',
         y_align: Clutter.ActorAlign.CENTER}));
     return actor;
 }
@@ -83,18 +83,18 @@ function updatesSection(model) {
 }
 
 export function buildSettingsView(model) {
-    const header = new St.BoxLayout({style_class: 'claudex-settings-header',
+    const header = new St.BoxLayout({style_class: 'cloudex-settings-header',
         orientation: Clutter.Orientation.HORIZONTAL, x_expand: true});
     const back = new St.Button({name: 'back-button',
-        style_class: 'claudex-back-button', can_focus: true, reactive: true,
+        style_class: 'cloudex-back-button', can_focus: true, reactive: true,
         track_hover: true, child: new St.Label({text: '← Usage',
-            style_class: 'claudex-button-label',
+            style_class: 'cloudex-button-label',
             y_align: Clutter.ActorAlign.CENTER})});
     back.set_accessible_name('Back to usage');
     back.connect('clicked', model.onBack);
     header.add_child(back);
     header.add_child(new St.Label({text: 'Settings',
-        style_class: 'claudex-settings-title', x_expand: true,
+        style_class: 'cloudex-settings-title', x_expand: true,
         y_align: Clutter.ActorAlign.CENTER}));
     return [header, panelSection(model), displaySection(model),
         historySection(model), updatesSection(model)];

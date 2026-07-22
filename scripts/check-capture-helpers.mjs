@@ -35,7 +35,7 @@ export function prepareProductionVariant(model) {
         path.join(model.sourceDir, 'icons'), {recursive: true});
     model.edits(model.sourceDir);
     model.run('gnome-extensions', ['pack', '--force',
-        '--schema=schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
+        '--schema=schemas/org.gnome.shell.extensions.cloudex-usage.gschema.xml',
         '--extra-source=surface-controller.js',
         '--extra-source=panel-preferences.js', '--extra-source=codex-contract.js',
         '--extra-source=codex-runtime.js', '--extra-source=claude-contract.js',
@@ -48,7 +48,7 @@ export function prepareProductionVariant(model) {
         '--extra-source=tokens.json', '--extra-source=icons',
         '--out-dir', model.packageDir, model.sourceDir]);
     return path.join(model.packageDir,
-        'claudex-usage@hugo.local.shell-extension.zip');
+        'cloudex-usage@hugo.local.shell-extension.zip');
 }
 
 function comparableImage(filename, filePath) {

@@ -5,7 +5,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 import {captureActor as capture} from './capture-actor.js';
-const UUID = 'claudex-usage@hugo.local', PORT = 19876;
+const UUID = 'cloudex-usage@hugo.local', PORT = 19876;
 const LEFT_CAPTURE = 'surface-left-popup-dark-100.png';
 const RANGE_CAPTURES = {
     dark: 'surface-history-stepper-dark-100.png',
@@ -60,31 +60,31 @@ function auth(token) {
     GLib.file_set_contents(path, JSON.stringify({claudeAiOauth: {accessToken: token}}));
 }
 function historyWindows() {
-    const path = GLib.build_filenamev([GLib.getenv('CLAUDEX_HISTORY_DIR'), 'history.json']);
+    const path = GLib.build_filenamev([GLib.getenv('CLOUDEX_HISTORY_DIR'), 'history.json']);
     const [ok, bytes] = GLib.file_get_contents(path);
     if (!ok)
         {return {};}
     return JSON.parse(new TextDecoder('utf-8').decode(bytes)).windows ?? {};
 }
 function historyText() {
-    const path = GLib.build_filenamev([GLib.getenv('CLAUDEX_HISTORY_DIR'), 'history.json']);
+    const path = GLib.build_filenamev([GLib.getenv('CLOUDEX_HISTORY_DIR'), 'history.json']);
     const [ok, bytes] = GLib.file_get_contents(path);
     assert(ok, 'history file is readable');
     return new TextDecoder('utf-8').decode(bytes);
 }
 function startClaude() {
-    const process = Gio.Subprocess.new([GLib.getenv('CLAUDEX_FAKE_CLAUDE'),
+    const process = Gio.Subprocess.new([GLib.getenv('CLOUDEX_FAKE_CLAUDE'),
         '-c', 'import time; time.sleep(30)'], Gio.SubprocessFlags.NONE);
     process.fixturePid = process.get_identifier();
     const directory = GLib.build_filenamev(
-        [GLib.getenv('CLAUDEX_PROC_ROOT'), process.fixturePid]);
+        [GLib.getenv('CLOUDEX_PROC_ROOT'), process.fixturePid]);
     GLib.mkdir_with_parents(directory, 0o700);
     GLib.file_set_contents(GLib.build_filenamev([directory, 'comm']), 'claude\n');
     return process;
 }
 function stopClaude(process) {
     const directory = Gio.File.new_for_path(GLib.build_filenamev(
-        [GLib.getenv('CLAUDEX_PROC_ROOT'), process.fixturePid]));
+        [GLib.getenv('CLOUDEX_PROC_ROOT'), process.fixturePid]));
     process.force_exit(); directory.get_child('comm').delete(null);
     directory.delete(null);
 }
@@ -124,7 +124,7 @@ export async function run() {
         process = startClaude();
         await waitFor(() => extension.getSurfaceSnapshot().providers[0]
             ?.metrics[0]?.percent === 12, 'live Claude usage');
-        if (GLib.getenv('CLAUDEX_J006_PHASE') === 'restore') {
+        if (GLib.getenv('CLOUDEX_J006_PHASE') === 'restore') {
             const indicator = Main.panel.statusArea[UUID];
             indicator.menu.open();
             await waitFor(() => findActor(indicator.menu.actor, 'history-chart'),

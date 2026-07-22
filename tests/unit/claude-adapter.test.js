@@ -74,7 +74,7 @@ class Session {
     }
     abort() {}
 }
-const root = GLib.dir_make_tmp('claudex-claude-unit-XXXXXX');
+const root = GLib.dir_make_tmp('cloudex-claude-unit-XXXXXX');
 const procRoot = GLib.build_filenamev([root, 'proc']);
 const configHome = GLib.build_filenamev([root, 'home']);
 const processPath = GLib.build_filenamev([procRoot, '123']);

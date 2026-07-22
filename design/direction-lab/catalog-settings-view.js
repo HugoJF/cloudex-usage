@@ -20,8 +20,8 @@ function label(text, styleClass, properties = {}) {
 }
 
 function section(title) {
-    const actor = column('claudex-settings-section');
-    actor.add_child(label(title, 'claudex-settings-kicker'));
+    const actor = column('cloudex-settings-section');
+    actor.add_child(label(title, 'cloudex-settings-kicker'));
     return actor;
 }
 
@@ -75,15 +75,15 @@ function buildUpdatesSection(model) {
 }
 
 export function buildCatalogSettingsView(model) {
-    const header = box('claudex-settings-header', Clutter.Orientation.HORIZONTAL,
+    const header = box('cloudex-settings-header', Clutter.Orientation.HORIZONTAL,
         {x_expand: true});
     const back = new St.Button({name: 'back-button',
-        style_class: 'claudex-back-button', can_focus: true, reactive: true,
-        track_hover: true, child: label('← Usage', 'claudex-button-label')});
+        style_class: 'cloudex-back-button', can_focus: true, reactive: true,
+        track_hover: true, child: label('← Usage', 'cloudex-button-label')});
     back.set_accessible_name('Back to usage');
     back.connect('clicked', model.actions.openUsage);
     header.add_child(back);
-    header.add_child(label('Settings', 'claudex-settings-title', {x_expand: true}));
+    header.add_child(label('Settings', 'cloudex-settings-title', {x_expand: true}));
     return PopoverScaffold({id: 'usage-refinement-settings', view: 'settings',
         children: [header, buildPanelSection(model), buildDisplaySection(model),
             buildHistorySection(model), buildUpdatesSection(model)]});

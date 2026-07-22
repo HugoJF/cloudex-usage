@@ -1,5 +1,5 @@
 ---
-id: PITCH-CLAUDEX-USAGE
+id: PITCH-CLOUDEX-USAGE
 type: pitch
 status: active
 owner: hugo
@@ -8,7 +8,7 @@ updated: 2026-07-17
 tags: [gnome, codex, claude, usage]
 ---
 
-# Pitch: Claudex Usage
+# Pitch: Cloudex Usage
 
 ## Problem & Thesis
 

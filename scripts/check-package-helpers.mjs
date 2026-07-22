@@ -100,7 +100,7 @@ export function assertVerifierRejects(entries) {
 const PRODUCTION_REQUIRED = ['surface-controller.js', 'panel-preferences.js',
     'codex-contract.js', 'codex-runtime.js', 'claude-contract.js',
     'claude-runtime.js', 'history-store.js', 'history-runtime.js',
-    'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
+    'schemas/org.gnome.shell.extensions.cloudex-usage.gschema.xml',
     'icons/claude.svg', 'icons/codex.svg'];
 
 export function assertProductionVerifierRejects(entries) {

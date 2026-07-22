@@ -64,8 +64,8 @@ assertCommandRejects('sh', [path.join(root, 'scripts/gsettings-session-wrapper.s
     env: {
         ...process.env,
         XDG_CONFIG_HOME: missingSettingsConfigDir,
-        CLAUDEX_GSETTINGS_FIXTURE_DIR: missingSettingsFixtureDir,
-        CLAUDEX_J003_PHASE: 'write',
+        CLOUDEX_GSETTINGS_FIXTURE_DIR: missingSettingsFixtureDir,
+        CLOUDEX_J003_PHASE: 'write',
     },
 });
 process.stdout.write('GSettings session wrapper: missing-seed rejection passed\n');
@@ -105,7 +105,7 @@ try {
     ]);
 
     const zipPath = path.join(packageDir,
-        'claudex-usage-design@hugo.local.shell-extension.zip');
+        'cloudex-usage-design@hugo.local.shell-extension.zip');
     const catalogEntries = assertPackage(zipPath, 'catalog', [
         'catalog-state.js',
         'catalog-panel.js',
@@ -121,7 +121,7 @@ try {
     run('gnome-extensions', [
         'pack',
         '--force',
-        '--schema=schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
+        '--schema=schemas/org.gnome.shell.extensions.cloudex-usage.gschema.xml',
         '--extra-source=surface-controller.js',
         '--extra-source=panel-preferences.js',
         '--extra-source=codex-contract.js',
@@ -143,7 +143,7 @@ try {
         'extension',
     ]);
     const productionZipPath = path.join(productionPackageDir,
-        'claudex-usage@hugo.local.shell-extension.zip');
+        'cloudex-usage@hugo.local.shell-extension.zip');
     const productionEntries = assertPackage(productionZipPath, 'production', [
         'surface-controller.js',
         'panel-preferences.js',
@@ -161,7 +161,7 @@ try {
         'settings-view.js',
         'load-tokens.js',
         'temporal.js',
-        'schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml',
+        'schemas/org.gnome.shell.extensions.cloudex-usage.gschema.xml',
         'icons/claude.svg',
         'icons/claude-light.svg',
         'icons/codex.svg',
@@ -201,9 +201,9 @@ try {
         'tests/journeys/J-004-codex-usage.journey.test.js',
     ], {
         env: {...process.env, GSETTINGS_BACKEND: 'memory',
-            CODEX_HOME: codexHome, CLAUDEX_FAKE_CODEX: fakeCodex,
-            CLAUDEX_PROC_ROOT: journeyProcRoot,
-            CLAUDEX_HISTORY_DIR: codexAdapterHistoryDir},
+            CODEX_HOME: codexHome, CLOUDEX_FAKE_CODEX: fakeCodex,
+            CLOUDEX_PROC_ROOT: journeyProcRoot,
+            CLOUDEX_HISTORY_DIR: codexAdapterHistoryDir},
     });
     const claudeJourneyZipPath = prepareProductionVariant(
         claudeJourneySourceDir, claudeJourneyPackageDir, sourceDir => {
@@ -219,8 +219,8 @@ try {
     ], {
         env: {...process.env, GSETTINGS_BACKEND: 'memory',
             CLAUDE_CONFIG_DIR: claudeConfigHome,
-            CLAUDEX_FAKE_CLAUDE: fakeClaude, CLAUDEX_PROC_ROOT: claudeJourneyProcRoot,
-            CLAUDEX_HISTORY_DIR: claudeAdapterHistoryDir},
+            CLOUDEX_FAKE_CLAUDE: fakeClaude, CLOUDEX_PROC_ROOT: claudeJourneyProcRoot,
+            CLOUDEX_HISTORY_DIR: claudeAdapterHistoryDir},
     });
     seedHistory(claudeHistoryDir);
     for (const phase of ['write', 'restore']) {
@@ -230,11 +230,11 @@ try {
         ], {
             env: {...process.env, GSETTINGS_BACKEND: 'memory',
                 CLAUDE_CONFIG_DIR: claudeConfigHome,
-                CLAUDEX_FAKE_CLAUDE: fakeClaude,
-                CLAUDEX_PROC_ROOT: claudeJourneyProcRoot,
-                CLAUDEX_HISTORY_DIR: claudeHistoryDir,
-                CLAUDEX_CAPTURE_DIR: captureDir,
-                CLAUDEX_J006_PHASE: phase},
+                CLOUDEX_FAKE_CLAUDE: fakeClaude,
+                CLOUDEX_PROC_ROOT: claudeJourneyProcRoot,
+                CLOUDEX_HISTORY_DIR: claudeHistoryDir,
+                CLOUDEX_CAPTURE_DIR: captureDir,
+                CLOUDEX_J006_PHASE: phase},
         });
     }
     writeSharedConsumer(root, proofSourceDir, proofJourneyPath);
@@ -247,7 +247,7 @@ try {
         proofSourceDir,
     ]);
     const proofZipPath = path.join(proofPackageDir,
-        'claudex-shared-proof@hugo.local.shell-extension.zip');
+        'cloudex-shared-proof@hugo.local.shell-extension.zip');
     assertPackage(proofZipPath, 'shared consumer');
     run('dbus-run-session', [
         '--',
@@ -265,7 +265,7 @@ try {
         '--extension', zipPath,
         'tests/journeys/J-001-primitive-catalog.journey.test.js',
     ], {
-        env: {...process.env, CLAUDEX_CAPTURE_DIR: captureDir},
+        env: {...process.env, CLOUDEX_CAPTURE_DIR: captureDir},
     });
     for (const phase of ['write', 'restore']) {
         run('dbus-run-session', [
@@ -279,10 +279,10 @@ try {
         ], {
             env: {
                 ...process.env,
-                CLAUDEX_CAPTURE_DIR: captureDir,
-                CLAUDEX_GSETTINGS_FIXTURE_DIR: settingsFixtureDir,
-                CLAUDEX_J003_PHASE: phase,
-                CLAUDEX_HISTORY_DIR: settingsHistoryDir,
+                CLOUDEX_CAPTURE_DIR: captureDir,
+                CLOUDEX_GSETTINGS_FIXTURE_DIR: settingsFixtureDir,
+                CLOUDEX_J003_PHASE: phase,
+                CLOUDEX_HISTORY_DIR: settingsHistoryDir,
             },
         });
     }
@@ -295,13 +295,13 @@ try {
         'tests/journeys/J-002-usage-surface.journey.test.js',
     ], {
         env: {...process.env, GSETTINGS_BACKEND: 'memory',
-            CLAUDEX_CAPTURE_DIR: captureDir,
-            CLAUDEX_HISTORY_DIR: surfaceHistoryDir},
+            CLOUDEX_CAPTURE_DIR: captureDir,
+            CLOUDEX_HISTORY_DIR: surfaceHistoryDir},
     });
     assertCaptures(captureDir, CATALOG_CAPTURES, 'catalog', !updateCaptures);
     assertCaptures(captureDir, SURFACE_CAPTURES, 'production surface',
         !updateCaptures);
-    process.stdout.write('\nClaudex Usage check: passed\n');
+    process.stdout.write('\nCloudex Usage check: passed\n');
 } finally {
     rmSync(temporaryRoot, {recursive: true, force: true});
 }

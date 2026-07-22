@@ -8,7 +8,7 @@ import {UsageMetric} from './usage-metric.js';
 export function ProviderCard({id, provider, metrics, tokens}) {
     requireId(id, 'Provider card');
     requireUniqueIds(metrics, 'Usage metric');
-    const actor = column('claudex-provider-card', {name: id});
+    const actor = column('cloudex-provider-card', {name: id});
     actor.add_child(ProviderGroup({model: provider, tokens}));
     for (const metric of metrics)
         {actor.add_child(UsageMetric({metric, tokens}));}

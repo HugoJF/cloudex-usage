@@ -1,161 +1,158 @@
 <div align="center">
 
-# Claudex Usage
+# Cloudex Usage
 
-**Claude Code and Codex usage limits, at a glance in the GNOME panel.**
+**Codex and Claude Code usage limits, at a glance in the GNOME panel.**
 
 ![GNOME Shell 50](https://img.shields.io/badge/GNOME%20Shell-50-4a86cf)
 ![GJS](https://img.shields.io/badge/built%20with-GJS-1a5fb4)
-![Status: Claude and Codex live](https://img.shields.io/badge/status-Claude%20%2B%20Codex%20live-4a86cf)
+![Status: Codex and Claude live](https://img.shields.io/badge/status-Codex%20%2B%20Claude%20live-4a86cf)
 
-<img src="design/captures/surface-popup-dark-100.png" width="440" alt="Claudex Usage popover showing Claude and Codex usage windows, reset times, and usage history">
+<img src="design/captures/surface-popup-dark-100.png" width="440" alt="Cloudex Usage popover showing Codex and Claude usage windows, reset times, and local usage history">
 
 </div>
 
-## Why
+Cloudex Usage is a GNOME Shell extension for people who use both Codex and Claude
+Code. It shows current subscription usage while either agent is running, then gets
+out of the way when they stop.
 
-Subscription-backed coding agents run on rolling usage windows, but checking how much
-capacity remains means leaving your work to open a separate status view. Claudex Usage
-puts those numbers where you already are: while Claude Code or Codex is in use, a small
-GNOME Shell indicator shows each provider's current usage windows and reset times —
-as either percentage used or percentage left — and when the agents close, it gets out
-of the way.
+## Features
 
-## Principles
+- Codex account-weekly usage from the existing Codex CLI login.
+- Claude Code 5-hour and weekly usage from the existing Claude Code OAuth login.
+- Used or Left percentages in the panel, popup, and history chart.
+- Optional pace markers that compare usage with elapsed time.
+- Configurable panel values and a 5, 10, or 15 minute refresh cadence.
+- Local-only usage history with ranges from one hour to 30 days.
+- Explicit unavailable states instead of stale or guessed values.
+- Light and dark GNOME Shell theme support.
 
-These constraints are product-level commitments, not implementation details
-(canonical in the [product pitch](docs/product/pitch.md)):
+Cloudex never starts or authenticates either agent. It reads the existing local
+login only while a matching current-user `codex` or `claude` process is present.
 
-- **One surface, per-provider adapters.** A single panel experience covers both
-  providers.
-- **Opportunistic visibility.** An indicator appears only while its matching
-  application is active — no permanent background monitoring obligation.
-- **Never wake an agent to watch it.** Codex usage uses the existing CLI login while a
-  local session is present; nothing is started solely to obtain usage.
-- **Privacy by default.** Credentials and raw provider responses are never persisted,
-  logged, or displayed, and nothing is shared with another service.
-- **Fail closed.** An outage, expired session, or provider failure produces an
-  explicit unavailable state — never a stale or misleading value.
+## Requirements
 
-## Project status
+- GNOME Shell 50; development and visual validation target GNOME Shell 50.1.
+- A file-backed Codex CLI login, a Claude Code OAuth login, or both.
+- Node.js and npm to build from source.
+- `gnome-extensions` from the GNOME Shell tools.
 
-The approved visual system, production surface, and both live provider adapters ship
-today: Codex account-weekly usage, and Claude Code 5-hour and weekly usage, each read
-from the existing login while a local session is present, plus a local-only usage-history
-chart recorded during the same refresh. One persisted setting switches current values
-and history together between Used and Left without changing recorded samples.
+Keyring-only Codex logins are not currently supported. Configuration paths must also
+be visible to GNOME Shell; relative `CODEX_HOME` or `CLAUDE_CONFIG_DIR` values fail
+closed.
 
-| Capability | Status |
-| --- | --- |
-| Design system and primitive catalog | ✅ Done — Direction D, installable with a screenshot harness |
-| Unified usage surface | ✅ Done — persisted visibility, Used/Left display and cadence choices, with fail-closed polling while eligible providers exist |
-| Codex provider adapter | ✅ Done — current account-weekly usage from the existing file-backed CLI login |
-| Claude Code provider adapter | ✅ Done — 5-hour and weekly usage from the existing file-backed OAuth login |
-| Local usage history | ✅ Done — records samples during refresh and charts the merged trajectory, local-only |
+## Install from source
 
-The [feature horizon](docs/product/feature-horizon.md) tracks the full capability map.
+Clone the repository, install its pinned development dependencies, and build the
+production extension:
 
-## Gallery
+```bash
+git clone https://github.com/HugoJF/cloudex-usage.git
+cd cloudex-usage
+npm ci
+npm run styles
 
-Every state is captured deterministically from an isolated GNOME Shell 50.1 session.
-J-001 proves the static catalog; J-002 proves the production surface through
-harness-only provider registration; J-004 proves the packaged Codex runtime from
-session presence through credential rotation, unavailable data, and teardown; J-006
-proves local history and its presentation in Used or Left.
+mkdir -p /tmp/cloudex-usage-package
+gnome-extensions pack \
+  --force \
+  --schema=schemas/org.gnome.shell.extensions.cloudex-usage.gschema.xml \
+  --extra-source=surface-controller.js \
+  --extra-source=panel-preferences.js \
+  --extra-source=codex-contract.js \
+  --extra-source=codex-runtime.js \
+  --extra-source=claude-contract.js \
+  --extra-source=claude-runtime.js \
+  --extra-source=history-store.js \
+  --extra-source=history-runtime.js \
+  --extra-source=controller-snapshot.js \
+  --extra-source=controller-validation.js \
+  --extra-source=panel-view.js \
+  --extra-source=history-view.js \
+  --extra-source=usage-view.js \
+  --extra-source=settings-view.js \
+  --extra-source=load-tokens.js \
+  --extra-source=temporal.js \
+  --extra-source=shared \
+  --extra-source=../design/system/tokens.json \
+  --extra-source=../design/direction-lab/icons \
+  --out-dir=/tmp/cloudex-usage-package \
+  extension
+
+gnome-extensions install --force \
+  /tmp/cloudex-usage-package/cloudex-usage@hugo.local.shell-extension.zip
+```
+
+On Wayland, log out and back in so GNOME Shell loads the installed code. Then enable
+the extension:
+
+```bash
+gnome-extensions enable cloudex-usage@hugo.local
+gnome-extensions info cloudex-usage@hugo.local
+```
+
+To uninstall it:
+
+```bash
+gnome-extensions uninstall cloudex-usage@hugo.local
+```
+
+## Usage and privacy
+
+Start Codex or Claude Code normally. Cloudex appears when it detects the matching
+local process and refreshes both eligible providers through one shared cycle. Open
+the panel item to see reset times, pace markers, and history; use the gear button to
+choose panel values, Used or Left display, cadence, weekly pace, and history options.
+
+Credentials and raw provider responses are never persisted, logged, or displayed.
+History contains only timestamps and percentages in a bounded JSON file under the
+current user's data directory. Nothing Cloudex records is sent to another service.
+
+The provider usage endpoints are not public APIs and may change. Cloudex validates
+their expected shapes strictly and shows usage as unavailable when a response no
+longer matches.
+
+## Screenshots
 
 | Panel indicator (dark) | Panel indicator (light) |
 | --- | --- |
 | ![Dark panel indicator](design/captures/surface-panel-dark-100.png) | ![Light panel indicator](design/captures/surface-panel-light-100.png) |
 
-| Settings popover | Range focus & hover |
+| Settings | History range control |
 | --- | --- |
-| <img src="design/captures/surface-settings-dark-100.png" width="360" alt="Settings popover, dark theme"> | <img src="design/captures/surface-history-stepper-dark-100.png" width="360" alt="Usage history with its inline range stepper"> |
+| <img src="design/captures/surface-settings-dark-100.png" width="360" alt="Cloudex settings in the dark theme"> | <img src="design/captures/surface-history-stepper-dark-100.png" width="360" alt="Cloudex usage history range control"> |
 
-The complete evidence set lives in [`design/captures`](design/captures/README.md).
-
-## Preview without installing
-
-Launch the catalog in an isolated GNOME Shell devkit session:
-
-```bash
-npm run capture
-```
-
-The devkit uses a disposable home and does not change the extensions installed in
-the current desktop session.
-
-## Install for development
-
-The catalog currently supports GNOME Shell 50. Run these commands from the project
-root to build and install it for the current user; `sudo` is not required.
-
-```bash
-npm run styles
-mkdir -p /tmp/claudex-usage-package
-
-gnome-extensions pack \
-  --force \
-  --extra-source=icons \
-  --extra-source=catalog-state.js \
-  --extra-source=../../extension/shared \
-  --extra-source=../system/tokens.json \
-  --out-dir=/tmp/claudex-usage-package \
-  design/direction-lab
-
-gnome-extensions install --force \
-  /tmp/claudex-usage-package/claudex-usage-design@hugo.local.shell-extension.zip
-```
-
-On Wayland, log out and back in so GNOME Shell loads the newly installed code, then
-enable the catalog and verify its status:
-
-```bash
-gnome-extensions enable claudex-usage-design@hugo.local
-gnome-extensions info claudex-usage-design@hugo.local
-```
-
-To install an updated development build, repeat the pack and install commands, then
-log out and back in. To remove the catalog:
-
-```bash
-gnome-extensions uninstall claudex-usage-design@hugo.local
-```
-
-This installs the static design catalog only. The production extension has UUID
-`claudex-usage@hugo.local` and packages built-in Codex and Claude adapters. It becomes
-visible for an exact current-user process named `codex` or `claude`, then reads the
-matching existing file-backed CLI/OAuth login at refresh time. Keyring-only Codex
-login and provider config paths not inherited by GNOME Shell are unavailable states.
+The [visual evidence index](design/captures/README.md) documents the complete light,
+dark, scaling, focus, hover, and unavailable-state capture set.
 
 ## Development
 
-One command is the entire validation gate — docs, token/CSS drift, unit tests,
-extension packaging, and the isolated J-001 GNOME journey with capture verification:
+Run the complete validation gate:
 
 ```bash
 npm test
 ```
 
-Use `npm run capture` only when the canonical screenshots must be regenerated.
+It checks documentation, linting, token/CSS drift, unit tests, extension packaging,
+isolated GNOME journeys, and temporary capture verification. Useful additional
+commands are:
 
-The project follows the [Aura workflow](AGENTS.md): work descends from an accepted
-spec, docs are the source of truth, and every slice closes through the same gate.
+```bash
+npm run capture        # regenerate committed screenshots
+npm run validate:play  # open the production extension in an isolated devkit window
+npm run validate:live  # exercise real local logins in a headless devkit session
+```
 
-## Documentation
+The live validation commands use existing credentials and make real authenticated
+provider requests. The devkit session does not alter extensions installed in the
+current desktop session.
 
-| Document | Purpose |
-| --- | --- |
-| [Product pitch](docs/product/pitch.md) | Problem, promise, and provider constraints |
-| [Product index](docs/product/README.md) | Every brief and spec with one-line status |
-| [Feature horizon](docs/product/feature-horizon.md) | Capability maturity and parking lot |
-| [Architecture](docs/engineering/architecture.md) | Catalog topology and boundaries |
-| [Design system](docs/engineering/design-system.md) | Tokens, primitives, interaction idioms |
-| [Primitive catalog](design/direction-lab/README.md) | The installable Direction D catalog |
-| [Visual evidence](design/captures/README.md) | Canonical J-001 captures |
+Project internals are documented in the [product index](docs/product/README.md),
+[architecture](docs/engineering/architecture.md), and
+[design system](docs/engineering/design-system.md).
 
 ## Trademarks
 
 Claude and Anthropic are trademarks of Anthropic. Codex, OpenAI, and the Blossom mark
 are trademarks of OpenAI. This is an independent project, not affiliated with or
-endorsed by either company; provider marks are vendored for local presentation
-(see [provider mark provenance](design/direction-lab/icons/README.md)).
+endorsed by either company. Provider marks are vendored for local presentation; see
+their [provenance](design/direction-lab/icons/README.md).

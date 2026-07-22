@@ -13,7 +13,7 @@ export function IconButton({id, iconName, accessibleName, onActivate, tokens,
     if (typeof busy !== 'boolean')
         {throw new Error('Icon button busy state must be boolean');}
     const actor = new St.Button({name: id,
-        style_class: `claudex-icon-button${busy ? ' busy' : ''}`, can_focus: true,
+        style_class: `cloudex-icon-button${busy ? ' busy' : ''}`, can_focus: true,
         reactive: true, track_hover: true, y_align: Clutter.ActorAlign.CENTER,
         y_expand: false, child: new St.Icon({icon_name: requireText(iconName,
             'Symbolic icon'), icon_size: tokens.size.settingsIcon})});

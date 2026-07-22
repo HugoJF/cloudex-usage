@@ -30,15 +30,18 @@ export function ProgressBar({metric, tokens}) {
     const width = tokens.size.progressWidth;
     const height = tokens.size.progressHeight;
     const actor = new St.Widget({name: `progress-${metric.id}`,
-        style_class: 'claudex-progress-track', layout_manager: new Clutter.FixedLayout(),
+        style_class: 'cloudex-progress-track', layout_manager: new Clutter.FixedLayout(),
         width, height, accessible_role: Atk.Role.PROGRESS_BAR});
     actor.set_accessible_name(requireText(metric.accessibleName,
         'Progress accessible name'));
     const fillWidth = progressWidth(metric.percent, width);
-    if (fillWidth > 0)
-        {actor.add_child(new St.Widget({name: `progress-fill-${metric.id}`,
-            style_class: 'claudex-progress-fill',
-            style: dataStyle(metric.dataRole, tokens), width: fillWidth, height, x: 0, y: 0}));}
+    let fill = null;
+    if (fillWidth > 0) {
+        fill = new St.Widget({name: `progress-fill-${metric.id}`,
+            style_class: 'cloudex-progress-fill',
+            style: dataStyle(metric.dataRole, tokens), width: fillWidth, height, x: 0, y: 0});
+        actor.add_child(fill);
+    }
     if (metric.pacePercent !== undefined) {
         requirePercent(metric.pacePercent, 'Time pace percentage');
         if (!Number.isFinite(width) || width < PACE_MARKER_WIDTH_PX)
@@ -49,5 +52,13 @@ export function ProgressBar({metric, tokens}) {
             accessible_role: Atk.Role.REDUNDANT_OBJECT}));
         setProgressBarPace(actor, metric.pacePercent);
     }
+    actor.connect('notify::width', () => {
+        if (!Number.isFinite(actor.width) || actor.width <= 0)
+            {return;}
+        if (fill)
+            {fill.width = progressWidth(metric.percent, actor.width);}
+        if (metric.pacePercent !== undefined)
+            {setProgressBarPace(actor, metric.pacePercent);}
+    });
     return actor;
 }

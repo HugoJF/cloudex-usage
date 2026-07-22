@@ -25,7 +25,7 @@ import {buildSettingsView} from './settings-view.js';
 import {buildUsageView, displayUsageMetric} from './usage-view.js';
 import {loadTokens} from './load-tokens.js';
 
-export default class ClaudexUsageExtension extends Extension {
+export default class CloudexUsageExtension extends Extension {
     _requireController() {
         if (!this._controller) {
             throw new Error('extension is not enabled');
@@ -198,7 +198,7 @@ export default class ClaudexUsageExtension extends Extension {
                     this._render();
                 }});
         replaceChild(this._popoverHost, PopoverScaffold({
-            id: 'claudex-live-popover',
+            id: 'cloudex-live-popover',
             view: this._view,
             children,
         }));
@@ -217,16 +217,16 @@ export default class ClaudexUsageExtension extends Extension {
         if (this._indicator)
             {return;}
         this._indicator = new PanelMenu.Button(0.0, this.metadata.name, false);
-        this._indicator.add_style_class_name('claudex-indicator');
-        this._indicator.set_accessible_name('Claudex Usage');
-        this._panelHost = new St.Bin({name: 'claudex-panel-host'});
+        this._indicator.add_style_class_name('cloudex-indicator');
+        this._indicator.set_accessible_name('Cloudex Usage');
+        this._panelHost = new St.Bin({name: 'cloudex-panel-host'});
         this._indicator.add_child(this._panelHost);
         this._menuItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
             can_focus: false,
-            style_class: 'claudex-menu-item',
+            style_class: 'cloudex-menu-item',
         });
-        this._popoverHost = new St.Bin({name: 'claudex-popover-host'});
+        this._popoverHost = new St.Bin({name: 'cloudex-popover-host'});
         this._menuItem.add_child(this._popoverHost);
         this._indicator.menu.addMenuItem(this._menuItem);
         this._menuOpenChangedId = this._indicator.menu.connect(

@@ -40,7 +40,7 @@ function storedRows(name, key = 'claude:short') {
     return JSON.parse(readText(path)).windows[key] ?? [];
 }
 
-const root = GLib.dir_make_tmp('claudex-history-runtime-XXXXXX');
+const root = GLib.dir_make_tmp('cloudex-history-runtime-XXXXXX');
 let clock = 0;
 function runtime(name, extra = {}) {
     return new HistoryRuntime({

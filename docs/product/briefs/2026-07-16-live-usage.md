@@ -8,7 +8,7 @@ updated: 2026-07-21
 source_docs:
   - docs/product/pitch.md
   - docs/product/feature-horizon.md
-parent_ids: [PITCH-CLAUDEX-USAGE]
+parent_ids: [PITCH-CLOUDEX-USAGE]
 tags: [gnome, claude, codex, usage]
 supersedes: []
 ---

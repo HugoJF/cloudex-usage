@@ -1,6 +1,6 @@
 {
-  "uuid": "claudex-shared-proof@hugo.local",
-  "name": "Claudex Shared Presentation Proof",
+  "uuid": "cloudex-shared-proof@hugo.local",
+  "name": "Cloudex Shared Presentation Proof",
   "description": "Committed second-consumer fixture",
   "version": 1,
   "shell-version": ["50"]

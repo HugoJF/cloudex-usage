@@ -4,7 +4,7 @@
 
 | Document | Purpose |
 | --- | --- |
-| [PITCH-CLAUDEX-USAGE](pitch.md) | Defines the combined GNOME usage surface and provider constraints. |
+| [PITCH-CLOUDEX-USAGE](pitch.md) | Defines the combined GNOME usage surface and provider constraints. |
 
 ## Briefs
 

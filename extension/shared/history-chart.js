@@ -58,9 +58,9 @@ export function HistoryChart({id, series, accessibleName, tokens}) {
     requireText(accessibleName, 'History chart accessible name');
     validateSeries(series, tokens);
     const drawingSeries = series.map(item => ({...item, values: [...item.values]}));
-    const frame = box('claudex-chart-frame', Clutter.Orientation.HORIZONTAL,
+    const frame = box('cloudex-chart-frame', Clutter.Orientation.HORIZONTAL,
         {x_expand: true});
-    const chart = new St.DrawingArea({name: id, style_class: 'claudex-chart',
+    const chart = new St.DrawingArea({name: id, style_class: 'cloudex-chart',
         x_expand: true, x_align: Clutter.ActorAlign.FILL,
         height: tokens.size.chartHeight, accessible_role: Atk.Role.CHART});
     chart.set_accessible_name(accessibleName);
@@ -92,9 +92,9 @@ export function HistoryChart({id, series, accessibleName, tokens}) {
         cr.$dispose();
     });
     frame.add_child(chart);
-    const axis = column('claudex-chart-axis');
+    const axis = column('cloudex-chart-axis');
     AXIS_LABELS.forEach(value => axis.add_child(label(value,
-        'claudex-chart-axis-label', {y_expand: true})));
+        'cloudex-chart-axis-label', {y_expand: true})));
     frame.add_child(axis);
     return frame;
 }

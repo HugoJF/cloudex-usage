@@ -1,4 +1,4 @@
-# Claudex Usage Primitive Catalog
+# Cloudex Usage Primitive Catalog
 
 Developer-only GNOME Shell extension containing the approved static Direction D
 panel, usage popup, settings popup, and interaction states. It performs no

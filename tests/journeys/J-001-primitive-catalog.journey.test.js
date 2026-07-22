@@ -6,7 +6,7 @@ import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 
 import {captureActor as capture} from './capture-actor.js';
 
-const UUID = 'claudex-usage-design@hugo.local';
+const UUID = 'cloudex-usage-design@hugo.local';
 const EXPECTED_CAPTURES = [
     'catalog-panel-dark-100.png',
     'catalog-popup-dark-100.png',

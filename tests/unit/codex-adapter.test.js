@@ -59,7 +59,7 @@ class Session {
     }
     abort() {}
 }
-const root = GLib.dir_make_tmp('claudex-codex-unit-XXXXXX');
+const root = GLib.dir_make_tmp('cloudex-codex-unit-XXXXXX');
 const procRoot = GLib.build_filenamev([root, 'proc']);
 const codexHome = GLib.build_filenamev([root, 'home']);
 const processPath = GLib.build_filenamev([procRoot, '123']);

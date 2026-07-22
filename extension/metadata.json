@@ -1,8 +1,8 @@
 {
-  "name": "Claudex Usage",
+  "name": "Cloudex Usage",
   "description": "Live Claude Code and Codex usage in one GNOME Shell panel surface.",
-  "uuid": "claudex-usage@hugo.local",
+  "uuid": "cloudex-usage@hugo.local",
   "shell-version": ["50"],
   "version": 1,
-  "settings-schema": "org.gnome.shell.extensions.claudex-usage"
+  "settings-schema": "org.gnome.shell.extensions.cloudex-usage"
 }

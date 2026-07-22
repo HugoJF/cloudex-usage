@@ -26,12 +26,12 @@ function label(text, styleClass, properties = {}) {
 }
 
 function rangeSelect({range, onActivate, tokens}) {
-    const row = box('claudex-choice-row');
-    row.add_child(label(range, 'claudex-choice-value'));
+    const row = box('cloudex-choice-row');
+    row.add_child(label(range, 'cloudex-choice-value'));
     row.add_child(new St.Icon({icon_name: 'pan-down-symbolic',
         icon_size: tokens.size.settingsIcon / 2}));
     const actor = new St.Button({name: 'refinement-range-select',
-        style_class: 'claudex-choice-button', can_focus: true, reactive: true,
+        style_class: 'cloudex-choice-button', can_focus: true, reactive: true,
         track_hover: true, child: row, accessible_role: Atk.Role.COMBO_BOX});
     actor.set_accessible_name(`Usage history range, ${range}`);
     actor.connect('clicked', onActivate);
@@ -39,7 +39,7 @@ function rangeSelect({range, onActivate, tokens}) {
 }
 
 function providerIcon({path, accessibleName, tokens}) {
-    const actor = new St.Icon({style_class: 'claudex-provider-icon',
+    const actor = new St.Icon({style_class: 'cloudex-provider-icon',
         gicon: new Gio.FileIcon({file: Gio.File.new_for_path(path)}),
         icon_size: tokens.size.providerIcon, y_align: Clutter.ActorAlign.CENTER});
     actor.set_accessible_name(accessibleName);
@@ -47,11 +47,11 @@ function providerIcon({path, accessibleName, tokens}) {
 }
 
 function providerHeader({id, title, iconPath, tokens}) {
-    const actor = box('claudex-provider-header', Clutter.Orientation.HORIZONTAL,
+    const actor = box('cloudex-provider-header', Clutter.Orientation.HORIZONTAL,
         {x_expand: true});
     actor.add_child(providerIcon({path: iconPath,
         accessibleName: `${title} mark`, tokens}));
-    actor.add_child(label(title, 'claudex-provider-name', {x_expand: true}));
+    actor.add_child(label(title, 'cloudex-provider-name', {x_expand: true}));
     actor.set_name(`refinement-provider-${id}`);
     return actor;
 }
@@ -74,22 +74,22 @@ function paceMarker(usage, tokens) {
 }
 
 function metric({usage, showTimePace, tokens}) {
-    const actor = column('claudex-metric', {x_expand: true});
-    const top = box('claudex-metric-top', Clutter.Orientation.HORIZONTAL,
+    const actor = column('cloudex-metric', {x_expand: true});
+    const top = box('cloudex-metric-top', Clutter.Orientation.HORIZONTAL,
         {x_expand: true});
-    top.add_child(label(usage.window, 'claudex-window', {x_expand: true}));
-    top.add_child(label(`${usage.percent}%`, 'claudex-percent'));
+    top.add_child(label(usage.window, 'cloudex-window', {x_expand: true}));
+    top.add_child(label(`${usage.percent}%`, 'cloudex-percent'));
     actor.add_child(top);
     const progress = ProgressBar({metric: metricModel(usage, showTimePace), tokens});
     if (showTimePace)
         {progress.add_child(paceMarker(usage, tokens));}
     actor.add_child(progress);
-    actor.add_child(label(usage.reset, 'claudex-reset'));
+    actor.add_child(label(usage.reset, 'cloudex-reset'));
     return actor;
 }
 
 function providerCard({id, title, metrics, showTimePace, extensionPath, tokens}) {
-    const actor = column('claudex-provider-card', {name: `refinement-card-${id}`});
+    const actor = column('cloudex-provider-card', {name: `refinement-card-${id}`});
     actor.add_child(providerHeader({id, title,
         iconPath: `${extensionPath}/icons/${id}.svg`, tokens}));
     for (const usage of metrics)
@@ -98,11 +98,11 @@ function providerCard({id, title, metrics, showTimePace, extensionPath, tokens})
 }
 
 function buildHeader(model) {
-    const header = box('claudex-header', Clutter.Orientation.HORIZONTAL,
+    const header = box('cloudex-header', Clutter.Orientation.HORIZONTAL,
         {x_expand: true});
-    const copy = column('claudex-title-copy', {x_expand: true});
-    copy.add_child(label('USAGE', 'claudex-kicker'));
-    copy.add_child(label('Claude + Codex', 'claudex-title'));
+    const copy = column('cloudex-title-copy', {x_expand: true});
+    copy.add_child(label('USAGE', 'cloudex-kicker'));
+    copy.add_child(label('Claude + Codex', 'cloudex-title'));
     header.add_child(copy);
     header.add_child(IconButton({id: 'refinement-refresh-button',
         iconName: 'view-refresh-symbolic', accessibleName: 'Refresh usage',
@@ -114,10 +114,10 @@ function buildHeader(model) {
 }
 
 function buildHistory(model) {
-    const history = column('claudex-history');
-    const header = box('claudex-history-header', Clutter.Orientation.HORIZONTAL,
+    const history = column('cloudex-history');
+    const header = box('cloudex-history-header', Clutter.Orientation.HORIZONTAL,
         {x_expand: true});
-    header.add_child(label('Usage history', 'claudex-section-title',
+    header.add_child(label('Usage history', 'cloudex-section-title',
         {x_expand: true}));
     header.add_child(rangeSelect({range: model.state.activeRange,
         onActivate: model.actions.cycleRange, tokens: model.tokens}));
@@ -148,9 +148,9 @@ function buildHistory(model) {
 }
 
 function footer() {
-    const actor = box('claudex-footer', Clutter.Orientation.HORIZONTAL,
+    const actor = box('cloudex-footer', Clutter.Orientation.HORIZONTAL,
         {name: 'refinement-footer', x_expand: true});
-    actor.add_child(label('Updated 3 min ago', 'claudex-updated', {x_expand: true}));
+    actor.add_child(label('Updated 3 min ago', 'cloudex-updated', {x_expand: true}));
     return actor;
 }
 

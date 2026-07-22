@@ -56,15 +56,15 @@ export function buildHistoryView({preferences, history, displayPercent, tokens,
         ...item,
         values: item.values.map(displayPercent),
     }));
-    const section = column('claudex-history', 'history-section');
+    const section = column('cloudex-history', 'history-section');
     const head = new St.BoxLayout({
-        style_class: 'claudex-history-header',
+        style_class: 'cloudex-history-header',
         orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
     });
     head.add_child(new St.Label({
         text: 'Usage history',
-        style_class: 'claudex-section-title',
+        style_class: 'cloudex-section-title',
         y_align: Clutter.ActorAlign.CENTER,
         x_expand: true,
     }));
@@ -78,7 +78,7 @@ export function buildHistoryView({preferences, history, displayPercent, tokens,
         section.add_child(new St.Label({
             name: 'history-empty',
             text: `Not enough history for the ${range.label} range yet`,
-            style_class: 'claudex-provider-detail',
+            style_class: 'cloudex-provider-detail',
         }));
         return section;
     }

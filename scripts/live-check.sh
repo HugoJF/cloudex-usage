@@ -15,7 +15,7 @@ trap 'rm -rf "$PKG"' EXIT
 cd "$ROOT"
 
 gnome-extensions pack --force \
-  --schema=schemas/org.gnome.shell.extensions.claudex-usage.gschema.xml \
+  --schema=schemas/org.gnome.shell.extensions.cloudex-usage.gschema.xml \
   --extra-source=surface-controller.js \
   --extra-source=panel-preferences.js \
   --extra-source=codex-contract.js --extra-source=codex-runtime.js \
@@ -30,7 +30,7 @@ gnome-extensions pack --force \
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}" \
 CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}" \
   dbus-run-session -- gnome-shell-test-tool --devkit --disable-animations \
-    --extension "$PKG/claudex-usage@hugo.local.shell-extension.zip" \
+    --extension "$PKG/cloudex-usage@hugo.local.shell-extension.zip" \
     scripts/live-monitor.journey.js 2>&1 \
   | grep --line-buffered "^LIVE:" || {
       echo "no LIVE output — the extension did not report; rerun to see full logs" >&2

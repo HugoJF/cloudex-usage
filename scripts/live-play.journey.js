@@ -5,7 +5,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 
-const UUID = 'claudex-usage@hugo.local';
+const UUID = 'cloudex-usage@hugo.local';
 export const METRICS = {};
 export function init() {}
 

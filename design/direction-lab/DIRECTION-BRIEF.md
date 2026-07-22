@@ -1,4 +1,4 @@
-# Design Direction Exploration — Claudex Usage
+# Design Direction Exploration — Cloudex Usage
 
 This is the durable record of the single divergent Phase-0 exploration required by
 Aura. Direction D is the canonical outcome; the adjacent extension is its executable,
@@ -6,7 +6,7 @@ developer-only primitive catalog rather than a selectable direction gallery.
 
 ## Product essence
 
-Claudex Usage makes Claude Code and Codex subscription limits visible from the
+Cloudex Usage makes Claude Code and Codex subscription limits visible from the
 GNOME panel without opening separate provider views. It should feel trustworthy,
 quiet, and glanceable while still carrying three differently shaped usage windows.
 

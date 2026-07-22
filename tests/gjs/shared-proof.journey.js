@@ -1,7 +1,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 
-const UUID = 'claudex-shared-proof@hugo.local';
+const UUID = 'cloudex-shared-proof@hugo.local';
 export const METRICS = {};
 export function init() {}
 

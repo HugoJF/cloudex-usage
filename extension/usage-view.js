@@ -50,21 +50,21 @@ function providerCard(provider, model) {
             tokens: model.tokens,
         });
     }
-    const card = column('claudex-provider-card', `provider-card-${provider.id}`);
+    const card = column('cloudex-provider-card', `provider-card-${provider.id}`);
     card.add_child(ProviderGroup({model: presentation, tokens: model.tokens}));
     card.add_child(new St.Label({name: `unavailable-${provider.id}`,
-        text: 'Usage unavailable', style_class: 'claudex-provider-detail'}));
+        text: 'Usage unavailable', style_class: 'cloudex-provider-detail'}));
     return card;
 }
 
 function header(model) {
-    const actor = new St.BoxLayout({style_class: 'claudex-header',
+    const actor = new St.BoxLayout({style_class: 'cloudex-header',
         orientation: Clutter.Orientation.HORIZONTAL, x_expand: true});
-    const copy = column('claudex-title-copy');
-    copy.add_child(new St.Label({text: 'USAGE', style_class: 'claudex-kicker',
+    const copy = column('cloudex-title-copy');
+    copy.add_child(new St.Label({text: 'USAGE', style_class: 'cloudex-kicker',
         y_align: Clutter.ActorAlign.CENTER}));
     copy.add_child(new St.Label({text: 'Claude + Codex',
-        style_class: 'claudex-title', y_align: Clutter.ActorAlign.CENTER}));
+        style_class: 'cloudex-title', y_align: Clutter.ActorAlign.CENTER}));
     actor.add_child(copy);
     actor.add_child(IconButton({id: 'refresh-button',
         iconName: model.snapshot.refreshing

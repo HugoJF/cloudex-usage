@@ -9,11 +9,11 @@ import {requireCallback, requireId, requireText} from './presentation-validation
 export function ChoiceRow({id, title, value, accessibleName, onActivate}) {
     requireId(id, 'Choice row');
     requireCallback(onActivate, 'Choice row activation');
-    const row = box('claudex-choice-row', Clutter.Orientation.HORIZONTAL,
+    const row = box('cloudex-choice-row', Clutter.Orientation.HORIZONTAL,
         {x_expand: true});
-    row.add_child(label(title, 'claudex-setting-title', {x_expand: true}));
-    row.add_child(label(value, 'claudex-choice-value'));
-    const actor = new St.Button({name: id, style_class: 'claudex-choice-button',
+    row.add_child(label(title, 'cloudex-setting-title', {x_expand: true}));
+    row.add_child(label(value, 'cloudex-choice-value'));
+    const actor = new St.Button({name: id, style_class: 'cloudex-choice-button',
         can_focus: true, reactive: true, track_hover: true, child: row});
     actor.set_accessible_name(requireText(accessibleName,
         'Choice row accessible name'));
